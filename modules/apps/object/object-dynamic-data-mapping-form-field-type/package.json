@@ -21,6 +21,11 @@
 			"<rootDir>/src/main/resources/META-INF/resources/tests/**/*.spec.*"
 		]
 	},
+	"jest": {
+		"testMatch": [
+			"<rootDir>/src/main/resources/META-INF/resources/tests/**/*.spec.*"
+		]
+	},
 	"main": "js/index.ts",
 	"name": "@liferay/object-dynamic-data-mapping-form-field-type",
 	"private": true,
