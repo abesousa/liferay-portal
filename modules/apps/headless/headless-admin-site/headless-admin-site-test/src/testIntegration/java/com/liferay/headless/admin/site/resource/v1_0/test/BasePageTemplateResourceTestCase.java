@@ -36,6 +36,7 @@ import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -106,10 +107,16 @@ public abstract class BasePageTemplateResourceTestCase {
 
 		_pageTemplateResource.setContextCompany(testCompany);
 
+		com.liferay.portal.kernel.model.User testCompanyAdminUser =
+			UserTestUtil.getAdminUser(testCompany.getCompanyId());
+
 		PageTemplateResource.Builder builder = PageTemplateResource.builder();
 
 		pageTemplateResource = builder.authentication(
-			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
+			testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
