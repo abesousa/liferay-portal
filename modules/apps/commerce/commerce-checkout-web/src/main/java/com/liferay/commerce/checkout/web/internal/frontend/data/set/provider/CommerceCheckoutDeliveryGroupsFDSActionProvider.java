@@ -61,7 +61,6 @@ public class CommerceCheckoutDeliveryGroupsFDSActionProvider
 						"viewDeliveryGroupURL",
 						_getViewDeliveryGroupURL(themeDisplay)
 					).build());
-
 				dropdownItem.setHref(StringPool.BLANK);
 				dropdownItem.setLabel(
 					_language.get(httpServletRequest, Constants.VIEW));
