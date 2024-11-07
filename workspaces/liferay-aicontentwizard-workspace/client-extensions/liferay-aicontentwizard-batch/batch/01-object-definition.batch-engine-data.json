@@ -153,7 +153,7 @@
 			"panelCategoryKey": "applications_menu.applications.content",
 			"parameterRequired": false,
 			"pluralLabel": {
-				"en_US": "K9L6 AI Wizard Config"
+				"en_US": "K9L6 AI Content Wizard Config"
 			},
 			"portlet": true,
 			"restContextPath": "/o/c/k9l6aiwizardconfig",

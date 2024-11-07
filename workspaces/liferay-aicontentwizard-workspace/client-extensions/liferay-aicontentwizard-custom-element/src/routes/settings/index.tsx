@@ -81,7 +81,7 @@ export default function Settings() {
 	return (
 		<Container className="p-4">
 			<div className="d-flex justify-content-between mb-4">
-				<h1>AI Wizard Settings</h1>
+				<h1>AI Content Wizard Settings</h1>
 
 				{hasItems && (
 					<ClayButtonWithIcon
