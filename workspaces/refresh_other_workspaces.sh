@@ -15,6 +15,7 @@ function main {
 			-a --delete \
 			--exclude "README.markdown" \
 			--exclude "client-extensions" \
+			--exclude "language" \
 			--exclude "modules" \
 			--exclude "node_modules" \
 			--exclude "node_modules_cache" \
