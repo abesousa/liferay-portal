@@ -71,7 +71,7 @@ public class ExpandoColumnUpgradeProcess extends UpgradeProcess {
 
 		unicodeProperties.setProperty(
 			ExpandoColumnConstants.PROPERTY_HIDDEN,
-			String.valueOf(Boolean.TRUE));
+			Boolean.TRUE.toString());
 
 		expandoColumn.setTypeSettingsProperties(unicodeProperties);
 
