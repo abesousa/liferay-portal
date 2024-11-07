@@ -17,11 +17,11 @@
 			"enableCategorization": true,
 			"enableComments": true,
 			"enableObjectEntryHistory": true,
-			"externalReferenceCode": "K9L6_AI_CONTENT_WIZARDSETTINGS",
+			"externalReferenceCode": "K9L6_AI_CONTENT_WIZARD_SETTING",
 			"label": {
-				"en_US": "AI Content Wizard Settings"
+				"en_US": "K9L6 AI Content Wizard Setting"
 			},
-			"name": "K9L6ContentWizardSettings",
+			"name": "K9L6AIContentWizardSetting",
 			"objectFields": [
 				{
 					"DBType": "Boolean",
@@ -62,15 +62,34 @@
 				},
 				{
 					"DBType": "String",
+					"businessType": "Text",
+					"indexed": false,
+					"indexedAsKeyword": false,
+					"indexedLanguageId": "",
+					"label": {
+						"en_US": "Description"
+					},
+					"name": "description",
+					"objectFieldSettings": [
+					],
+					"readOnly": "false",
+					"readOnlyConditionExpression": "",
+					"required": false,
+					"state": false,
+					"system": false,
+					"type": "String"
+				},
+				{
+					"DBType": "String",
 					"businessType": "Picklist",
 					"indexed": true,
 					"indexedAsKeyword": false,
 					"indexedLanguageId": "en_US",
 					"label": {
-						"en_US": "Provider"
+						"en_US": "Image Model"
 					},
-					"listTypeDefinitionExternalReferenceCode": "K9L6_AI_CONTENT_WIZARD_PROVIDERS",
-					"name": "provider",
+					"listTypeDefinitionExternalReferenceCode": "K9L6_AI_CONTENT_WIZARD_MODELS",
+					"name": "imageModel",
 					"readOnly": "false",
 					"required": false,
 					"state": false,
@@ -101,30 +120,11 @@
 					"indexedAsKeyword": false,
 					"indexedLanguageId": "en_US",
 					"label": {
-						"en_US": "Image Model"
+						"en_US": "Provider"
 					},
-					"listTypeDefinitionExternalReferenceCode": "K9L6_AI_CONTENT_WIZARD_MODELS",
-					"name": "imageModel",
+					"listTypeDefinitionExternalReferenceCode": "K9L6_AI_CONTENT_WIZARD_PROVIDERS",
+					"name": "provider",
 					"readOnly": "false",
-					"required": false,
-					"state": false,
-					"system": false,
-					"type": "String"
-				},
-				{
-					"DBType": "String",
-					"businessType": "Text",
-					"indexed": false,
-					"indexedAsKeyword": false,
-					"indexedLanguageId": "",
-					"label": {
-						"en_US": "Description"
-					},
-					"name": "description",
-					"objectFieldSettings": [
-					],
-					"readOnly": "false",
-					"readOnlyConditionExpression": "",
 					"required": false,
 					"state": false,
 					"system": false,
@@ -153,10 +153,10 @@
 			"panelCategoryKey": "applications_menu.applications.content",
 			"parameterRequired": false,
 			"pluralLabel": {
-				"en_US": "K9L6 AI Content Wizard Config"
+				"en_US": "K9L6 AI Content Wizard Settings"
 			},
 			"portlet": true,
-			"restContextPath": "/o/c/k9l6aiwizardconfig",
+			"restContextPath": "/o/c/k9l6aicontentwizardsettings",
 			"scope": "company",
 			"status": {
 				"code": 0,
