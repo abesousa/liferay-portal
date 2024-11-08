@@ -8,11 +8,10 @@ package com.liferay.ai.content.wizard;
 import com.liferay.ai.content.wizard.langchain4j.tools.AccountTools;
 import com.liferay.ai.content.wizard.langchain4j.tools.BlogPostingTools;
 import com.liferay.ai.content.wizard.langchain4j.tools.KnowledgeBaseTools;
+import com.liferay.ai.content.wizard.langchain4j.tools.SitePageTools;
+import com.liferay.ai.content.wizard.langchain4j.tools.SiteTools;
 import com.liferay.ai.content.wizard.langchain4j.tools.TaxonomyTools;
 import com.liferay.ai.content.wizard.langchain4j.tools.ToolsContext;
-import com.liferay.ai.content.wizard.models.AIContext;
-import com.liferay.ai.content.wizard.service.LiferayService;
-import com.liferay.ai.content.wizard.tools.SiteTool;
 import com.liferay.client.extension.util.spring.boot.BaseRestController;
 import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
 
@@ -22,9 +21,6 @@ import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
 
 import java.net.URL;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.json.JSONObject;
 
@@ -53,12 +49,6 @@ public class AIRestController extends BaseRestController {
 
 		JSONObject jsonObject = new JSONObject(json);
 
-		String question = jsonObject.getString("question");
-
-		AIContext aiContext = new AIContext(_liferayService, null);
-
-		aiContext.setSiteId(jsonObject.getLong("siteId"));
-
 		ToolsContext toolsContext = new ToolsContext(
 			_getAuthorization(),
 			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain),
@@ -83,20 +73,18 @@ public class AIRestController extends BaseRestController {
 			).build()
 		).tools(
 			new AccountTools(toolsContext), new BlogPostingTools(toolsContext),
-			new KnowledgeBaseTools(toolsContext), new SiteTool(aiContext),
+			new KnowledgeBaseTools(toolsContext),
+			new SitePageTools(toolsContext), new SiteTools(toolsContext),
 			new TaxonomyTools(toolsContext)
 		).chatMemory(
 			MessageWindowChatMemory.withMaxMessages(10)
 		).build();
 
-		if (_log.isInfoEnabled()) {
-			_log.info("Asked question: " + question);
-		}
-
 		return new ResponseEntity<>(
 			new JSONObject(
 			).put(
-				"output", liferayAIService.chat(question)
+				"output",
+				liferayAIService.chat(jsonObject.getString("question"))
 			).toString(),
 			HttpStatus.OK);
 	}
@@ -118,13 +106,8 @@ public class AIRestController extends BaseRestController {
 				"headless-server");
 	}
 
-	private static final Log _log = LogFactory.getLog(AIRestController.class);
-
 	@Autowired
 	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
-
-	@Autowired
-	private LiferayService _liferayService;
 
 	@Value("${liferay.aicontentwizard.openai.api.key}")
 	private String _openAIAPIKey;

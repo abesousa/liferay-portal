@@ -5,7 +5,6 @@
 
 package com.liferay.ai.content.wizard;
 
-import com.liferay.ai.content.wizard.service.LiferayService;
 import com.liferay.client.extension.util.spring.boot.BaseRestController;
 import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
 
@@ -94,8 +93,5 @@ public class SettingsRestController extends BaseRestController {
 
 	@Autowired
 	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
-
-	@Autowired
-	private LiferayService _liferayService;
 
 }
