@@ -12,16 +12,14 @@ import com.liferay.headless.admin.taxonomy.client.dto.v1_0.TaxonomyVocabulary;
 import com.liferay.headless.admin.taxonomy.client.resource.v1_0.TaxonomyCategoryResource;
 import com.liferay.headless.admin.taxonomy.client.resource.v1_0.TaxonomyVocabularyResource;
 import com.liferay.headless.admin.user.client.dto.v1_0.Account;
+import com.liferay.headless.admin.user.client.pagination.Pagination;
 import com.liferay.headless.admin.user.client.resource.v1_0.AccountResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
-import com.liferay.headless.delivery.client.dto.v1_0.BlogPosting;
 import com.liferay.headless.delivery.client.dto.v1_0.BlogPostingImage;
 import com.liferay.headless.delivery.client.dto.v1_0.KnowledgeBaseArticle;
 import com.liferay.headless.delivery.client.dto.v1_0.KnowledgeBaseFolder;
 import com.liferay.headless.delivery.client.pagination.Page;
-import com.liferay.headless.delivery.client.pagination.Pagination;
 import com.liferay.headless.delivery.client.resource.v1_0.BlogPostingImageResource;
-import com.liferay.headless.delivery.client.resource.v1_0.BlogPostingResource;
 import com.liferay.headless.delivery.client.resource.v1_0.KnowledgeBaseArticleResource;
 import com.liferay.headless.delivery.client.resource.v1_0.KnowledgeBaseFolderResource;
 import com.liferay.headless.site.client.dto.v1_0.Site;
@@ -31,7 +29,6 @@ import java.io.File;
 
 import java.net.URL;
 
-import java.util.ArrayList;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,21 +45,6 @@ public class LiferayService extends BaseService {
 		AccountResource accountResource = _getAccountResource();
 
 		return accountResource.postAccount(account);
-	}
-
-	public BlogPosting createBlog(BlogPosting blogPosting, long siteId)
-		throws Exception {
-
-		BlogPostingResource blogPostingResource = _getBlogPostingResource();
-
-		return blogPostingResource.postSiteBlogPosting(siteId, blogPosting);
-	}
-
-	public Page<BlogPosting> createBlog(long siteId) throws Exception {
-		BlogPostingResource blogPostingResource = _getBlogPostingResource();
-
-		return blogPostingResource.getSiteBlogPostingsPage(
-			siteId, "", new ArrayList<String>(), "", Pagination.of(1, 20), "");
 	}
 
 	public String createChildWikiPage(String body, String parentWikiPageId) {
@@ -188,17 +170,7 @@ public class LiferayService extends BaseService {
 		AccountResource accountResource = _getAccountResource();
 
 		return accountResource.getAccountsPage(
-			"", "",
-			com.liferay.headless.admin.user.client.pagination.Pagination.of(
-				1, 20),
-			"");
-	}
-
-	public Page<BlogPosting> getBlogs(long siteId) throws Exception {
-		BlogPostingResource blogPostingResource = _getBlogPostingResource();
-
-		return blogPostingResource.getSiteBlogPostingsPage(
-			siteId, "", new ArrayList<String>(), "", Pagination.of(1, 20), "");
+			"", "", Pagination.of(1, 20), "");
 	}
 
 	public String getKeywords() {
@@ -265,15 +237,6 @@ public class LiferayService extends BaseService {
 		throws Exception {
 
 		return BlogPostingImageResource.builder(
-		).endpoint(
-			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
-		).header(
-			HttpHeaders.AUTHORIZATION, _getAuthorization()
-		).build();
-	}
-
-	private BlogPostingResource _getBlogPostingResource() throws Exception {
-		return BlogPostingResource.builder(
 		).endpoint(
 			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
 		).header(

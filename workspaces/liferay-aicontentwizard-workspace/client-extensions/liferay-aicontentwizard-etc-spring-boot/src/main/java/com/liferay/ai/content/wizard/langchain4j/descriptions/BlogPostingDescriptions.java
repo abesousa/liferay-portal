@@ -3,52 +3,15 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-package com.liferay.ai.content.wizard.schemas;
-
-import com.liferay.headless.delivery.client.dto.v1_0.BlogPosting;
+package com.liferay.ai.content.wizard.langchain4j.descriptions;
 
 import dev.langchain4j.model.output.structured.Description;
 
-import org.json.JSONObject;
-
 /**
  * @author Keven Leone
+ * @author Brian Wing Shun Chan
  */
-public class Blog {
-
-	public String getAlternativeHeadline() {
-		return alternativeHeadline;
-	}
-
-	public String getArticleBody() {
-		return articleBody;
-	}
-
-	public String getHeadline() {
-		return headline;
-	}
-
-	public String[] getKeywords() {
-		return keywords;
-	}
-
-	public String getPictureDescription() {
-		return pictureDescription;
-	}
-
-	public BlogPosting toBlogPosting() {
-		return BlogPosting.toDTO(
-			new JSONObject(
-			).put(
-				"alternativeHeadline", alternativeHeadline
-			).put(
-				"articleBody", articleBody
-			).put(
-				"headline", headline
-			).put(
-				"keywords", keywords
-			).toString());
-	}
+public class BlogPostingDescriptions {
 
 	@Description("A headline that is a summary of the blog")
 	public String alternativeHeadline;

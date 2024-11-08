@@ -5,19 +5,23 @@
 
 package com.liferay.ai.content.wizard;
 
+import com.liferay.ai.content.wizard.langchain4j.tools.BlogPostingTools;
+import com.liferay.ai.content.wizard.langchain4j.tools.ToolsContext;
 import com.liferay.ai.content.wizard.models.AIContext;
 import com.liferay.ai.content.wizard.service.LiferayService;
 import com.liferay.ai.content.wizard.tools.AccountTool;
-import com.liferay.ai.content.wizard.tools.BlogTool;
 import com.liferay.ai.content.wizard.tools.CategoryTool;
 import com.liferay.ai.content.wizard.tools.KnowledgeBaseTool;
 import com.liferay.ai.content.wizard.tools.SiteTool;
 import com.liferay.client.extension.util.spring.boot.BaseRestController;
+import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
 
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.SystemMessage;
+
+import java.net.URL;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,7 +48,9 @@ public class AIRestController extends BaseRestController {
 	@PostMapping(
 		produces = MediaType.APPLICATION_JSON_VALUE, value = "/generate"
 	)
-	public ResponseEntity<String> generate(@RequestBody String json) {
+	public ResponseEntity<String> generate(@RequestBody String json)
+		throws Exception {
+
 		JSONObject jsonObject = new JSONObject(json);
 
 		String question = jsonObject.getString("question");
@@ -52,6 +58,11 @@ public class AIRestController extends BaseRestController {
 		AIContext aiContext = new AIContext(_liferayService, null);
 
 		aiContext.setSiteId(jsonObject.getLong("siteId"));
+
+		ToolsContext toolsContext = new ToolsContext(
+			_getAuthorization(),
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain),
+			jsonObject.getLong("siteId"));
 
 		LiferayAIService liferayAIService = AiServices.builder(
 			LiferayAIService.class
@@ -71,7 +82,7 @@ public class AIRestController extends BaseRestController {
 				true
 			).build()
 		).tools(
-			new AccountTool(aiContext), new BlogTool(aiContext),
+			new AccountTool(aiContext), new BlogPostingTools(toolsContext),
 			new CategoryTool(aiContext), new KnowledgeBaseTool(aiContext),
 			new SiteTool(aiContext)
 		).chatMemory(
@@ -101,7 +112,15 @@ public class AIRestController extends BaseRestController {
 
 	}
 
+	private String _getAuthorization() {
+		return _liferayOAuth2AccessTokenManager.getAuthorization(
+			"liferay-aicontentwizard-oauth-application-headless-server");
+	}
+
 	private static final Log _log = LogFactory.getLog(AIRestController.class);
+
+	@Autowired
+	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
 
 	@Autowired
 	private LiferayService _liferayService;
