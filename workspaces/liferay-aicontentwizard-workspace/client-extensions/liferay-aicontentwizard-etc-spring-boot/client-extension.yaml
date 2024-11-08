@@ -3,7 +3,7 @@ assemble:
 liferay-aicontentwizard-etc-spring-boot-oauth-application-headless-server:
     .serviceAddress: localhost:58081
     .serviceScheme: http
-    name: Liferay AI Content Wizard OAuth Application Headless Server
+    name: Liferay AI Content Etc Spring Boot Wizard OAuth Application Headless Server
     scopes:
         - c_k9l6aicontentwizardsetting.everything
         - Liferay.Bulk.REST.everything
