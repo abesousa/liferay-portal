@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RequestMapping("/ai")
 @RestController
-public class AI extends BaseRestController {
+public class AIRestController extends BaseRestController {
 
 	@PostMapping(
 		produces = MediaType.APPLICATION_JSON_VALUE, value = "/generate"
@@ -85,7 +85,7 @@ public class AI extends BaseRestController {
 	@Autowired
 	protected OpenAIImageModelConfiguration openAIImageModelConfiguration;
 
-	private static final Log _log = LogFactory.getLog(AI.class);
+	private static final Log _log = LogFactory.getLog(AIRestController.class);
 
 	@Autowired
 	private LiferayService _liferayService;

@@ -5,8 +5,8 @@
 
 package com.liferay.ai.content.wizard.service;
 
-import com.liferay.client.extension.util.spring.boot.BaseRestController;
 import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
+import com.liferay.client.extension.util.spring.boot.service.BaseService;
 import com.liferay.headless.admin.taxonomy.client.dto.v1_0.TaxonomyCategory;
 import com.liferay.headless.admin.taxonomy.client.dto.v1_0.TaxonomyVocabulary;
 import com.liferay.headless.admin.taxonomy.client.resource.v1_0.TaxonomyCategoryResource;
@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
  * @author Keven Leone
  */
 @Component
-public class LiferayService extends BaseRestController {
+public class LiferayService extends BaseService {
 
 	public Account createAccount(Account account) throws Exception {
 		AccountResource accountResource = _getAccountResource();

@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RequestMapping("/settings")
 @RestController
-public class Settings extends BaseRestController {
+public class SettingsRestController extends BaseRestController {
 
 	@DeleteMapping("/{id}")
 	public void deleteSetting(@PathVariable("id") String id) {
