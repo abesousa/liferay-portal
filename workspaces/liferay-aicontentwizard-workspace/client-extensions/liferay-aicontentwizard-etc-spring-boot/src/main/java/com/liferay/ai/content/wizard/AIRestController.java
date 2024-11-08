@@ -5,10 +5,7 @@
 
 package com.liferay.ai.content.wizard;
 
-import com.liferay.ai.content.wizard.interfaces.LiferayAssistant;
 import com.liferay.ai.content.wizard.models.AIContext;
-import com.liferay.ai.content.wizard.openai.OpenAIChatModelConfiguration;
-import com.liferay.ai.content.wizard.openai.OpenAIImageModelConfiguration;
 import com.liferay.ai.content.wizard.service.LiferayService;
 import com.liferay.ai.content.wizard.tools.AccountTool;
 import com.liferay.ai.content.wizard.tools.BlogTool;
@@ -18,8 +15,9 @@ import com.liferay.ai.content.wizard.tools.SiteTool;
 import com.liferay.client.extension.util.spring.boot.BaseRestController;
 
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.SystemMessage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -50,18 +49,27 @@ public class AIRestController extends BaseRestController {
 
 		String question = jsonObject.getString("question");
 
-		ChatLanguageModel chatLanguageModel =
-			_openAIChatModelConfiguration.getOpenAIChatLanguageModel();
-
-		AIContext aiContext = new AIContext(
-			_liferayService, openAIImageModelConfiguration);
+		AIContext aiContext = new AIContext(_liferayService, null);
 
 		aiContext.setSiteId(jsonObject.getLong("siteId"));
 
-		LiferayAssistant assistant = AiServices.builder(
-			LiferayAssistant.class
+		LiferayAIService liferayAIService = AiServices.builder(
+			LiferayAIService.class
 		).chatLanguageModel(
-			chatLanguageModel
+			OpenAiChatModel.builder(
+			).apiKey(
+				_openAIAPIKey
+			).modelName(
+				_openAIModelName
+			).responseFormat(
+				"json_schema"
+			).strictJsonSchema(
+				true
+			).logRequests(
+				true
+			).logResponses(
+				true
+			).build()
 		).tools(
 			new AccountTool(aiContext), new BlogTool(aiContext),
 			new CategoryTool(aiContext), new KnowledgeBaseTool(aiContext),
@@ -77,20 +85,31 @@ public class AIRestController extends BaseRestController {
 		return new ResponseEntity<>(
 			new JSONObject(
 			).put(
-				"output", assistant.chat(question)
+				"output", liferayAIService.chat(question)
 			).toString(),
 			HttpStatus.OK);
 	}
 
-	@Autowired
-	protected OpenAIImageModelConfiguration openAIImageModelConfiguration;
+	public interface LiferayAIService {
+
+		@SystemMessage(
+			"You are a chatbot called 'Liferay Assistant', specialist in Liferay Portal" +
+				"Do not answer topics related to competitors, if you are not " +
+					"sure with Tools to use just say 'Sorry, I cannot help you.'"
+		)
+		public String chat(String message);
+
+	}
 
 	private static final Log _log = LogFactory.getLog(AIRestController.class);
 
 	@Autowired
 	private LiferayService _liferayService;
 
-	@Autowired
-	private OpenAIChatModelConfiguration _openAIChatModelConfiguration;
+	@Value("${liferay.aicontentwizard.openai.api.key}")
+	private String _openAIAPIKey;
+
+	@Value("${liferay.aicontentwizard.openai.model.name}")
+	private String _openAIModelName;
 
 }
