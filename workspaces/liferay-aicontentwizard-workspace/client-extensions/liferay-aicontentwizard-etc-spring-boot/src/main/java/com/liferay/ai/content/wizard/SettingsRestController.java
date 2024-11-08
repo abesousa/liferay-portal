@@ -33,7 +33,7 @@ public class SettingsRestController extends BaseRestController {
 	@DeleteMapping("/{id}")
 	public void delete(@PathVariable("id") String id) {
 		delete(
-			_getAuthorization(), "", "/o/c/k9l6aicontentwizardsettings" + id);
+			_getAuthorization(), "", "/o/c/k9l6aicontentwizardsettings/" + id);
 	}
 
 	@GetMapping
