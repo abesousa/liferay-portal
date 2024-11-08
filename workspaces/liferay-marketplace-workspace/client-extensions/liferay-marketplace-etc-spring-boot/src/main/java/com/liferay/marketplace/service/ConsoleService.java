@@ -5,7 +5,7 @@
 
 package com.liferay.marketplace.service;
 
-import com.liferay.client.extension.util.spring.boot.BaseRestController;
+import com.liferay.client.extension.util.spring.boot.service.BaseService;
 import com.liferay.petra.string.StringBundler;
 
 import java.time.Duration;
@@ -26,7 +26,7 @@ import reactor.util.retry.Retry;
  * @author Keven Leone
  */
 @Component
-public class ConsoleService extends BaseRestController {
+public class ConsoleService extends BaseService {
 
 	public void deleteProject(String projectId) throws Exception {
 		String projectName = _consoleProjectPrefix + "-ext" + projectId;

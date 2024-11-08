@@ -6,6 +6,7 @@
 package com.liferay.marketplace.service;
 
 import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
+import com.liferay.client.extension.util.spring.boot.service.BaseService;
 import com.liferay.headless.admin.user.client.dto.v1_0.UserAccount;
 import com.liferay.headless.admin.user.client.resource.v1_0.AccountResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.PostalAddressResource;
@@ -22,7 +23,6 @@ import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.SkuResou
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderItemResource;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderResource;
-import com.liferay.marketplace.BaseRestController;
 import com.liferay.marketplace.constants.MarketplaceConstants;
 import com.liferay.petra.string.StringBundler;
 
@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component;
  * @author Keven Leone
  */
 @Component
-public class MarketplaceService extends BaseRestController {
+public class MarketplaceService extends BaseService {
 
 	public AccountResource getAccountResource() throws Exception {
 		return AccountResource.builder(
