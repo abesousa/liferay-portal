@@ -7,10 +7,6 @@ package com.liferay.ai.content.wizard.service;
 
 import com.liferay.client.extension.util.spring.boot.LiferayOAuth2AccessTokenManager;
 import com.liferay.client.extension.util.spring.boot.service.BaseService;
-import com.liferay.headless.admin.taxonomy.client.dto.v1_0.TaxonomyCategory;
-import com.liferay.headless.admin.taxonomy.client.dto.v1_0.TaxonomyVocabulary;
-import com.liferay.headless.admin.taxonomy.client.resource.v1_0.TaxonomyCategoryResource;
-import com.liferay.headless.admin.taxonomy.client.resource.v1_0.TaxonomyVocabularyResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
 import com.liferay.headless.delivery.client.dto.v1_0.BlogPostingImage;
 import com.liferay.headless.delivery.client.resource.v1_0.BlogPostingImageResource;
@@ -68,39 +64,6 @@ public class LiferayService extends BaseService {
 		SiteResource siteResource = _getSiteResource();
 
 		return siteResource.postSite(site);
-	}
-
-	public TaxonomyCategory createTaxonomyCategory(
-			String parentTaxonomyCategoryId, TaxonomyCategory taxonomyCategory)
-		throws Exception {
-
-		TaxonomyCategoryResource taxonomyCategoryResource =
-			_getTaxonomyCategoryResource();
-
-		return taxonomyCategoryResource.postTaxonomyCategoryTaxonomyCategory(
-			parentTaxonomyCategoryId, taxonomyCategory);
-	}
-
-	public TaxonomyVocabulary createTaxonomyVocabulary(
-			long siteId, TaxonomyVocabulary taxonomyVocabulary)
-		throws Exception {
-
-		TaxonomyVocabularyResource taxonomyVocabularyResource =
-			_getTaxonomyVocabularyResource();
-
-		return taxonomyVocabularyResource.postSiteTaxonomyVocabulary(
-			siteId, taxonomyVocabulary);
-	}
-
-	public TaxonomyCategory createTaxonomyVocabularyCategory(
-			TaxonomyCategory taxonomyCategory, long vocabularyId)
-		throws Exception {
-
-		TaxonomyCategoryResource taxonomyCategoryResource =
-			_getTaxonomyCategoryResource();
-
-		return taxonomyCategoryResource.postTaxonomyVocabularyTaxonomyCategory(
-			vocabularyId, taxonomyCategory);
 	}
 
 	public String createWikiNode(String body, String siteId) {
@@ -179,28 +142,6 @@ public class LiferayService extends BaseService {
 
 	private SiteResource _getSiteResource() throws Exception {
 		return SiteResource.builder(
-		).endpoint(
-			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
-		).header(
-			HttpHeaders.AUTHORIZATION, _getAuthorization()
-		).build();
-	}
-
-	private TaxonomyCategoryResource _getTaxonomyCategoryResource()
-		throws Exception {
-
-		return TaxonomyCategoryResource.builder(
-		).endpoint(
-			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
-		).header(
-			HttpHeaders.AUTHORIZATION, _getAuthorization()
-		).build();
-	}
-
-	private TaxonomyVocabularyResource _getTaxonomyVocabularyResource()
-		throws Exception {
-
-		return TaxonomyVocabularyResource.builder(
 		).endpoint(
 			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
 		).header(

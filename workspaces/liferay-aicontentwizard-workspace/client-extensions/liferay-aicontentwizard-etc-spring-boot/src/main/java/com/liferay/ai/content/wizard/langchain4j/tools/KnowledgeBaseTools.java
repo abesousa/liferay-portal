@@ -43,7 +43,7 @@ public class KnowledgeBaseTools extends BaseTools {
 	}
 
 	@Tool("Creates a Knowledge Base")
-	public String postSiteKnowledgeBaseFolder(
+	public void postSiteKnowledgeBaseFolder(
 			KnowledgeBaseDescriptions knowledgeBaseDescriptions)
 		throws Exception {
 
@@ -66,8 +66,6 @@ public class KnowledgeBaseTools extends BaseTools {
 			_postKnowledgeBaseFolderKnowledgeBaseArticle(
 				knowledgeBaseFolder, knowledgeBaseFolderDescriptions);
 		}
-
-		return "Knowledge Base created...";
 	}
 
 	private void _postKnowledgeBaseFolderKnowledgeBaseArticle(
