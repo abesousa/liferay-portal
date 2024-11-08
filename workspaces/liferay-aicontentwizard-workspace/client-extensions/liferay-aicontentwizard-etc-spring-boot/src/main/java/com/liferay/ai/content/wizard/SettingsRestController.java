@@ -88,7 +88,8 @@ public class SettingsRestController extends BaseRestController {
 
 	private String _getAuthorization() {
 		return _liferayOAuth2AccessTokenManager.getAuthorization(
-			"liferay-aicontentwizard-oauth-application-headless-server");
+			"liferay-aicontentwizard-etc-spring-boot-oauth-application-" +
+				"headless-server");
 	}
 
 	@Autowired
