@@ -84,7 +84,7 @@ public class AIRestController extends BaseRestController {
 			new JSONObject(
 			).put(
 				"output",
-				liferayAIService.chat(jsonObject.getString("question"))
+				liferayAIService.systemMessage(jsonObject.getString("question"))
 			).toString(),
 			HttpStatus.OK);
 	}
@@ -96,7 +96,7 @@ public class AIRestController extends BaseRestController {
 				"Do not answer topics related to competitors, if you are not " +
 					"sure with Tools to use just say 'Sorry, I cannot help you.'"
 		)
-		public String chat(String message);
+		public String systemMessage(String message);
 
 	}
 
