@@ -123,7 +123,7 @@ public class ConsoleService extends BaseService {
 	}
 
 	@Override
-	protected ExchangeFilterFunction getExchangeFilterFunction() {
+	protected ExchangeFilterFunction getWebClientExchangeFilterFunction() {
 		return (clientRequest, exchangeFunction) -> exchangeFunction.exchange(
 			clientRequest
 		).retryWhen(

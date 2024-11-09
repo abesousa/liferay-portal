@@ -137,7 +137,7 @@ public abstract class BaseService {
 		).block();
 	}
 
-	protected ExchangeFilterFunction getExchangeFilterFunction() {
+	protected ExchangeFilterFunction getWebClientExchangeFilterFunction() {
 		return (clientRequest, exchangeFunction) -> exchangeFunction.exchange(
 			clientRequest);
 	}
@@ -270,7 +270,7 @@ public abstract class BaseService {
 				)
 			).build()
 		).filter(
-			getExchangeFilterFunction()
+			getWebClientExchangeFilterFunction()
 		).build();
 	}
 

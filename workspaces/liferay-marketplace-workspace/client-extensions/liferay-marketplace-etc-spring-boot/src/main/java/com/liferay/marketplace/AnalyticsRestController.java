@@ -211,7 +211,7 @@ public class AnalyticsRestController extends BaseRestController {
 	}
 
 	@Override
-	protected ExchangeFilterFunction getExchangeFilterFunction() {
+	protected ExchangeFilterFunction getWebClientExchangeFilterFunction() {
 		return (clientRequest, exchangeFunction) -> exchangeFunction.exchange(
 			clientRequest
 		).retryWhen(
@@ -240,7 +240,7 @@ public class AnalyticsRestController extends BaseRestController {
 		).defaultHeader(
 			HttpHeaders.AUTHORIZATION, authorization
 		).filter(
-			getExchangeFilterFunction()
+			getWebClientExchangeFilterFunction()
 		).build();
 	}
 
