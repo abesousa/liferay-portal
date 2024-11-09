@@ -173,10 +173,10 @@ public abstract class BaseEntityRelationshipDALO
 					}
 				},
 				() -> {
-					String response;
+					String responseJSON;
 
 					try {
-						response = put(
+						responseJSON = put(
 							getAuthorization(), null, objectDefinitionURLPath);
 					}
 					catch (Exception exception) {
@@ -185,11 +185,11 @@ public abstract class BaseEntityRelationshipDALO
 						throw new RuntimeException(exception);
 					}
 
-					if (response == null) {
-						throw new RuntimeException("No response");
+					if (responseJSON == null) {
+						throw new RuntimeException("No response JSON");
 					}
 
-					new JSONObject(response);
+					new JSONObject(responseJSON);
 
 					if (_log.isDebugEnabled()) {
 						_log.debug(
@@ -269,10 +269,10 @@ public abstract class BaseEntityRelationshipDALO
 						}
 					},
 					() -> {
-						String response = null;
+						String responseJSON = null;
 
 						try {
-							response = get(
+							responseJSON = get(
 								getAuthorization(),
 								_defaultUriBuilderFactory.builder(
 								).path(
@@ -291,12 +291,12 @@ public abstract class BaseEntityRelationshipDALO
 							throw new RuntimeException(exception);
 						}
 
-						if (response == null) {
-							throw new RuntimeException("No response");
+						if (responseJSON == null) {
+							throw new RuntimeException("No response JSON");
 						}
 
 						JSONObject responseJSONObject = new JSONObject(
-							response);
+							responseJSON);
 
 						JSONArray itemsJSONArray =
 							responseJSONObject.getJSONArray("items");

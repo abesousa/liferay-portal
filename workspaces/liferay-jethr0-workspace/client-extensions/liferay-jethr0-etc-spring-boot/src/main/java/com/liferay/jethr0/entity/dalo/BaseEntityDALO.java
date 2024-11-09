@@ -139,10 +139,10 @@ public abstract class BaseEntityDALO<T extends Entity>
 					}
 				},
 				() -> {
-					String response;
+					String responseJSON;
 
 					try {
-						response = post(
+						responseJSON = post(
 							getAuthorization(), _getEntityURLPath(),
 							requestJSONObject.toString());
 					}
@@ -152,8 +152,8 @@ public abstract class BaseEntityDALO<T extends Entity>
 						throw new RuntimeException(exception);
 					}
 
-					if (response == null) {
-						throw new RuntimeException("No response");
+					if (responseJSON == null) {
+						throw new RuntimeException("No response JSON");
 					}
 
 					JSONObject jsonObject = new JSONObject();
@@ -162,7 +162,8 @@ public abstract class BaseEntityDALO<T extends Entity>
 						jsonObject.put(key, requestJSONObject.get(key));
 					}
 
-					JSONObject responseJSONObject = new JSONObject(response);
+					JSONObject responseJSONObject = new JSONObject(
+						responseJSON);
 
 					for (String key : responseJSONObject.keySet()) {
 						jsonObject.put(key, responseJSONObject.get(key));
@@ -236,10 +237,10 @@ public abstract class BaseEntityDALO<T extends Entity>
 					}
 				},
 				() -> {
-					String response = null;
+					String responseJSON = null;
 
 					try {
-						response = get(
+						responseJSON = get(
 							getAuthorization(), _getEntityURLPath() + "/" + id);
 					}
 					catch (Exception exception) {
@@ -248,11 +249,11 @@ public abstract class BaseEntityDALO<T extends Entity>
 						throw new RuntimeException(exception);
 					}
 
-					if (response == null) {
-						throw new RuntimeException("No response");
+					if (responseJSON == null) {
+						throw new RuntimeException("No response JSON");
 					}
 
-					return new JSONObject(response);
+					return new JSONObject(responseJSON);
 				});
 
 		if (_log.isDebugEnabled()) {
@@ -287,7 +288,7 @@ public abstract class BaseEntityDALO<T extends Entity>
 						}
 					},
 					() -> {
-						String response;
+						String responseJSON;
 
 						try {
 							UriBuilder uriBuilder =
@@ -311,7 +312,7 @@ public abstract class BaseEntityDALO<T extends Entity>
 								uriBuilder.queryParam("sort", sort);
 							}
 
-							response = get(
+							responseJSON = get(
 								getAuthorization(),
 								uriBuilder.build(
 								).toString());
@@ -322,14 +323,14 @@ public abstract class BaseEntityDALO<T extends Entity>
 							throw new RuntimeException(exception);
 						}
 
-						if (response == null) {
-							throw new RuntimeException("No response");
+						if (responseJSON == null) {
+							throw new RuntimeException("No response JSON");
 						}
 
 						Set<JSONObject> localJsonObjects = new HashSet<>();
 
 						JSONObject responseJSONObject = new JSONObject(
-							response);
+							responseJSON);
 
 						Integer localLastPage = responseJSONObject.getInt(
 							"lastPage");
@@ -419,10 +420,10 @@ public abstract class BaseEntityDALO<T extends Entity>
 					}
 				},
 				() -> {
-					String response;
+					String responseJSON;
 
 					try {
-						response = put(
+						responseJSON = put(
 							getAuthorization(), requestJSONObject.toString(),
 							_getEntityURLPath(requestObjectEntryId));
 					}
@@ -432,11 +433,12 @@ public abstract class BaseEntityDALO<T extends Entity>
 						throw new RuntimeException(exception);
 					}
 
-					if (response == null) {
-						throw new RuntimeException("No response");
+					if (responseJSON == null) {
+						throw new RuntimeException("No response JSON");
 					}
 
-					JSONObject responseJSONObject = new JSONObject(response);
+					JSONObject responseJSONObject = new JSONObject(
+						responseJSON);
 
 					long responseObjectEntryId = responseJSONObject.getLong(
 						"id");
