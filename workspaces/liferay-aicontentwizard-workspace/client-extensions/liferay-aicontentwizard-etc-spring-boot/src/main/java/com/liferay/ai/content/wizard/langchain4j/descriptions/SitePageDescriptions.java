@@ -68,9 +68,7 @@ public class SitePageDescriptions {
 			"A block that spans the full width of the page, containing images and text."
 		)
 		heading,
-		@Description(
-			"A block of content with controls for user navigation."
-		)
+		@Description("A block of content with controls for user navigation.")
 		hero_banner,
 		@Description("A simple image component.")
 		image,

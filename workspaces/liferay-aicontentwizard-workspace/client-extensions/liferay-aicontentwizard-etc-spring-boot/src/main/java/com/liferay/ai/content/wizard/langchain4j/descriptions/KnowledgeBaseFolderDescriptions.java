@@ -13,9 +13,7 @@ import dev.langchain4j.model.output.structured.Description;
  */
 public class KnowledgeBaseFolderDescriptions {
 
-	@Description(
-		"An array of this folder's article descriptions"
-	)
+	@Description("An array of this folder's article descriptions")
 	public KnowledgeBaseArticleDescriptions[]
 		knowledgeBaseArticleDescriptionsArray;
 

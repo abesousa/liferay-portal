@@ -35,9 +35,7 @@ public class AccountTools extends BaseTools {
 		).build();
 	}
 
-	@Tool(
-		"Deletes an account by its external reference code"
-	)
+	@Tool("Deletes an account by its external reference code")
 	public void deleteAccountByExternalReferenceCode(
 			@P(value = "The account external reference code") String
 				externalReferenceCode)

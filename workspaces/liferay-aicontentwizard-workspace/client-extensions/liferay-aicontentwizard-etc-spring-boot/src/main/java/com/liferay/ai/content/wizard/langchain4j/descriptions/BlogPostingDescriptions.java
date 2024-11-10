@@ -16,9 +16,7 @@ public class BlogPostingDescriptions {
 	@Description("The blog entry's subtitle")
 	public String alternativeHeadline;
 
-	@Description(
-		"The blog entry's content in HTML"
-	)
+	@Description("The blog entry's content in HTML")
 	public String articleBody;
 
 	@Description("The blog entry's title")
