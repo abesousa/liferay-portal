@@ -49,7 +49,7 @@ public class CommerceCurrencyLocalServiceTest {
 	}
 
 	@Test(expected = DuplicateCommerceCurrencyException.class)
-	public void testDuplicateAddCommerceCurrency() throws Exception {
+	public void testAddCommerceCurrency() throws Exception {
 		_commerceCurrency = _commerceCurrencyLocalService.addCommerceCurrency(
 			_user.getUserId(), RandomTestUtil.randomString(3),
 			RandomTestUtil.randomLocaleStringMap(),
