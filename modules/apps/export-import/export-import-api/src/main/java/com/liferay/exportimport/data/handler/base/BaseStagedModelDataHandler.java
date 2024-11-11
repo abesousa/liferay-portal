@@ -43,9 +43,9 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 			String uuid, long groupId, String className, String extraData)
 		throws PortalException {
 
-		Group group = GroupLocalServiceUtil.fetchGroup(groupId);
+		long companyId = 0;
 
-		long companyId;
+		Group group = GroupLocalServiceUtil.fetchGroup(groupId);
 
 		if (group != null) {
 			companyId = group.getCompanyId();
