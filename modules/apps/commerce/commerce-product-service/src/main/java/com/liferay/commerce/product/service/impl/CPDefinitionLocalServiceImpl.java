@@ -2788,6 +2788,9 @@ public class CPDefinitionLocalServiceImpl
 			return;
 		}
 
+		Group companyGroup = _groupLocalService.getCompanyGroup(
+			cpDefinition.getCompanyId());
+
 		Map<Locale, String> newUrlTitleMap = new HashMap<>();
 
 		if (MapUtil.isEmpty(urlTitleMap)) {
@@ -2796,9 +2799,6 @@ public class CPDefinitionLocalServiceImpl
 		else {
 			newUrlTitleMap = _getUniqueUrlTitles(cpDefinition, urlTitleMap);
 		}
-
-		Group companyGroup = _groupLocalService.getCompanyGroup(
-			cpDefinition.getCompanyId());
 
 		_friendlyURLEntryLocalService.addFriendlyURLEntry(
 			companyGroup.getGroupId(),
@@ -3104,13 +3104,13 @@ public class CPDefinitionLocalServiceImpl
 	}
 
 	private Map<String, String> _toLanguageIdMap(Map<Locale, String> map) {
-		Map<String, String> localizedMap = new HashMap<>();
+		Map<String, String> languageIdMap = new HashMap<>();
 
 		map.forEach(
-			(locale, value) -> localizedMap.put(
+			(locale, value) -> languageIdMap.put(
 				LocaleUtil.toLanguageId(locale), value));
 
-		return Collections.unmodifiableMap(localizedMap);
+		return Collections.unmodifiableMap(languageIdMap);
 	}
 
 	private List<CPDefinitionLocalization> _updateCPDefinitionLocalizedFields(
