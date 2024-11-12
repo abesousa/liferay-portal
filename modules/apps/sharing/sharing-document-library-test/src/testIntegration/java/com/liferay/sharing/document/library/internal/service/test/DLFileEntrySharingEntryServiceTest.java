@@ -61,8 +61,6 @@ public class DLFileEntrySharingEntryServiceTest {
 	@Before
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
-		_fromUser = UserTestUtil.addOmniadminUser();
-		_toUser = UserTestUtil.addUser();
 
 		FileEntry fileEntry = _dlAppService.addFileEntry(
 			null, _group.getGroupId(),
@@ -75,7 +73,11 @@ public class DLFileEntrySharingEntryServiceTest {
 
 		_dlFileEntry = (DLFileEntry)fileEntry.getModel();
 
+		_fromUser = UserTestUtil.addOmniadminUser();
+
 		UserTestUtil.setUser(_fromUser);
+
+		_toUser = UserTestUtil.addUser();
 	}
 
 	@Test
