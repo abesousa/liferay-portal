@@ -201,12 +201,12 @@ public class PageTemplateResourceTest extends BasePageTemplateResourceTestCase {
 
 	@Override
 	protected PageTemplate randomIrrelevantPageTemplate() throws Exception {
-		return _getPageRandomTemplate(irrelevantGroup);
+		return _getPageTemplate(irrelevantGroup);
 	}
 
 	@Override
 	protected PageTemplate randomPageTemplate() throws Exception {
-		return _getPageRandomTemplate(testGroup);
+		return _getPageTemplate(testGroup);
 	}
 
 	@Override
@@ -267,7 +267,7 @@ public class PageTemplateResourceTest extends BasePageTemplateResourceTestCase {
 		};
 	}
 
-	private PageTemplate _getPageRandomTemplate(Group group) throws Exception {
+	private PageTemplate _getPageTemplate(Group group) throws Exception {
 		List<UnsafeSupplier<PageTemplate, Exception>> unsafeSuppliers =
 			Arrays.asList(
 				() -> _getContentPageTemplate(group),
