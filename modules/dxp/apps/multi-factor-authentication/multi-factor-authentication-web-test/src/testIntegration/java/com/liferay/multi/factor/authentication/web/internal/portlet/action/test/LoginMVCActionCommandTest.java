@@ -84,6 +84,12 @@ public class LoginMVCActionCommandTest {
 
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
 
+		User user1 = UserTestUtil.addUser(_company);
+
+		ServiceContextThreadLocal.pushServiceContext(
+			ServiceContextTestUtil.getServiceContext(
+				user1.getGroupId(), user1.getUserId()));
+
 		try (CompanyConfigurationTemporarySwapper
 				configurationTemporarySwapper =
 					new CompanyConfigurationTemporarySwapper(
@@ -94,104 +100,89 @@ public class LoginMVCActionCommandTest {
 							"enabled", true
 						).build())) {
 
-			User user1 = UserTestUtil.addUser(_company);
+			String password = StringUtil.toLowerCase(
+				RandomTestUtil.randomString());
 
-			try {
-				ServiceContextThreadLocal.pushServiceContext(
-					ServiceContextTestUtil.getServiceContext(
-						user1.getGroupId(), user1.getUserId()));
+			user1 = _userLocalService.updatePassword(
+				user1.getUserId(), password, password, true, false);
 
-				String password = StringUtil.toLowerCase(
-					RandomTestUtil.randomString());
+			Bundle bundle = FrameworkUtil.getBundle(
+				LoginMVCActionCommandTest.class);
 
-				user1 = _userLocalService.updatePassword(
-					user1.getUserId(), password, password, true, false);
+			BundleContext bundleContext = bundle.getBundleContext();
 
-				Bundle bundle = FrameworkUtil.getBundle(
-					LoginMVCActionCommandTest.class);
+			bundleContext.registerService(
+				HeadlessMFAChecker.class, new FalseHeadlessMFAChecker(),
+				MapUtil.singletonDictionary(
+					"companyId", _company.getCompanyId()));
 
-				BundleContext bundleContext = bundle.getBundleContext();
+			MockLiferayPortletActionRequest mockLiferayPortletActionRequest1 =
+				_getMockLiferayPortletActionRequest(user1, password);
 
-				bundleContext.registerService(
-					HeadlessMFAChecker.class, new FalseHeadlessMFAChecker(),
-					MapUtil.singletonDictionary(
-						"companyId", _company.getCompanyId()));
+			_mvcActionCommand.processAction(
+				mockLiferayPortletActionRequest1,
+				new MockLiferayPortletActionResponse());
 
-				MockLiferayPortletActionRequest
-					mockLiferayPortletActionRequest1 =
-						_getMockLiferayPortletActionRequest(user1, password);
+			User user2 = _userLocalService.getUser(user1.getUserId());
 
-				_mvcActionCommand.processAction(
-					mockLiferayPortletActionRequest1,
-					new MockLiferayPortletActionResponse());
+			Assert.assertEquals(
+				user1.isPasswordReset(), user2.isPasswordReset());
+			Assert.assertTrue(user2.isPasswordReset());
 
-				User user2 = _userLocalService.getUser(user1.getUserId());
+			bundleContext.registerService(
+				HeadlessMFAChecker.class, new TrueHeadlessMFAChecker(),
+				MapUtil.singletonDictionary(
+					"companyId", _company.getCompanyId()));
 
-				Assert.assertEquals(
-					user1.isPasswordReset(), user2.isPasswordReset());
-				Assert.assertTrue(user2.isPasswordReset());
+			HttpServletRequest httpServletRequest1 =
+				_portal.getOriginalServletRequest(
+					_portal.getHttpServletRequest(
+						mockLiferayPortletActionRequest1));
 
-				bundleContext.registerService(
-					HeadlessMFAChecker.class, new TrueHeadlessMFAChecker(),
-					MapUtil.singletonDictionary(
-						"companyId", _company.getCompanyId()));
+			httpServletRequest1 = _portal.getOriginalServletRequest(
+				httpServletRequest1);
 
-				HttpServletRequest httpServletRequest1 =
-					_portal.getOriginalServletRequest(
-						_portal.getHttpServletRequest(
-							mockLiferayPortletActionRequest1));
+			HttpSession httpSession1 = httpServletRequest1.getSession();
 
-				httpServletRequest1 = _portal.getOriginalServletRequest(
-					httpServletRequest1);
+			String key = (String)httpSession1.getAttribute("MFA_WEB_KEY");
+			String digest = (String)httpSession1.getAttribute("MFA_WEB_DIGEST");
 
-				HttpSession httpSession1 = httpServletRequest1.getSession();
+			MockLiferayPortletActionRequest mockLiferayPortletActionRequest2 =
+				_getMockLiferayPortletActionRequest(
+					_getState(
+						(String)mockLiferayPortletActionRequest1.getAttribute(
+							"REDIRECT")));
 
-				String key = (String)httpSession1.getAttribute("MFA_WEB_KEY");
-				String digest = (String)httpSession1.getAttribute(
-					"MFA_WEB_DIGEST");
+			HttpServletRequest httpServletRequest2 =
+				_portal.getOriginalServletRequest(
+					_portal.getHttpServletRequest(
+						mockLiferayPortletActionRequest2));
 
-				MockLiferayPortletActionRequest
-					mockLiferayPortletActionRequest2 =
-						_getMockLiferayPortletActionRequest(
-							_getState(
-								(String)
-									mockLiferayPortletActionRequest1.
-										getAttribute("REDIRECT")));
+			HttpSession httpSession2 = httpServletRequest2.getSession();
 
-				HttpServletRequest httpServletRequest2 =
-					_portal.getOriginalServletRequest(
-						_portal.getHttpServletRequest(
-							mockLiferayPortletActionRequest2));
+			httpSession2.setAttribute("MFA_WEB_DIGEST", digest);
+			httpSession2.setAttribute("MFA_WEB_KEY", key);
 
-				HttpSession httpSession2 = httpServletRequest2.getSession();
+			LiferayActionRequest liferayActionRequest =
+				ActionRequestFactory.create(
+					httpServletRequest2,
+					_portletLocalService.getPortletById(LoginPortletKeys.LOGIN),
+					null, null, null, null, null, TestPropsValues.getPlid());
 
-				httpSession2.setAttribute("MFA_WEB_DIGEST", digest);
-				httpSession2.setAttribute("MFA_WEB_KEY", key);
+			liferayActionRequest.setPortletRequestDispatcherRequest(
+				httpServletRequest2);
 
-				LiferayActionRequest liferayActionRequest =
-					ActionRequestFactory.create(
-						httpServletRequest2,
-						_portletLocalService.getPortletById(
-							LoginPortletKeys.LOGIN),
-						null, null, null, null, null,
-						TestPropsValues.getPlid());
+			_mvcActionCommand.processAction(
+				liferayActionRequest, new MockLiferayPortletActionResponse());
 
-				liferayActionRequest.setPortletRequestDispatcherRequest(
-					httpServletRequest2);
+			user2 = _userLocalService.getUser(user1.getUserId());
 
-				_mvcActionCommand.processAction(
-					liferayActionRequest,
-					new MockLiferayPortletActionResponse());
-
-				user2 = _userLocalService.getUser(user1.getUserId());
-
-				Assert.assertEquals(
-					user1.isPasswordReset(), user2.isPasswordReset());
-				Assert.assertTrue(user2.isPasswordReset());
-			}
-			finally {
-				ServiceContextThreadLocal.popServiceContext();
-			}
+			Assert.assertEquals(
+				user1.isPasswordReset(), user2.isPasswordReset());
+			Assert.assertTrue(user2.isPasswordReset());
+		}
+		finally {
+			ServiceContextThreadLocal.popServiceContext();
 		}
 	}
 
