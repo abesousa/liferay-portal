@@ -9,7 +9,7 @@ import com.liferay.headless.admin.site.dto.v1_0.ClassSubtypeReference;
 import com.liferay.headless.admin.site.dto.v1_0.DisplayPageTemplate;
 import com.liferay.headless.admin.site.dto.v1_0.DisplayPageTemplateFolder;
 import com.liferay.headless.admin.site.dto.v1_0.ItemExternalReference;
-import com.liferay.headless.admin.site.internal.resource.util.ResourceUtil;
+import com.liferay.headless.admin.site.internal.resource.util.GroupUtil;
 import com.liferay.headless.admin.site.resource.v1_0.DisplayPageTemplateResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.info.item.InfoItemFormVariation;
@@ -64,7 +64,7 @@ public class DisplayPageTemplateResourceImpl
 
 		_layoutPageTemplateEntryService.deleteLayoutPageTemplateEntry(
 			displayPageTemplateExternalReferenceCode,
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				false, contextCompany.getCompanyId(),
 				siteExternalReferenceCode));
 	}
@@ -84,7 +84,7 @@ public class DisplayPageTemplateResourceImpl
 			_layoutPageTemplateEntryService.
 				getLayoutPageTemplateEntryByExternalReferenceCode(
 					displayPageTemplateExternalReferenceCode,
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode)));
 	}
@@ -101,7 +101,7 @@ public class DisplayPageTemplateResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			true, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
@@ -136,7 +136,7 @@ public class DisplayPageTemplateResourceImpl
 		return Page.of(
 			transform(
 				_layoutPageTemplateEntryService.getLayoutPageTemplateEntries(
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode),
 					LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE,
@@ -157,7 +157,7 @@ public class DisplayPageTemplateResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		return _addDisplayPageTemplate(
@@ -177,7 +177,7 @@ public class DisplayPageTemplateResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
@@ -202,7 +202,7 @@ public class DisplayPageTemplateResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =

@@ -6,7 +6,7 @@
 package com.liferay.headless.admin.site.internal.resource.v1_0;
 
 import com.liferay.headless.admin.site.dto.v1_0.PageTemplateSet;
-import com.liferay.headless.admin.site.internal.resource.util.ResourceUtil;
+import com.liferay.headless.admin.site.internal.resource.util.GroupUtil;
 import com.liferay.headless.admin.site.resource.v1_0.PageTemplateSetResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateCollectionTypeConstants;
@@ -48,7 +48,7 @@ public class PageTemplateSetResourceImpl
 
 		_layoutPageTemplateCollectionService.deleteLayoutPageTemplateCollection(
 			pageTemplateSetExternalReferenceCode,
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				false, contextCompany.getCompanyId(),
 				siteExternalReferenceCode));
 	}
@@ -67,7 +67,7 @@ public class PageTemplateSetResourceImpl
 			_layoutPageTemplateCollectionService.
 				getLayoutPageTemplateCollection(
 					pageTemplateSetExternalReferenceCode,
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode)));
 	}
@@ -84,7 +84,7 @@ public class PageTemplateSetResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			true, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		return Page.of(
@@ -113,7 +113,7 @@ public class PageTemplateSetResourceImpl
 
 		return _toPageTemplateSet(
 			_addLayoutPageTemplateCollection(
-				ResourceUtil.getGroupId(
+				GroupUtil.getGroupId(
 					false, contextCompany.getCompanyId(),
 					siteExternalReferenceCode),
 				pageTemplateSet));
@@ -130,7 +130,7 @@ public class PageTemplateSetResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateCollection layoutPageTemplateCollection =

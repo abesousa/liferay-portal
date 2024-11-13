@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 /**
  * @author Lourdes Fernández Besada
  */
-public class ResourceUtil {
+public class GroupUtil {
 
 	public static long getGroupId(
 			boolean allowCompanyGroup, boolean allowLiveGroup, long companyId,

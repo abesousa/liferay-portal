@@ -9,7 +9,7 @@ import com.liferay.headless.admin.site.dto.v1_0.ContentPageTemplate;
 import com.liferay.headless.admin.site.dto.v1_0.PageTemplate;
 import com.liferay.headless.admin.site.dto.v1_0.PageTemplateSet;
 import com.liferay.headless.admin.site.dto.v1_0.WidgetPageTemplate;
-import com.liferay.headless.admin.site.internal.resource.util.ResourceUtil;
+import com.liferay.headless.admin.site.internal.resource.util.GroupUtil;
 import com.liferay.headless.admin.site.resource.v1_0.PageTemplateResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
@@ -67,7 +67,7 @@ public class PageTemplateResourceImpl extends BasePageTemplateResourceImpl {
 		return Page.of(
 			transform(
 				_layoutPageTemplateEntryService.getLayoutPageTemplateEntries(
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode),
 					new int[] {
@@ -89,7 +89,7 @@ public class PageTemplateResourceImpl extends BasePageTemplateResourceImpl {
 		}
 
 		return _addPageTemplate(
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				_isTypeWidgetPageTemplate(pageTemplate), false,
 				contextCompany.getCompanyId(), siteExternalReferenceCode),
 			pageTemplate);

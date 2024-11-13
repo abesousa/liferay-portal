@@ -6,7 +6,7 @@
 package com.liferay.headless.admin.site.internal.resource.v1_0;
 
 import com.liferay.headless.admin.site.dto.v1_0.DisplayPageTemplateFolder;
-import com.liferay.headless.admin.site.internal.resource.util.ResourceUtil;
+import com.liferay.headless.admin.site.internal.resource.util.GroupUtil;
 import com.liferay.headless.admin.site.resource.v1_0.DisplayPageTemplateFolderResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateCollectionTypeConstants;
@@ -54,7 +54,7 @@ public class DisplayPageTemplateFolderResourceImpl
 
 		_layoutPageTemplateCollectionService.deleteLayoutPageTemplateCollection(
 			displayPageTemplateFolderExternalReferenceCode,
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				false, contextCompany.getCompanyId(),
 				siteExternalReferenceCode));
 	}
@@ -74,7 +74,7 @@ public class DisplayPageTemplateFolderResourceImpl
 			_layoutPageTemplateCollectionService.
 				getLayoutPageTemplateCollection(
 					displayPageTemplateFolderExternalReferenceCode,
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode)));
 	}
@@ -95,7 +95,7 @@ public class DisplayPageTemplateFolderResourceImpl
 			transform(
 				_layoutPageTemplateCollectionService.
 					getLayoutPageTemplateCollections(
-						ResourceUtil.getGroupId(
+						GroupUtil.getGroupId(
 							true, contextCompany.getCompanyId(),
 							siteExternalReferenceCode),
 						LayoutPageTemplateCollectionTypeConstants.DISPLAY_PAGE,
@@ -117,7 +117,7 @@ public class DisplayPageTemplateFolderResourceImpl
 
 		return _addDisplayPageTemplateFolder(
 			displayPageTemplateFolder,
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				false, contextCompany.getCompanyId(),
 				siteExternalReferenceCode));
 	}
@@ -134,7 +134,7 @@ public class DisplayPageTemplateFolderResourceImpl
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateCollection layoutPageTemplateCollection =

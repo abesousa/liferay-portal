@@ -6,7 +6,7 @@
 package com.liferay.headless.admin.site.internal.resource.v1_0;
 
 import com.liferay.headless.admin.site.dto.v1_0.MasterPage;
-import com.liferay.headless.admin.site.internal.resource.util.ResourceUtil;
+import com.liferay.headless.admin.site.internal.resource.util.GroupUtil;
 import com.liferay.headless.admin.site.resource.v1_0.MasterPageResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
@@ -53,7 +53,7 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 
 		_layoutPageTemplateEntryService.deleteLayoutPageTemplateEntry(
 			masterPageExternalReferenceCode,
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				false, contextCompany.getCompanyId(),
 				siteExternalReferenceCode));
 	}
@@ -72,7 +72,7 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 			_layoutPageTemplateEntryService.
 				getLayoutPageTemplateEntryByExternalReferenceCode(
 					masterPageExternalReferenceCode,
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode)));
 	}
@@ -91,7 +91,7 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 		return Page.of(
 			transform(
 				_layoutPageTemplateEntryService.getLayoutPageTemplateEntries(
-					ResourceUtil.getGroupId(
+					GroupUtil.getGroupId(
 						true, contextCompany.getCompanyId(),
 						siteExternalReferenceCode),
 					LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
@@ -110,7 +110,7 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 		}
 
 		return _addMasterPage(
-			ResourceUtil.getGroupId(
+			GroupUtil.getGroupId(
 				false, contextCompany.getCompanyId(),
 				siteExternalReferenceCode),
 			masterPage);
@@ -126,7 +126,7 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 			throw new UnsupportedOperationException();
 		}
 
-		long groupId = ResourceUtil.getGroupId(
+		long groupId = GroupUtil.getGroupId(
 			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
