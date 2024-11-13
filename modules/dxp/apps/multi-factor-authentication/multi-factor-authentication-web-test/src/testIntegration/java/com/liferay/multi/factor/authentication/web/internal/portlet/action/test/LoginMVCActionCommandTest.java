@@ -150,7 +150,7 @@ public class LoginMVCActionCommandTest {
 				String digest = (String)httpSession1.getAttribute(
 					"MFA_WEB_DIGEST");
 
-				String state = _getStateFromRedirectParam(
+				String state = _getState(
 					(String)mockLiferayPortletActionRequest1.getAttribute(
 						"REDIRECT"));
 
@@ -272,15 +272,13 @@ public class LoginMVCActionCommandTest {
 		return mockLiferayPortletActionRequest;
 	}
 
-	private String _getStateFromRedirectParam(String redirect)
-		throws Exception {
-
+	private String _getState(String redirect) throws Exception {
 		redirect = URLDecoder.decode(redirect, StandardCharsets.UTF_8.name());
 
-		int start = StringUtil.lastIndexOfAny(
+		int index = StringUtil.lastIndexOfAny(
 			redirect, new String[] {"state="});
 
-		return redirect.substring(start + 6);
+		return redirect.substring(index + 6);
 	}
 
 	private ThemeDisplay _getThemeDisplay() throws Exception {
