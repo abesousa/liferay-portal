@@ -150,13 +150,13 @@ public class LoginMVCActionCommandTest {
 				String digest = (String)httpSession1.getAttribute(
 					"MFA_WEB_DIGEST");
 
-				String state = _getState(
-					(String)mockLiferayPortletActionRequest1.getAttribute(
-						"REDIRECT"));
-
 				MockLiferayPortletActionRequest
 					mockLiferayPortletActionRequest2 =
-						_getMockLiferayPortletActionRequest(state);
+						_getMockLiferayPortletActionRequest(
+							_getState(
+								(String)
+									mockLiferayPortletActionRequest1.
+										getAttribute("REDIRECT")));
 
 				HttpServletRequest httpServletRequest2 =
 					_portal.getOriginalServletRequest(
@@ -321,8 +321,7 @@ public class LoginMVCActionCommandTest {
 	@Inject
 	private UserLocalService _userLocalService;
 
-	private class FalseHeadlessMFAChecker
-		implements HeadlessMFAChecker {
+	private class FalseHeadlessMFAChecker implements HeadlessMFAChecker {
 
 		@Override
 		public boolean verifyHeadlessRequest(
@@ -333,8 +332,7 @@ public class LoginMVCActionCommandTest {
 
 	}
 
-	private class TrueHeadlessMFAChecker
-		implements HeadlessMFAChecker {
+	private class TrueHeadlessMFAChecker implements HeadlessMFAChecker {
 
 		@Override
 		public boolean verifyHeadlessRequest(
