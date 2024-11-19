@@ -465,8 +465,9 @@ public class ObjectEntryLocalServiceImpl
 		ObjectEntry objectEntry = null;
 
 		if (Validator.isNotNull(externalReferenceCode)) {
-			objectEntry = objectEntryPersistence.fetchByERC_C_ODI(
-				externalReferenceCode, user.getCompanyId(), objectDefinitionId);
+			objectEntry = objectEntryPersistence.fetchByERC_G_C_ODI(
+				externalReferenceCode, groupId, user.getCompanyId(),
+				objectDefinitionId);
 
 			if (objectEntry != null) {
 				return updateObjectEntry(
@@ -601,11 +602,12 @@ public class ObjectEntryLocalServiceImpl
 
 	@Override
 	public ObjectEntry deleteObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
+			String externalReferenceCode, long companyId, long groupId,
+			long objectDefinitionId)
 		throws PortalException {
 
-		ObjectEntry objectEntry = objectEntryPersistence.findByERC_G_C(
-			externalReferenceCode, groupId, companyId);
+		ObjectEntry objectEntry = objectEntryPersistence.fetchByERC_G_C_ODI(
+			externalReferenceCode, groupId, companyId, objectDefinitionId);
 
 		return objectEntryLocalService.deleteObjectEntry(objectEntry);
 	}
@@ -733,7 +735,7 @@ public class ObjectEntryLocalServiceImpl
 
 	@Override
 	public ObjectEntry fetchObjectEntry(
-		String externalReferenceCode, long objectDefinitionId) {
+		String externalReferenceCode, long objectDefinitionId, long groupId) {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionPersistence.fetchByPrimaryKey(objectDefinitionId);
@@ -742,8 +744,8 @@ public class ObjectEntryLocalServiceImpl
 			return null;
 		}
 
-		return objectEntryPersistence.fetchByERC_C_ODI(
-			externalReferenceCode, objectDefinition.getCompanyId(),
+		return objectEntryPersistence.fetchByERC_G_C_ODI(
+			externalReferenceCode, groupId, objectDefinition.getCompanyId(),
 			objectDefinitionId);
 	}
 
@@ -966,24 +968,25 @@ public class ObjectEntryLocalServiceImpl
 
 	@Override
 	public ObjectEntry getObjectEntry(
-			String externalReferenceCode, long objectDefinitionId)
+			String externalReferenceCode, long objectDefinitionId, long groupId)
 		throws PortalException {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionPersistence.findByPrimaryKey(objectDefinitionId);
 
-		return objectEntryPersistence.findByERC_C_ODI(
-			externalReferenceCode, objectDefinition.getCompanyId(),
+		return objectEntryPersistence.fetchByERC_G_C_ODI(
+			externalReferenceCode, groupId, objectDefinition.getCompanyId(),
 			objectDefinitionId);
 	}
 
 	@Override
 	public ObjectEntry getObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
+			String externalReferenceCode, long companyId, long groupId,
+			long objectDefinitionId)
 		throws PortalException {
 
-		return objectEntryPersistence.findByERC_G_C(
-			externalReferenceCode, groupId, companyId);
+		return objectEntryPersistence.fetchByERC_G_C_ODI(
+			externalReferenceCode, groupId, companyId, objectDefinitionId);
 	}
 
 	@Override

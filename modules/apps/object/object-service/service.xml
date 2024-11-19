@@ -229,16 +229,6 @@
 			<finder-column name="objectDefinitionId" />
 			<finder-column comparator="!=" name="status" />
 		</finder>
-		<finder name="ERC_G_C" return-type="ObjectEntry">
-			<finder-column name="externalReferenceCode" />
-			<finder-column name="groupId" />
-			<finder-column name="companyId" />
-		</finder>
-		<finder name="ERC_C_ODI" return-type="ObjectEntry">
-			<finder-column name="externalReferenceCode" />
-			<finder-column name="companyId" />
-			<finder-column name="objectDefinitionId" />
-		</finder>
 		<finder name="G_ODI_S" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="objectDefinitionId" />
