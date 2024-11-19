@@ -168,11 +168,12 @@ public class ObjectEntryLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectEntry deleteObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
+			String externalReferenceCode, long companyId, long groupId,
+			long objectDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectEntryLocalService.deleteObjectEntry(
-			externalReferenceCode, companyId, groupId);
+			externalReferenceCode, companyId, groupId, objectDefinitionId);
 	}
 
 	/**
@@ -315,10 +316,10 @@ public class ObjectEntryLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectEntry fetchObjectEntry(
-		String externalReferenceCode, long objectDefinitionId) {
+		String externalReferenceCode, long objectDefinitionId, long groupId) {
 
 		return _objectEntryLocalService.fetchObjectEntry(
-			externalReferenceCode, objectDefinitionId);
+			externalReferenceCode, objectDefinitionId, groupId);
 	}
 
 	/**
@@ -540,20 +541,21 @@ public class ObjectEntryLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectEntry getObjectEntry(
-			String externalReferenceCode, long objectDefinitionId)
+			String externalReferenceCode, long objectDefinitionId, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectEntryLocalService.getObjectEntry(
-			externalReferenceCode, objectDefinitionId);
+			externalReferenceCode, objectDefinitionId, groupId);
 	}
 
 	@Override
 	public com.liferay.object.model.ObjectEntry getObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
+			String externalReferenceCode, long companyId, long groupId,
+			long objectDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectEntryLocalService.getObjectEntry(
-			externalReferenceCode, companyId, groupId);
+			externalReferenceCode, companyId, groupId, objectDefinitionId);
 	}
 
 	/**

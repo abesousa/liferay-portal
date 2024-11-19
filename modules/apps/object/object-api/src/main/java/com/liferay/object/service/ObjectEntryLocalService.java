@@ -149,7 +149,8 @@ public interface ObjectEntryLocalService
 		throws PortalException;
 
 	public ObjectEntry deleteObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
+			String externalReferenceCode, long companyId, long groupId,
+			long objectDefinitionId)
 		throws PortalException;
 
 	/**
@@ -245,7 +246,7 @@ public interface ObjectEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectEntry fetchObjectEntry(
-		String externalReferenceCode, long objectDefinitionId);
+		String externalReferenceCode, long objectDefinitionId, long groupId);
 
 	/**
 	 * Returns the object entry matching the UUID and group.
@@ -378,12 +379,13 @@ public interface ObjectEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectEntry getObjectEntry(
-			String externalReferenceCode, long objectDefinitionId)
+			String externalReferenceCode, long objectDefinitionId, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectEntry getObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
+			String externalReferenceCode, long companyId, long groupId,
+			long objectDefinitionId)
 		throws PortalException;
 
 	/**

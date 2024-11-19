@@ -258,26 +258,6 @@ public class ObjectEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByERC_G_C() throws Exception {
-		_persistence.countByERC_G_C(
-			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByERC_G_C("null", 0L, 0L);
-
-		_persistence.countByERC_G_C((String)null, 0L, 0L);
-	}
-
-	@Test
-	public void testCountByERC_C_ODI() throws Exception {
-		_persistence.countByERC_C_ODI(
-			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByERC_C_ODI("null", 0L, 0L);
-
-		_persistence.countByERC_C_ODI((String)null, 0L, 0L);
-	}
-
-	@Test
 	public void testCountByG_ODI_S() throws Exception {
 		_persistence.countByG_ODI_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -612,38 +592,6 @@ public class ObjectEntryPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				objectEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "groupId"));
-
-		Assert.assertEquals(
-			objectEntry.getExternalReferenceCode(),
-			ReflectionTestUtil.invoke(
-				objectEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "externalReferenceCode"));
-		Assert.assertEquals(
-			Long.valueOf(objectEntry.getGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				objectEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "groupId"));
-		Assert.assertEquals(
-			Long.valueOf(objectEntry.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				objectEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-
-		Assert.assertEquals(
-			objectEntry.getExternalReferenceCode(),
-			ReflectionTestUtil.invoke(
-				objectEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "externalReferenceCode"));
-		Assert.assertEquals(
-			Long.valueOf(objectEntry.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				objectEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(objectEntry.getObjectDefinitionId()),
-			ReflectionTestUtil.<Long>invoke(
-				objectEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "objectDefinitionId"));
 
 		Assert.assertEquals(
 			objectEntry.getExternalReferenceCode(),
