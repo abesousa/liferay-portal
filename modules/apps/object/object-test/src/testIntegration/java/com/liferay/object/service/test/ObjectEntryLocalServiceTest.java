@@ -667,7 +667,7 @@ public class ObjectEntryLocalServiceTest {
 					"firstName", "Judas"
 				).build()));
 
-		// Adding object entries successfully
+		// Count object entry
 
 		_assertCount(0);
 
@@ -762,7 +762,7 @@ public class ObjectEntryLocalServiceTest {
 
 		_assertCount(8);
 
-		// Localized values
+		// Object entry with localized values
 
 		ObjectDefinition objectDefinition = _publishCustomObjectDefinition(
 			true,
@@ -804,7 +804,7 @@ public class ObjectEntryLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			modifiableSystemObjectDefinition.getObjectDefinitionId());
 
-		// Same external reference code in different sites
+		// Object entry with same external reference code in different sites
 
 		String externalReferenceCode = RandomTestUtil.randomString();
 
@@ -823,7 +823,7 @@ public class ObjectEntryLocalServiceTest {
 
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
 
-		// Unique values in a company scoped object definition
+		// Object entry with unique values in a company scoped object definition
 
 		AssertUtils.assertFailure(
 			ObjectEntryValuesException.UniqueValueConstraintViolation.class,
@@ -839,7 +839,7 @@ public class ObjectEntryLocalServiceTest {
 					"listTypeEntryKeyRequired", "listTypeEntryKey1"
 				).build()));
 
-		// Unique values in different sites
+		// Object entry with unique values in different sites
 
 		objectDefinition = _publishCustomObjectDefinition(
 			false,
@@ -875,7 +875,7 @@ public class ObjectEntryLocalServiceTest {
 				"name", "Peter"
 			).build());
 
-		// Unique values in the same site
+		// Object entry with unique values in the same site
 
 		long finalObjectDefinitionId = objectDefinition.getObjectDefinitionId();
 
