@@ -739,7 +739,7 @@ public class ObjectEntryLocalServiceImpl
 
 	@Override
 	public ObjectEntry fetchObjectEntry(
-		String externalReferenceCode, long objectDefinitionId) {
+		String externalReferenceCode, long groupId, long objectDefinitionId) {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionPersistence.fetchByPrimaryKey(objectDefinitionId);
@@ -749,7 +749,7 @@ public class ObjectEntryLocalServiceImpl
 		}
 
 		return objectEntryPersistence.fetchByERC_G_C_ODI(
-			externalReferenceCode, 0, objectDefinition.getCompanyId(),
+			externalReferenceCode, groupId, objectDefinition.getCompanyId(),
 			objectDefinitionId);
 	}
 
@@ -972,14 +972,14 @@ public class ObjectEntryLocalServiceImpl
 
 	@Override
 	public ObjectEntry getObjectEntry(
-			String externalReferenceCode, long objectDefinitionId)
+			String externalReferenceCode, long groupId, long objectDefinitionId)
 		throws PortalException {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionPersistence.findByPrimaryKey(objectDefinitionId);
 
 		return objectEntryPersistence.findByERC_G_C_ODI(
-			externalReferenceCode, 0, objectDefinition.getCompanyId(),
+			externalReferenceCode, groupId, objectDefinition.getCompanyId(),
 			objectDefinitionId);
 	}
 
