@@ -1043,7 +1043,7 @@
 		},
 		"/by-external-reference-code/{currentExternalReferenceCode}/relationship1/{relatedExternalReferenceCode}": {
 			"put": {
-				"operationId": "putObject2Relationship1Object1",
+				"operationId": "putByExternalReferenceCodeCurrentExternalReferenceCodeObjectRelationshipNameRelatedExternalReferenceCode",
 				"parameters": [
 					{
 						"in": "path",
