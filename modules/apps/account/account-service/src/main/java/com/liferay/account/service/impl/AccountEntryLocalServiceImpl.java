@@ -187,6 +187,13 @@ public class AccountEntryLocalServiceImpl
 		accountEntry.setType(type);
 		accountEntry.setStatus(WorkflowConstants.STATUS_DRAFT);
 
+		if (serviceContext != null) {
+
+			// Expando
+
+			accountEntry.setExpandoBridgeAttributes(serviceContext);
+		}
+
 		accountEntry = accountEntryPersistence.update(accountEntry);
 
 		if (domains != null) {
@@ -216,10 +223,6 @@ public class AccountEntryLocalServiceImpl
 			// Asset
 
 			_updateAsset(accountEntry, serviceContext);
-
-			// Expando
-
-			accountEntry.setExpandoBridgeAttributes(serviceContext);
 
 			workflowServiceContext = (ServiceContext)serviceContext.clone();
 		}
