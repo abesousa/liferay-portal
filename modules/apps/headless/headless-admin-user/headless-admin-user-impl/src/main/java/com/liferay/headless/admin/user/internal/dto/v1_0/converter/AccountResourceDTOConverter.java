@@ -37,6 +37,7 @@ import com.liferay.headless.admin.user.internal.dto.v1_0.util.WebUrlUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.Organization;
@@ -273,14 +274,15 @@ public class AccountResourceDTOConverter
 			AccountEntry accountEntry, DTOConverterContext dtoConverterContext)
 		throws Exception {
 
-		if (!_accountEntryModelResourcePermission.contains(
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-10855") ||
+			(!_accountEntryModelResourcePermission.contains(
 				PermissionThreadLocal.getPermissionChecker(),
 				accountEntry.getAccountEntryId(),
 				AccountActionKeys.MANAGE_ADDRESSES) &&
-			!_accountEntryModelResourcePermission.contains(
-				PermissionThreadLocal.getPermissionChecker(),
-				accountEntry.getAccountEntryId(),
-				AccountActionKeys.VIEW_ADDRESSES)) {
+			 !_accountEntryModelResourcePermission.contains(
+				 PermissionThreadLocal.getPermissionChecker(),
+				 accountEntry.getAccountEntryId(),
+				 AccountActionKeys.VIEW_ADDRESSES))) {
 
 			return null;
 		}
