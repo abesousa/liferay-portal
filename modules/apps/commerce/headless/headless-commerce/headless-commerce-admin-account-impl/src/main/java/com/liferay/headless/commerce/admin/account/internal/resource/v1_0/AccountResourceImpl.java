@@ -502,8 +502,6 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 			_toAccountEntryStatus(
 				GetterUtil.getBoolean(account.getActive(), true)));
 
-		accountEntry = _accountEntryService.updateAccountEntry(accountEntry);
-
 		// Expando
 
 		Map<String, ?> customFields = account.getCustomFields();
@@ -513,6 +511,8 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 				serviceContext.getCompanyId(), AccountEntry.class,
 				accountEntry.getPrimaryKey(), customFields);
 		}
+
+		accountEntry = _accountEntryService.updateAccountEntry(accountEntry);
 
 		// Update nested resources
 
