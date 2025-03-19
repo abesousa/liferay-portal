@@ -373,12 +373,11 @@ definition {
 		DBPartition.validateSchemas(schemaNamePrefix = "ltest_");
 	}
 
-	@ignore = "true"
-	@priority = 5
-	test ExtractAndAddDBPartitionCompanyWithInitialEmptyDB {
+	@priority = 4
+	test ExtractAndAddDBPartition {
 		property app.server.bundles.size = "1";
 		property cluster.enabled = "true";
-		property custom.properties = "database.partition.schema.name.prefix=ltest_${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
 		property test.assert.warning.exceptions = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -419,6 +418,17 @@ definition {
 			Clustering.shutdownSpecificServer(nodePort = 8080);
 
 			Clustering.shutdownSpecificServer(nodePort = 9080);
+		}
+
+		task ("Removing the original schema") {
+			var databaseType = PropsUtil.get("database.type");
+
+			if (${databaseType} == "mysql") {
+				SQL.executeSQLStatement(sqlStatement = "drop schema if exists lpartition_${partitionCompanyId};");
+			}
+			else if (${databaseType} == "postgresql") {
+				SQL.executeSQLStatement(sqlStatement = "drop schema if exists lpartition_${partitionCompanyId} cascade;");
+			}
 		}
 
 		task ("Create an empty database") {

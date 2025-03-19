@@ -159,6 +159,17 @@ create table AssetTag (
 	primary key (tagId, ctCollectionId)
 );
 
+create table AssetTagGroupRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	assetTagGroupRelId LONG not null,
+	groupId LONG,
+	companyId LONG,
+	tagId LONG,
+	primary key (assetTagGroupRelId, ctCollectionId)
+);
+
 create table AssetVocabulary (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
@@ -178,6 +189,17 @@ create table AssetVocabulary (
 	visibilityType INTEGER,
 	lastPublishDate DATE null,
 	primary key (vocabularyId, ctCollectionId)
+);
+
+create table AssetVocabularyGroupRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	assetVocabularyGroupRelId LONG not null,
+	groupId LONG,
+	companyId LONG,
+	vocabularyId LONG,
+	primary key (assetVocabularyGroupRelId, ctCollectionId)
 );
 
 create table BrowserTracker (
@@ -1248,6 +1270,7 @@ create table Role_ (
 	description TEXT null,
 	type_ INTEGER,
 	subtype VARCHAR(75) null,
+	status INTEGER,
 	primary key (roleId, ctCollectionId)
 );
 

@@ -18,9 +18,9 @@ import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
-import com.liferay.exportimport.kernel.lar.PortletDataHandlerBoolean;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerControl;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
+import com.liferay.exportimport.kernel.lar.UserIdStrategy;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.StringPool;
@@ -62,10 +62,7 @@ public class BatchEnginePortletDataHandler extends BasePortletDataHandler {
 
 		_fileName = taskItemDelegateName + ".json";
 
-		setExportControls(
-			new PortletDataHandlerBoolean(
-				taskItemDelegateName, taskItemDelegateName, true, true, null,
-				className));
+		setEmptyControlsAllowed(true);
 	}
 
 	@Override
@@ -166,6 +163,20 @@ public class BatchEnginePortletDataHandler extends BasePortletDataHandler {
 					}
 				).put(
 					"createStrategy", CreateStrategy.UPSERT.getDBOperation()
+				).put(
+					"importCreatorStrategy",
+					() -> {
+						if (!UserIdStrategy.CURRENT_USER_ID.equals(
+								MapUtil.getString(
+									portletDataContext.getParameterMap(),
+									PortletDataHandlerKeys.USER_ID_STRATEGY))) {
+
+							return null;
+						}
+
+						return BatchEngineImportTaskConstants.
+							IMPORT_CREATOR_STRATEGY_KEEP_CREATOR;
+					}
 				).build(),
 				_taskItemDelegateName);
 

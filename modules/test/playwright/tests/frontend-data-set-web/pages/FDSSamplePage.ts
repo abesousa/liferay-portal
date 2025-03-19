@@ -17,6 +17,7 @@ export class FDSSamplePage {
 	readonly customViewsDeleteAlert: Locator;
 	readonly customViewsSaveModal: Locator;
 	readonly customViewsSelectorButton: Locator;
+	readonly itemActionButton: Locator;
 	readonly page: Page;
 	readonly sidePanel: Locator;
 	readonly sidePanelFrame: FrameLocator;
@@ -57,6 +58,32 @@ export class FDSSamplePage {
 				'Manage Columns Visibility'
 			),
 		};
+		const itemActionsCell = this.table.itemActionsCells.first();
+
+		this.itemActionButton = itemActionsCell.getByRole('button', {
+			exact: true,
+			name: 'Actions',
+		});
+	}
+
+	async clickItemAction(itemAction: string) {
+		const dropdownId =
+			await this.itemActionButton.getAttribute('aria-controls');
+
+		await this.itemActionButton.click();
+
+		await this.page
+			.locator(`#${dropdownId}`)
+			.filter({has: this.page.getByRole('menu')})
+			.waitFor();
+
+		await this.page
+			.locator(`#${dropdownId}`)
+			.getByRole('menuitem', {
+				exact: true,
+				name: itemAction,
+			})
+			.click();
 	}
 
 	async selectTab(label: string) {
@@ -67,7 +94,7 @@ export class FDSSamplePage {
 		await expect(navLink).toHaveClass(/active/);
 	}
 
-	async setupFDSSampleWidget({site}) {
+	async setupFDSSampleWidget({locale = 'en', site}) {
 		const widgetDefinition = getWidgetDefinition({
 			id: getRandomString(),
 			widgetName:
@@ -80,7 +107,7 @@ export class FDSSamplePage {
 			title: getRandomString(),
 		});
 
-		const url = `${liferayConfig.environment.baseUrl}/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`;
+		const url = `${liferayConfig.environment.baseUrl}/${locale}/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`;
 
 		await this.page.goto(url);
 

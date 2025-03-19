@@ -838,6 +838,10 @@ test(
 		await siteMembershipsPage.userGroupsLink.click();
 		await siteMembershipsPage.newUserGroupButton.click();
 
+		await expect(
+			siteMembershipsPage.assignUserGroupIFrameTitle
+		).toBeVisible();
+
 		await siteMembershipsPage.assignUserGroupTable.changeView('Table');
 
 		await expect(
@@ -1071,5 +1075,139 @@ test(
 		await expect(
 			usersAndOrganizationsPage.impersonateUserMenuItem
 		).toBeVisible();
+	}
+);
+
+test(
+	'Can edit organization site team',
+	{tag: '@LPD-50685'},
+	async ({
+		apiHelpers,
+		editOrganizationPage,
+		page,
+		siteConfigurationDetailsPage,
+		siteSettingsPage,
+		teamsPage,
+		usersAndOrganizationsPage,
+	}) => {
+		const organization =
+			await apiHelpers.headlessAdminUser.postOrganization();
+
+		await usersAndOrganizationsPage.goToOrganizations();
+
+		await (
+			await usersAndOrganizationsPage.organizationActionsMenu(
+				organization.name
+			)
+		).click();
+		await editOrganizationPage.organizationEditMenuItem.click();
+		await editOrganizationPage.organizationSiteLink.click();
+		await editOrganizationPage.createSiteToggle.check();
+		await editOrganizationPage.organizationSiteSaveButton.click();
+
+		const siteUrl = `/${organization.name}`;
+
+		await siteSettingsPage.goToSiteSetting(
+			'Site Configuration',
+			null,
+			siteUrl
+		);
+
+		await siteConfigurationDetailsPage.allowManualMembershipManagementToggle.check();
+		await siteConfigurationDetailsPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await teamsPage.goTo(siteUrl);
+
+		const newTeamName = getRandomString();
+
+		await teamsPage.newTeamButton.click();
+		await teamsPage.nameInput.fill(newTeamName);
+		await teamsPage.descriptionInput.fill(getRandomString());
+		await teamsPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await (
+			await teamsPage.teamsTable.rowActions(newTeamName, 1, true)
+		).click();
+
+		await teamsPage.editButton.click();
+
+		const editedName = getRandomString();
+		const editedDescription = getRandomString();
+
+		await teamsPage.nameInput.fill(editedName);
+		await teamsPage.descriptionInput.fill(editedDescription);
+		await teamsPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await expect(teamsPage.teamsTable.cell(editedName, true)).toBeVisible();
+		await expect(
+			teamsPage.teamsTable.cell(editedDescription, true)
+		).toBeVisible();
+		await expect(
+			teamsPage.teamsTable.cell(newTeamName, true)
+		).not.toBeVisible();
+	}
+);
+
+test(
+	'Only global tag can be associated to user',
+	{tag: ['@LPD-50770', '@LPS-111656']},
+	async ({
+		apiHelpers,
+		editUserPage,
+		page,
+		tagsEditPage,
+		usersAndOrganizationsPage,
+	}) => {
+		const tags = [
+			{name: getRandomString(), siteUrl: '/global'},
+			{name: getRandomString(), siteUrl: '/global'},
+			{name: getRandomString(), siteUrl: '/guest'},
+		];
+
+		for (const {name, siteUrl} of tags) {
+			await tagsEditPage.add(name, siteUrl);
+		}
+
+		const userAccount =
+			await apiHelpers.headlessAdminUser.postUserAccount();
+
+		await usersAndOrganizationsPage.goToUsers();
+		await (
+			await usersAndOrganizationsPage.usersTableRowLink(
+				userAccount.alternateName
+			)
+		).click();
+
+		await editUserPage.selectTagsButton.click();
+		await editUserPage.selectTag([tags[0].name, tags[1].name]);
+
+		await expect(editUserPage.tagInput(tags[0].name)).toBeVisible();
+		await expect(editUserPage.tagInput(tags[1].name)).toBeVisible();
+		await expect(editUserPage.tagInput(tags[2].name)).toHaveCount(0);
+
+		await editUserPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await editUserPage.membershipsLink.click();
+		await editUserPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await usersAndOrganizationsPage.goToUsers();
+		await (
+			await usersAndOrganizationsPage.usersTableRowLink(
+				userAccount.alternateName
+			)
+		).click();
+
+		await expect(editUserPage.tagInput(tags[0].name)).toBeVisible();
+		await expect(editUserPage.tagInput(tags[1].name)).toBeVisible();
 	}
 );

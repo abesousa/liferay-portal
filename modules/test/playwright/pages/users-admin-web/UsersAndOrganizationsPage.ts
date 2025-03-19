@@ -616,4 +616,8 @@ export class UsersAndOrganizationsPage {
 			.and(this.page.locator('[aria-haspopup]'))
 			.click();
 	}
+
+	async goToUser(userName: string) {
+		await this.page.getByRole('link', {name: userName}).click();
+	}
 }

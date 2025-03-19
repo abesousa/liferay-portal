@@ -441,7 +441,9 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 			try {
 				_transactionAwareInvoke(
 					() -> {
-						extractDBPartitionCompany(companyId);
+						extractCompany(companyId);
+
+						DBPartitionUtil.removeDBPartition(companyId);
 
 						return null;
 					});
@@ -678,14 +680,7 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 	}
 
 	@Override
-	public Company extractDBPartitionCompany(long companyId)
-		throws PortalException {
-
-		if (!DBPartition.isPartitionEnabled()) {
-			throw new UnsupportedOperationException(
-				"Database partitioning must be enabled");
-		}
-
+	public Company extractCompany(long companyId) throws PortalException {
 		if (companyId == PortalInstancePool.getDefaultCompanyId()) {
 			throw new RequiredCompanyException(
 				"Select another default company before extracting company " +
@@ -694,8 +689,12 @@ public class CompanyLocalServiceImpl extends CompanyLocalServiceBaseImpl {
 
 		Company company = companyPersistence.findByPrimaryKey(companyId);
 
-		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
+		try {
+			if (!DBPartition.isPartitionEnabled()) {
+				DBPartitionUtil.extractCompany(companyId);
+
+				return company;
+			}
 
 			DBPartitionUtil.extractDBPartition(companyId);
 		}

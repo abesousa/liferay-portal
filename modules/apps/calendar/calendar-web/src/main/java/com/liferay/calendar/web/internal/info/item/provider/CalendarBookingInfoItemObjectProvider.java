@@ -34,7 +34,7 @@ public class CalendarBookingInfoItemObjectProvider
 
 		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
 			throw new NoSuchInfoItemException(
-				"Unsupported info item identifier type " + infoItemIdentifier);
+				"Unsupported info item identifier " + infoItemIdentifier);
 		}
 
 		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =

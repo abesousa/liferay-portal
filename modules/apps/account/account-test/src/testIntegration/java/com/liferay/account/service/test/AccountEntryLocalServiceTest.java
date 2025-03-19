@@ -9,6 +9,7 @@ import com.liferay.account.configuration.AccountEntryEmailDomainsConfiguration;
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.exception.AccountEntryDomainsException;
 import com.liferay.account.exception.AccountEntryNameException;
+import com.liferay.account.exception.NoSuchEntryException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountGroup;
 import com.liferay.account.retriever.AccountUserRetriever;
@@ -32,11 +33,13 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectValidationRuleLocalService;
 import com.liferay.object.validation.rule.ObjectValidationRuleResult;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.Group;
@@ -578,6 +581,62 @@ public class AccountEntryLocalServiceTest {
 		Assert.assertNull(
 			_accountEntryLocalService.fetchAccountEntry(
 				AccountConstants.ACCOUNT_ENTRY_ID_GUEST));
+	}
+
+	@Test
+	public void testGetOrAddIncompleteAccountEntry() throws Exception {
+
+		// Lazy referencing disabled
+
+		try {
+			_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+				RandomTestUtil.randomString(), TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			Assert.fail();
+		}
+		catch (NoSuchEntryException noSuchEntryException) {
+			Assert.assertNotNull(noSuchEntryException);
+		}
+
+		// Lazy referencing enabled, workflow disabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		}
+
+		// Lazy referencing enabled, workflow enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			_enableWorkflow();
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		}
 	}
 
 	@Test
@@ -1142,6 +1201,73 @@ public class AccountEntryLocalServiceTest {
 			"customFieldValue",
 			GetterUtil.getString(
 				expandoBridge.getAttribute("customFieldName")));
+	}
+
+	@Test
+	public void testUpdateAccountEntryWithLazyReferencingEnabled()
+		throws Exception {
+
+		// Workflow disabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+
+			accountEntry = _accountEntryLocalService.updateAccountEntry(
+				accountEntry.getAccountEntryId(),
+				accountEntry.getParentAccountEntryId(), accountEntry.getName(),
+				accountEntry.getDescription(), false, null,
+				accountEntry.getEmailAddress(), null,
+				accountEntry.getTaxIdNumber(), accountEntry.getStatus(), null);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_APPROVED,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		}
+
+		// Workflow enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			_enableWorkflow();
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+
+			accountEntry = _accountEntryLocalService.updateAccountEntry(
+				accountEntry.getAccountEntryId(),
+				accountEntry.getParentAccountEntryId(), accountEntry.getName(),
+				accountEntry.getDescription(), false, null,
+				accountEntry.getEmailAddress(), null,
+				accountEntry.getTaxIdNumber(), accountEntry.getStatus(), null);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_PENDING,
+				TestPropsValues.getUser());
+			Assert.assertTrue(_hasWorkflowInstance(accountEntry));
+		}
 	}
 
 	@Test

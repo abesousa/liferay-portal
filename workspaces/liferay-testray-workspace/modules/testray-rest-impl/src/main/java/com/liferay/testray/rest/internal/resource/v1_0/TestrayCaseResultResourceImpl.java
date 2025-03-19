@@ -7,6 +7,7 @@ package com.liferay.testray.rest.internal.resource.v1_0;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.UserConstants;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.FullNameGenerator;
 import com.liferay.portal.kernel.security.auth.FullNameGeneratorFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -222,17 +223,18 @@ public class TestrayCaseResultResourceImpl
 			String priority, String status, String testrayCaseName,
 			String testrayCaseTypeIds, String testrayComponentIds,
 			String testrayRunId, String testrayRunName, String testraySubtaskId,
-			String testrayTeamIds, String testrayUserId, Pagination pagination)
+			String testrayTeamIds, String testrayUserId, Pagination pagination,
+			Sort[] sorts)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(48);
+		StringBundler sb = new StringBundler(52);
 
-		sb.append("select cr.c_caseResultId_, cr.comment_, cr.dueStatus_, ");
-		sb.append("cr.errors_, cr.issues_, ct.name_ as caseTypeName, c.name_ ");
-		sb.append("as caseName, c.priority_, c.flaky_, r.name_ as runName, ");
-		sb.append("r.number_ as runNumber, co.name_ as componentName, ");
-		sb.append("t.name_ as teamName, u.firstName, u.lastName, ");
-		sb.append("u.middleName, u.uuid_, u.portraitId from ");
+		sb.append("select cr.c_caseResultId_, cr.comment_, cr.duration_, ");
+		sb.append("cr.dueStatus_, cr.errors_, cr.issues_, ct.name_ as ");
+		sb.append("caseTypeName, c.name_ as caseName, c.priority_, c.flaky_, ");
+		sb.append("r.name_ as runName, r.number_ as runNumber, co.name_ as ");
+		sb.append("componentName, t.name_ as teamName, u.firstName, ");
+		sb.append("u.lastName, u.middleName, u.uuid_, u.portraitId from ");
 		sb.append("O_[%COMPANY_ID%]_Build b, O_[%COMPANY_ID%]_CaseResult cr ");
 		sb.append("left outer join User_ u on u.userId = ");
 		sb.append("cr.r_userToCaseResults_userId, O_[%COMPANY_ID%]_Case c, ");
@@ -339,7 +341,19 @@ public class TestrayCaseResultResourceImpl
 			params.add(GetterUtil.getLong(testrayUserId));
 		}
 
-		sb.append("order by cr.dueStatus_ asc, cr.errors_ is null asc,");
+		sb.append("order by ");
+
+		if (sorts != null) {
+			sb.append("cr.duration_ ");
+
+			if (sorts[0].isReverse()) {
+				sb.append("desc");
+			}
+
+			sb.append(", ");
+		}
+
+		sb.append("cr.dueStatus_ asc, cr.errors_ is null asc,");
 		sb.append("c.priority_ desc, t.name_ asc, co.name_ asc, ct.name_ ");
 		sb.append("asc, c.name_ , r.number_");
 
@@ -365,6 +379,7 @@ public class TestrayCaseResultResourceImpl
 				value -> new TestrayCaseResult() {
 					{
 						comment = GetterUtil.getString(value.get("comment_"));
+						duration = GetterUtil.getLong(value.get("duration_"));
 						error = GetterUtil.getString(value.get("errors_"));
 						flaky = GetterUtil.getBoolean(
 							String.valueOf(value.get("flaky_")));
@@ -453,7 +468,7 @@ public class TestrayCaseResultResourceImpl
 				getTestrayCaseResultsTestrayBuildPage(
 					testrayBuildId, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, null, null, null,
-					null);
+					null, null);
 
 			for (TestrayCaseResult testrayCaseResult : page.getItems()) {
 				URI uri = contextUriInfo.getBaseUri();

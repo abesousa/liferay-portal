@@ -41,7 +41,7 @@ public class FileEntryInfoItemObjectProvider
 			!(infoItemIdentifier instanceof GroupUrlTitleInfoItemIdentifier)) {
 
 			throw new NoSuchInfoItemException(
-				"Unsupported info item identifier type " + infoItemIdentifier);
+				"Unsupported info item identifier " + infoItemIdentifier);
 		}
 
 		long classPK = 0;

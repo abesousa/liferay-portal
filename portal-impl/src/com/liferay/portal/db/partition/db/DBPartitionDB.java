@@ -10,6 +10,8 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
@@ -19,6 +21,22 @@ import java.util.List;
  * @author Alberto Chaparro
  */
 public interface DBPartitionDB {
+
+	public default boolean existsPartition(
+			Connection connection, String partitionName)
+		throws SQLException {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select 1 from information_schema.schemata where schema_name " +
+					"= ?")) {
+
+			preparedStatement.setString(1, partitionName);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				return resultSet.next();
+			}
+		}
+	}
 
 	public default String getCatalog(
 			Connection connection, String partitionName)
@@ -82,6 +100,11 @@ public interface DBPartitionDB {
 		return StringBundler.concat(
 			"drop view if exists ", partitionName, StringPool.PERIOD, viewName);
 	}
+
+	public String[] getRenamePartitionSQLs(
+			Connection connection, String sourcePartitionName,
+			String targetPartitionName)
+		throws SQLException;
 
 	public default String getSafeAlterTable(String alterTableSQL) {
 		return alterTableSQL;

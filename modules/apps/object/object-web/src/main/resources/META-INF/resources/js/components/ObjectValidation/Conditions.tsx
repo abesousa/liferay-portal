@@ -80,6 +80,10 @@ export function Conditions({
 		);
 	}, [creationLanguageId, customObjectFields]);
 
+	const hasLocalizedField = useMemo(() => {
+		return customObjectFields.some((field) => field.localized);
+	}, [customObjectFields]);
+
 	return (
 		<>
 			{disabledGroovyValidation && (
@@ -109,6 +113,19 @@ export function Conditions({
 				title={values.engineLabel!}
 				tooltip={engine === 'ddm' ? ddmTooltip : null}
 			>
+				{hasLocalizedField && (
+					<ClayAlert
+						displayType="info"
+						title={`${Liferay.Language.get('info')}:`}
+					>
+						{`${Liferay.Language.get(
+							'this-object-includes-translatable-fields'
+						)} ${Liferay.Language.get(
+							'validations-always-use-the-object-entrys-default-language'
+						)}`}
+					</ClayAlert>
+				)}
+
 				<CodeEditor
 					error={errors.script}
 					mode={engine}

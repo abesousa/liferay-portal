@@ -480,6 +480,17 @@ public class AccountEntryLocalServiceWrapper
 		return _accountEntryLocalService.getIndexableActionableDynamicQuery();
 	}
 
+	@Override
+	public com.liferay.account.model.AccountEntry
+			getOrAddIncompleteAccountEntry(
+				String externalReferenceCode, long companyId, long userId,
+				String name, String type)
+		throws Exception {
+
+		return _accountEntryLocalService.getOrAddIncompleteAccountEntry(
+			externalReferenceCode, companyId, userId, name, type);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *

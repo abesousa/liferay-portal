@@ -25,6 +25,10 @@ public class SharingEntryTable extends BaseTable<SharingEntryTable> {
 
 	public final Column<SharingEntryTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<SharingEntryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<SharingEntryTable, Long> sharingEntryId = createColumn(
 		"sharingEntryId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<SharingEntryTable, Long> groupId = createColumn(
@@ -39,6 +43,8 @@ public class SharingEntryTable extends BaseTable<SharingEntryTable> {
 		"createDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
 	public final Column<SharingEntryTable, Date> modifiedDate = createColumn(
 		"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<SharingEntryTable, Long> toUserGroupId = createColumn(
+		"toUserGroupId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
 	public final Column<SharingEntryTable, Long> toUserId = createColumn(
 		"toUserId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
 	public final Column<SharingEntryTable, Long> classNameId = createColumn(

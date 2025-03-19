@@ -10,8 +10,11 @@ import {SiteConfigurationDetailsPage} from '../pages/site-admin-web/SiteConfigur
 import {SiteSettingsPage} from '../pages/site-admin-web/SiteSettingsPage';
 import {ExportUserDataPage} from '../pages/user-associated-data-web/ExportUserDataPage';
 import {PersonalDataErasurePage} from '../pages/user-associated-data-web/PersonalDataErasurePage';
+import {UserAssociatedDataBlogPage} from '../pages/user-associated-data-web/blog-web/UserAssociatedDataBlogPage';
 import {UserAssociatedDataDocumentLibraryPage} from '../pages/user-associated-data-web/document-library-web/UserAssociatedDataDocumentLibraryPage';
 import {UserAssociatedDataJournalPage} from '../pages/user-associated-data-web/journal-article-web/UserAssociatedDataJournalPage';
+import {UserAssociatedDataEditMessageBoardThreadPage} from '../pages/user-associated-data-web/message-board-web/UserAssociatedDataEditMessageBoardThreadPage';
+import {UserAssociatedDataMessageBoardPage} from '../pages/user-associated-data-web/message-board-web/UserAssociatedDataMessageBoardPage';
 import {UserAssociatedDataSiteStagingPage} from '../pages/user-associated-data-web/site-staging-web/UserAssociatedDataSiteStagingPage';
 import {AssignUsersPage} from '../pages/users-admin-web/AssignUsersPage';
 import {EditOrganizationPage} from '../pages/users-admin-web/EditOrganizationPage';
@@ -23,6 +26,7 @@ import {UserPersonalSitePage} from '../pages/users-admin-web/UserPersonalSitePag
 import {UsersAndOrganizationsPage} from '../pages/users-admin-web/UsersAndOrganizationsPage';
 import {DocumentLibraryPage} from '../pages/users-admin-web/document-library-web/DocumentLibraryPage';
 import {SiteMembershipsPage} from '../pages/users-admin-web/site-admin-web/SiteMembershipsPage';
+import {TagsEditPage} from '../tests/asset-tags-admin-web/pages/TagsEditPage';
 import {NotificationsPage} from '../tests/notifications-web/pages/NotificationsPage';
 
 const usersAndOrganizationsPagesTest = test.extend<{
@@ -38,9 +42,13 @@ const usersAndOrganizationsPagesTest = test.extend<{
 	siteConfigurationDetailsPage: SiteConfigurationDetailsPage;
 	siteMembershipsPage: SiteMembershipsPage;
 	siteSettingsPage: SiteSettingsPage;
+	tagsEditPage: TagsEditPage;
 	teamsPage: TeamsPage;
+	userAssociatedDataBlogPage: UserAssociatedDataBlogPage;
 	userAssociatedDataDocumentLibraryPage: UserAssociatedDataDocumentLibraryPage;
+	userAssociatedDataEditMessageBoardThreadPage: UserAssociatedDataEditMessageBoardThreadPage;
 	userAssociatedDataJournalPage: UserAssociatedDataJournalPage;
+	userAssociatedDataMessageBoardPage: UserAssociatedDataMessageBoardPage;
 	userAssociatedDataSiteStagingPage: UserAssociatedDataSiteStagingPage;
 	userLocaleOptionsPage: UserLocaleOptionsPage;
 	userPersonalSitePage: UserPersonalSitePage;
@@ -82,14 +90,26 @@ const usersAndOrganizationsPagesTest = test.extend<{
 	siteSettingsPage: async ({page}, use) => {
 		await use(new SiteSettingsPage(page));
 	},
+	tagsEditPage: async ({page}, use) => {
+		await use(new TagsEditPage(page));
+	},
 	teamsPage: async ({page}, use) => {
 		await use(new TeamsPage(page));
+	},
+	userAssociatedDataBlogPage: async ({page}, use) => {
+		await use(new UserAssociatedDataBlogPage(page));
 	},
 	userAssociatedDataDocumentLibraryPage: async ({page}, use) => {
 		await use(new UserAssociatedDataDocumentLibraryPage(page));
 	},
+	userAssociatedDataEditMessageBoardThreadPage: async ({page}, use) => {
+		await use(new UserAssociatedDataEditMessageBoardThreadPage(page));
+	},
 	userAssociatedDataJournalPage: async ({page}, use) => {
 		await use(new UserAssociatedDataJournalPage(page));
+	},
+	userAssociatedDataMessageBoardPage: async ({page}, use) => {
+		await use(new UserAssociatedDataMessageBoardPage(page));
 	},
 	userAssociatedDataSiteStagingPage: async ({page}, use) => {
 		await use(new UserAssociatedDataSiteStagingPage(page));

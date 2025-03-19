@@ -30,8 +30,8 @@ export class PersonalDataErasurePage {
 	) => Locator;
 	readonly menuItemDelete: Locator;
 	readonly objectCheckBox: (
-		blogId: string,
-		blogTitle: string,
+		objectId: string,
+		objectTitle: string,
 		match: boolean
 	) => Locator;
 	readonly objectCountLink: (objectCountNumber: string) => Locator;

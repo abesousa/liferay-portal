@@ -38,7 +38,7 @@ public class BlogsEntryInfoItemObjectProvider
 			!(infoItemIdentifier instanceof GroupUrlTitleInfoItemIdentifier)) {
 
 			throw new NoSuchInfoItemException(
-				"Unsupported info item identifier type " + infoItemIdentifier);
+				"Unsupported info item identifier " + infoItemIdentifier);
 		}
 
 		BlogsEntry blogsEntry = null;

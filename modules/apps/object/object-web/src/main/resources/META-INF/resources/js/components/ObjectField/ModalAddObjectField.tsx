@@ -51,6 +51,7 @@ export function ModalAddObjectField({
 		indexedLanguageId: '',
 		listTypeDefinitionExternalReferenceCode: '',
 		listTypeDefinitionId: 0,
+		localized: false,
 		readOnly: 'false',
 		readOnlyConditionExpression: '',
 		required: false,
@@ -110,6 +111,7 @@ export function ModalAddObjectField({
 				values.businessType === 'Integer' ||
 				values.businessType === 'LongInteger' ||
 				values.businessType === 'MultiselectPicklist' ||
+				values.businessType === 'Picklist' ||
 				values.businessType === 'PrecisionDecimal'));
 
 	useEffect(() => {
@@ -204,6 +206,7 @@ export function ModalAddObjectField({
 											label={Liferay.Language.get(
 												'enable-entry-translations'
 											)}
+											name="enableEntryTranslations"
 											onToggle={(localized) =>
 												setValues({
 													localized,

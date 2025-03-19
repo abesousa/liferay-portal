@@ -52,10 +52,13 @@ import com.liferay.portal.tools.java.parser.JavaSignature;
 import com.liferay.portal.tools.java.parser.JavaSimpleValue;
 import com.liferay.portal.tools.java.parser.JavaStaticInitialization;
 import com.liferay.portal.tools.java.parser.JavaSwitchCaseStatement;
+import com.liferay.portal.tools.java.parser.JavaSwitchExpression;
+import com.liferay.portal.tools.java.parser.JavaSwitchRuleStatement;
 import com.liferay.portal.tools.java.parser.JavaSwitchStatement;
 import com.liferay.portal.tools.java.parser.JavaSynchronizedStatement;
 import com.liferay.portal.tools.java.parser.JavaTerm;
 import com.liferay.portal.tools.java.parser.JavaTernaryOperator;
+import com.liferay.portal.tools.java.parser.JavaTextBlock;
 import com.liferay.portal.tools.java.parser.JavaThrowStatement;
 import com.liferay.portal.tools.java.parser.JavaTryStatement;
 import com.liferay.portal.tools.java.parser.JavaType;
@@ -172,7 +175,15 @@ public class JavaParserUtil {
 			javaTerm = _parseJavaSynchronizedStatement(detailAST);
 		}
 		else if (detailAST.getType() == TokenTypes.LITERAL_SWITCH) {
-			javaTerm = _parseJavaSwitchStatement(detailAST);
+			DetailAST switchRuleDetailAST = detailAST.findFirstToken(
+				TokenTypes.SWITCH_RULE);
+
+			if (switchRuleDetailAST != null) {
+				javaTerm = _parseJavaExpression(detailAST);
+			}
+			else {
+				javaTerm = _parseJavaSwitchStatement(detailAST);
+			}
 		}
 		else if (detailAST.getType() == TokenTypes.LITERAL_THROW) {
 			javaTerm = _parseJavaThrowStatement(detailAST);
@@ -194,6 +205,9 @@ public class JavaParserUtil {
 		}
 		else if (detailAST.getType() == TokenTypes.STATIC_INIT) {
 			javaTerm = new JavaStaticInitialization();
+		}
+		else if (detailAST.getType() == TokenTypes.SWITCH_RULE) {
+			javaTerm = _parseJavaSwitchRuleStatement(detailAST);
 		}
 		else if (detailAST.getType() == TokenTypes.VARIABLE_DEF) {
 			javaTerm = _parseJavaVariableDefinition(detailAST);
@@ -1186,6 +1200,14 @@ public class JavaParserUtil {
 				}
 			}
 		}
+		else if (detailAST.getType() == TokenTypes.LITERAL_SWITCH) {
+			DetailAST switchRuleDetailAST = detailAST.findFirstToken(
+				TokenTypes.SWITCH_RULE);
+
+			if (switchRuleDetailAST != null) {
+				javaExpression = _parseJavaSwitchExpression(detailAST);
+			}
+		}
 		else if (detailAST.getType() == TokenTypes.METHOD_CALL) {
 			return _parseJavaMethodCall(detailAST);
 		}
@@ -1194,6 +1216,9 @@ public class JavaParserUtil {
 		}
 		else if (detailAST.getType() == TokenTypes.QUESTION) {
 			javaExpression = _parseJavaTernaryOperator(detailAST);
+		}
+		else if (detailAST.getType() == TokenTypes.TEXT_BLOCK_LITERAL_BEGIN) {
+			javaExpression = _parseJavaTextBlock(detailAST.getFirstChild());
 		}
 		else if (detailAST.getType() == TokenTypes.TYPECAST) {
 			javaExpression = _parseJavaTypeCast(detailAST);
@@ -1685,6 +1710,58 @@ public class JavaParserUtil {
 		return javaSwitchCaseStatement;
 	}
 
+	private static JavaExpression _parseJavaSwitchExpression(
+		DetailAST detailAST) {
+
+		DetailAST lparenDetailAST = detailAST.getFirstChild();
+
+		return new JavaSwitchExpression(
+			_parseJavaExpression(lparenDetailAST.getNextSibling()));
+	}
+
+	private static JavaSwitchRuleStatement _parseJavaSwitchRuleStatement(
+		DetailAST switchRuleDetailAST) {
+
+		JavaSwitchRuleStatement javaSwitchRuleStatement =
+			new JavaSwitchRuleStatement();
+
+		DetailAST firstChildDetailAST = switchRuleDetailAST.getFirstChild();
+
+		if (firstChildDetailAST.getType() == TokenTypes.LITERAL_DEFAULT) {
+			javaSwitchRuleStatement.setDefault(true);
+		}
+		else {
+			List<DetailAST> exprCaseDetailASTList =
+				DetailASTUtil.getAllChildTokens(
+					firstChildDetailAST, false, TokenTypes.EXPR);
+
+			for (DetailAST exprCaseDetailAST : exprCaseDetailASTList) {
+				javaSwitchRuleStatement.addSwitchRuleJavaExpression(
+					_parseJavaExpression(exprCaseDetailAST));
+			}
+		}
+
+		DetailAST lambdaDetailAST = switchRuleDetailAST.findFirstToken(
+			TokenTypes.LAMBDA);
+
+		DetailAST nextSiblingDetailAST = lambdaDetailAST.getNextSibling();
+
+		if (nextSiblingDetailAST.getType() == TokenTypes.SLIST) {
+			return javaSwitchRuleStatement;
+		}
+
+		if (nextSiblingDetailAST.getType() == TokenTypes.EXPR) {
+			javaSwitchRuleStatement.setLambdaActionJavaExpression(
+				_parseJavaExpression(nextSiblingDetailAST));
+		}
+		else {
+			javaSwitchRuleStatement.setLambdaActionJavaTerm(
+				parseJavaTerm(nextSiblingDetailAST));
+		}
+
+		return javaSwitchRuleStatement;
+	}
+
 	private static JavaSwitchStatement _parseJavaSwitchStatement(
 		DetailAST literalSwitchDetailAST) {
 
@@ -1739,6 +1816,12 @@ public class JavaParserUtil {
 		return new JavaTernaryOperator(
 			conditionJavaExpression, falseValueJavaExpression,
 			trueValueJavaExpression);
+	}
+
+	private static JavaTextBlock _parseJavaTextBlock(
+		DetailAST textBlockContentDetailAST) {
+
+		return new JavaTextBlock(textBlockContentDetailAST.getText());
 	}
 
 	private static JavaThrowStatement _parseJavaThrowStatement(

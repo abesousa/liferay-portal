@@ -35,16 +35,14 @@ import {
 } from '../../../../../../utils/api';
 import {useAppContext} from '../AppContext/AppManageState';
 import {TYPES} from '../AppContext/actionTypes';
-import {offeringTypesDescription} from './constants/offeringTypesDescriptions';
+import {getOfferingTypes} from './constants/offeringTypes';
 
 import './ProvideAppBuildPage.scss';
-import {CardView} from '../../../../../../components/Card/CardView';
 import {
 	PRODUCT_SPECIFICATION_KEY,
 	PRODUCT_WORKFLOW_STATUS_CODE,
 } from '../../../../../../enums/Product';
 import HeadlessCommerceAdminCatalogImpl from '../../../../../../services/rest/HeadlessCommerceAdminCatalog';
-import {base64ToText, fileToBase64} from '../../../../../../utils/file';
 import ResourceRequirements from './ResourceRequirements';
 import UploadAppPackagesComponent from './components/UploadAppPackages';
 import {ProductTypeOptions} from './constants/productTypes';
@@ -158,13 +156,9 @@ export function ProvideAppBuildPage({
 			vocabId: marketplaceLiferayPlatformOfferingId,
 		});
 
-		const platformOfferingLabels = (
-			offeringTypesDescription[
-				appType.value as ProductType
-			] as unknown as OfferingType[]
-		)
-			?.filter((type) => !type.disabled)
-			.map((type) => type.label);
+		const platformOfferingLabels = getOfferingTypes(
+			appType.value as ProductType
+		);
 
 		const fullyManagedOption = platformOfferingList.filter(
 			(platformOffering) =>
@@ -260,9 +254,7 @@ export function ProvideAppBuildPage({
 
 			for (const appPackage of appPackagesByVersion) {
 				items.push({
-					attachment: base64ToText(
-						(await fileToBase64(appPackage.file)) as string
-					),
+					attachment: appPackage.file,
 					fileName: appPackage.fileName,
 					id: appPackage.id,
 					version: versionKey,
@@ -300,7 +292,7 @@ export function ProvideAppBuildPage({
 			formData.append('file', blob, fileName);
 			formData.append(
 				'productVirtualSettingsFileEntry',
-				JSON.stringify({attachment, version})
+				JSON.stringify({version})
 			);
 
 			const appPackagesByVersion = buildAppPackages[version];
@@ -534,21 +526,6 @@ export function ProvideAppBuildPage({
 
 			{appType.value && (
 				<>
-					<Section label={i18n.translate('compatible-offering')}>
-						{(
-							offeringTypesDescription[
-								appType.value as ProductType
-							] as unknown as OfferingType[]
-						).map((type) => {
-							return type.disabled ? null : (
-								<CardView
-									description={type.description}
-									title={type.label}
-								/>
-							);
-						})}
-					</Section>
-
 					{isCloud && (
 						<Section
 							label={i18n.translate('resource-requirements')}
@@ -575,10 +552,9 @@ export function ProvideAppBuildPage({
 						<div className="provide-app-build-page-app-build-radio-container">
 							<RadioCard
 								description={i18n.translate(
-									appType.value === ProductType.CLOUD ||
-										appType.value === ProductType.FRAGMENT
-										? 'use-any-local-zip-files-to-upload-max-file-size-is-500-mb'
-										: 'please-be-sure-to-specify-liferay-compatibility-through-the-appropriate-properties-or-xml-files-in-your-plugin'
+									appType.value === ProductType.DXP
+										? 'please-be-sure-to-specify-liferay-compatibility-through-the-appropriate-properties-or-xml-files-in-your-plugin'
+										: 'use-any-local-zip-files-to-upload-max-file-size-is-500-mb'
 								)}
 								icon="upload"
 								onChange={() =>
@@ -593,12 +569,11 @@ export function ProvideAppBuildPage({
 									appBuild === ProductUploadType.ZIP_UPLOAD
 								}
 								title={
-									appType.value === ProductType.CLOUD ||
-									appType.value === ProductType.FRAGMENT
-										? i18n.translate('via-zip-upload')
-										: i18n.translate(
+									appType.value === ProductType.DXP
+										? i18n.translate(
 												'via-liferay-plugin-packages'
 											)
+										: i18n.translate('via-zip-upload')
 								}
 								tooltip={ReactDOMServer.renderToString(
 									<span>
@@ -659,23 +634,20 @@ export function ProvideAppBuildPage({
 
 					<Section
 						description={i18n.translate(
-							appType.value === ProductType.CLOUD ||
-								appType.value === ProductType.FRAGMENT
-								? 'select-a-local-file-to-upload'
-								: 'if-the-app-is-compatible-with-different-updates-of-74-please-upload-multiple-packages-for-each-update-or-update-compatibility-range'
+							appType.value === ProductType.DXP
+								? 'if-the-app-is-compatible-with-different-updates-of-74-please-upload-multiple-packages-for-each-update-or-update-compatibility-range'
+								: 'select-a-local-file-to-upload'
 						)}
 						label={i18n.translate(
-							appType.value === ProductType.CLOUD ||
-								appType.value === ProductType.FRAGMENT
-								? 'upload-zip-files'
-								: 'upload-liferay-plugin-packages'
+							appType.value === ProductType.DXP
+								? 'upload-liferay-plugin-packages'
+								: 'upload-zip-files'
 						)}
 						required
 						tooltip={i18n.translate(
-							appType.value === ProductType.CLOUD ||
-								appType.value === ProductType.FRAGMENT
-								? 'you-can-upload-one-or-many-zip-files-max-total-size-is-500-mb'
-								: 'only-jar-war-files-are-allowed-max-file-size-is-500mb'
+							appType.value === ProductType.DXP
+								? 'only-jar-war-files-are-allowed-max-file-size-is-500mb'
+								: 'you-can-upload-one-or-many-zip-files-max-total-size-is-500-mb'
 						)}
 						tooltipText={i18n.translate('more-info')}
 					>
@@ -702,9 +674,9 @@ export function ProvideAppBuildPage({
 					setProcessing(true);
 
 					try {
+						await submitAppBuildTypeSpecification();
 						await submitAppBuildCategories();
 						await submitAppBuildPackages();
-						await submitAppBuildTypeSpecification();
 
 						if (isCloud) {
 							await submitAppBuildCloudResourceRequirements(

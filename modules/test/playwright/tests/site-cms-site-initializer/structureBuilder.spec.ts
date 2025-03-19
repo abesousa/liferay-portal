@@ -39,22 +39,21 @@ test(
 			name: label,
 		});
 
+		// Check we can't publish without adding a field
+
+		await clickAndExpectToBeVisible({
+			target: page.getByText('At least one field must be added'),
+			trigger: structureBuilderPage.saveButton,
+		});
+
 		// Save structure
+
+		await structureBuilderPage.addField('Text');
+		await structureBuilderPage.addField('Text');
 
 		const {id} = await structureBuilderPage.saveStructure();
 
 		await expect(page.locator('.alert-danger')).not.toBeVisible();
-
-		// Check we can't publish without adding a field
-
-		await expect(async () => {
-			await structureBuilderPage.publishStructure();
-		}).not.toPass();
-
-		// Add two fields
-
-		await structureBuilderPage.addField('Text');
-		await structureBuilderPage.addField('Text');
 
 		// Remove a field
 
@@ -138,7 +137,7 @@ test(
 
 		// Add four fields
 
-		const types = ['Text', 'Long Text', 'Upload', 'Integer'] as const;
+		const types = ['Text', 'Long Text', 'Upload', 'Numeric'] as const;
 
 		for (const type of types) {
 			await structureBuilderPage.addField(type);
@@ -263,6 +262,66 @@ test(
 			name: 'showCounter',
 			value: true,
 		});
+
+		// Delete structure
+
+		await structureBuilderPage.deleteStructure(id);
+	}
+);
+
+test(
+	'Frontend validations',
+	{tag: '@LPD-36752'},
+	async ({page, structureBuilderPage}) => {
+
+		// Go to the Structure Builder
+
+		await structureBuilderPage.goto();
+
+		// Set label and empty name
+
+		const label = `Structure${getRandomInt()}`;
+
+		await structureBuilderPage.changeStructureSettings({
+			label,
+			name: '',
+		});
+
+		await expect(page.getByText('This field is required')).toBeVisible();
+
+		// Add a Text field and select it
+
+		await structureBuilderPage.addField('Text');
+
+		await structureBuilderPage.selectField({label: 'Text'});
+
+		// Put empty name
+
+		await structureBuilderPage.changeFieldSettings({name: ''});
+
+		// Try to save and check it redirects to structure view
+
+		await clickAndExpectToBeVisible({
+			target: page.getByText('Structure Name'),
+			trigger: structureBuilderPage.saveButton,
+		});
+
+		// Fill name
+
+		await structureBuilderPage.changeStructureSettings({name: label});
+
+		// Now try to save and check it redirects to field view
+
+		await clickAndExpectToBeVisible({
+			target: page.locator('.breadcrumb-link', {hasText: 'Text'}),
+			trigger: structureBuilderPage.saveButton,
+		});
+
+		// Fill name and save again
+
+		await structureBuilderPage.changeFieldSettings({name: 'text'});
+
+		const {id} = await structureBuilderPage.saveStructure();
 
 		// Delete structure
 

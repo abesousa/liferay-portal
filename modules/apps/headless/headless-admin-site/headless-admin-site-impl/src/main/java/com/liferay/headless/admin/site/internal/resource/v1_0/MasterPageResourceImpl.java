@@ -8,32 +8,45 @@ package com.liferay.headless.admin.site.internal.resource.v1_0;
 import com.liferay.headless.admin.site.dto.v1_0.ContentPageSpecification;
 import com.liferay.headless.admin.site.dto.v1_0.ItemExternalReference;
 import com.liferay.headless.admin.site.dto.v1_0.MasterPage;
+import com.liferay.headless.admin.site.dto.v1_0.PageExperience;
 import com.liferay.headless.admin.site.dto.v1_0.PageSpecification;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.GroupUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.LayoutUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.ServiceContextUtil;
 import com.liferay.headless.admin.site.resource.v1_0.MasterPageResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
+import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.segments.constants.SegmentsExperienceConstants;
 
+import java.io.Serializable;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -216,17 +229,6 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 			return _addMasterPage(groupId, masterPage);
 		}
 
-		if (Validator.isNotNull(masterPage.getMarkedAsDefault()) &&
-			!Objects.equals(
-				GetterUtil.getBoolean(masterPage.getMarkedAsDefault()),
-				layoutPageTemplateEntry.isDefaultTemplate())) {
-
-			layoutPageTemplateEntry =
-				_layoutPageTemplateEntryService.updateLayoutPageTemplateEntry(
-					layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
-					GetterUtil.getBoolean(masterPage.getMarkedAsDefault()));
-		}
-
 		long previewFileEntryId = _getPreviewFileEntryId(groupId, masterPage);
 
 		if (previewFileEntryId !=
@@ -238,6 +240,98 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 					previewFileEntryId);
 		}
 
+		PageSpecification[] pageSpecifications =
+			masterPage.getPageSpecifications();
+
+		if (pageSpecifications != null) {
+			if (pageSpecifications.length != 2) {
+				throw new UnsupportedOperationException();
+			}
+
+			Layout layout = _layoutLocalService.getLayout(
+				layoutPageTemplateEntry.getPlid());
+
+			ContentPageSpecification draftContentPageSpecification = null;
+			ContentPageSpecification publishedContentPageSpecification =
+				(ContentPageSpecification)pageSpecifications[0];
+
+			if (!Objects.equals(
+					layout.getExternalReferenceCode(),
+					publishedContentPageSpecification.
+						getExternalReferenceCode())) {
+
+				draftContentPageSpecification =
+					publishedContentPageSpecification;
+				publishedContentPageSpecification =
+					(ContentPageSpecification)pageSpecifications[1];
+			}
+			else {
+				draftContentPageSpecification =
+					(ContentPageSpecification)pageSpecifications[1];
+			}
+
+			Layout draftLayout = layout.fetchDraftLayout();
+
+			if (!Objects.equals(
+					draftLayout.getExternalReferenceCode(),
+					draftContentPageSpecification.getExternalReferenceCode()) ||
+				!Objects.equals(
+					layout.getExternalReferenceCode(),
+					publishedContentPageSpecification.
+						getExternalReferenceCode()) ||
+				!Objects.equals(
+					publishedContentPageSpecification.
+						getDraftContentPageSpecificationExternalReferenceCode(),
+					draftContentPageSpecification.getExternalReferenceCode())) {
+
+				throw new UnsupportedOperationException();
+			}
+
+			int status = WorkflowConstants.STATUS_APPROVED;
+
+			if (Objects.equals(
+					draftContentPageSpecification.getStatus(),
+					PageSpecification.Status.DRAFT)) {
+
+				status = WorkflowConstants.STATUS_DRAFT;
+			}
+
+			ServiceContext serviceContext = _getServiceContext(
+				groupId, masterPage);
+
+			serviceContext.setAttribute(
+				"published",
+				Objects.equals(
+					publishedContentPageSpecification.getStatus(),
+					PageSpecification.Status.APPROVED));
+
+			LayoutUtil.updateLayout(
+				draftContentPageSpecification, draftLayout, status,
+				serviceContext);
+
+			layout = LayoutUtil.updateLayout(
+				publishedContentPageSpecification, layout,
+				WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+			if (!layoutPageTemplateEntry.isApproved() && layout.isPublished()) {
+				layoutPageTemplateEntry =
+					_layoutPageTemplateEntryService.updateStatus(
+						layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
+						WorkflowConstants.STATUS_APPROVED);
+			}
+		}
+
+		if (Validator.isNotNull(masterPage.getMarkedAsDefault()) &&
+			!Objects.equals(
+				GetterUtil.getBoolean(masterPage.getMarkedAsDefault()),
+				layoutPageTemplateEntry.isDefaultTemplate())) {
+
+			layoutPageTemplateEntry =
+				_layoutPageTemplateEntryService.updateLayoutPageTemplateEntry(
+					layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
+					GetterUtil.getBoolean(masterPage.getMarkedAsDefault()));
+		}
+
 		return _masterPageDTOConverter.toDTO(
 			_layoutPageTemplateEntryService.updateLayoutPageTemplateEntry(
 				layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
@@ -247,6 +341,11 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 	@Override
 	protected void preparePatch(
 		MasterPage masterPage, MasterPage existingMasterPage) {
+
+		if (masterPage.getPageSpecifications() != null) {
+			existingMasterPage.setPageSpecifications(
+				masterPage::getPageSpecifications);
+		}
 
 		if (masterPage.getThumbnail() != null) {
 			existingMasterPage.setThumbnail(masterPage::getThumbnail);
@@ -263,6 +362,11 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 			defaultTemplate = true;
 			status = WorkflowConstants.STATUS_APPROVED;
 		}
+		else if (_isPublishedLayout(masterPage.getPageSpecifications())) {
+			status = WorkflowConstants.STATUS_APPROVED;
+		}
+
+		ServiceContext serviceContext = _getServiceContext(groupId, masterPage);
 
 		return _masterPageDTOConverter.toDTO(
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
@@ -272,7 +376,144 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 				masterPage.getKey(), 0, 0, masterPage.getName(),
 				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
 				_getPreviewFileEntryId(groupId, masterPage), defaultTemplate, 0,
-				0, 0, status, _getServiceContext(groupId, masterPage)));
+				_getLayoutPlid(groupId, masterPage, serviceContext), 0, status,
+				serviceContext));
+	}
+
+	private Serializable _getDefaultSegmentsExperienceExternalReferenceCode(
+		PageExperience[] pageExperiences) {
+
+		if (ArrayUtil.isEmpty(pageExperiences)) {
+			throw new UnsupportedOperationException();
+		}
+
+		for (PageExperience pageExperience : pageExperiences) {
+			if (Objects.equals(
+					pageExperience.getKey(),
+					SegmentsExperienceConstants.KEY_DEFAULT)) {
+
+				return pageExperience.getExternalReferenceCode();
+			}
+		}
+
+		throw new UnsupportedOperationException();
+	}
+
+	private long _getLayoutPlid(
+			long groupId, MasterPage masterPage, ServiceContext serviceContext)
+		throws Exception {
+
+		PageSpecification[] pageSpecifications =
+			masterPage.getPageSpecifications();
+
+		if (pageSpecifications == null) {
+			return 0;
+		}
+
+		if (pageSpecifications.length != 2) {
+			throw new UnsupportedOperationException();
+		}
+
+		ContentPageSpecification draftContentPageSpecification = null;
+		ContentPageSpecification publishedContentPageSpecification =
+			(ContentPageSpecification)pageSpecifications[0];
+
+		if (Validator.isNull(
+				publishedContentPageSpecification.
+					getDraftContentPageSpecificationExternalReferenceCode())) {
+
+			draftContentPageSpecification = publishedContentPageSpecification;
+			publishedContentPageSpecification =
+				(ContentPageSpecification)pageSpecifications[1];
+		}
+		else {
+			draftContentPageSpecification =
+				(ContentPageSpecification)pageSpecifications[1];
+		}
+
+		if (Validator.isNull(
+				publishedContentPageSpecification.
+					getDraftContentPageSpecificationExternalReferenceCode()) ||
+			!Objects.equals(
+				draftContentPageSpecification.getExternalReferenceCode(),
+				publishedContentPageSpecification.
+					getDraftContentPageSpecificationExternalReferenceCode())) {
+
+			throw new UnsupportedOperationException();
+		}
+
+		Map<Locale, String> titleMap = Collections.singletonMap(
+			_portal.getSiteDefaultLocale(groupId), masterPage.getName());
+
+		String published;
+
+		if (Objects.equals(
+				publishedContentPageSpecification.getStatus(),
+				PageSpecification.Status.APPROVED)) {
+
+			published = "true";
+		}
+		else {
+			published = null;
+		}
+
+		serviceContext.setAttribute(
+			"defaultSegmentsExperienceExternalReferenceCode",
+			_getDefaultSegmentsExperienceExternalReferenceCode(
+				publishedContentPageSpecification.getPageExperiences()));
+		serviceContext.setAttribute(
+			"draftLayoutDefaultSegmentsExperienceExternalReferenceCode",
+			_getDefaultSegmentsExperienceExternalReferenceCode(
+				draftContentPageSpecification.getPageExperiences()));
+		serviceContext.setAttribute(
+			"draftLayoutExternalReferenceCode",
+			draftContentPageSpecification.getExternalReferenceCode());
+		serviceContext.setAttribute(
+			"layout.instanceable.allowed", Boolean.TRUE);
+		serviceContext.setAttribute(
+			"layout.page.template.entry.type",
+			LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT);
+		serviceContext.setAttribute(
+			"published", GetterUtil.getBoolean(published));
+
+		Layout layout = _layoutLocalService.addLayout(
+			publishedContentPageSpecification.getExternalReferenceCode(),
+			contextUser.getUserId(), groupId, true, 0, 0, 0, titleMap, titleMap,
+			null, null, null, LayoutConstants.TYPE_CONTENT,
+			UnicodePropertiesBuilder.create(
+				true
+			).setProperty(
+				LayoutTypeSettingsConstants.KEY_PUBLISHED, () -> published
+			).setProperty(
+				"lfr-theme:regular:show-footer", Boolean.FALSE.toString()
+			).setProperty(
+				"lfr-theme:regular:show-header", Boolean.FALSE.toString()
+			).setProperty(
+				"lfr-theme:regular:show-header-search", Boolean.FALSE.toString()
+			).setProperty(
+				"lfr-theme:regular:wrap-widget-page-content",
+				Boolean.FALSE.toString()
+			).buildString(),
+			true, true, new HashMap<>(), 0, serviceContext);
+
+		int status = WorkflowConstants.STATUS_APPROVED;
+
+		if (Objects.equals(
+				draftContentPageSpecification.getStatus(),
+				PageSpecification.Status.DRAFT)) {
+
+			status = WorkflowConstants.STATUS_DRAFT;
+		}
+
+		LayoutUtil.updateLayout(
+			draftContentPageSpecification, layout.fetchDraftLayout(), status,
+			serviceContext);
+
+		layout = LayoutUtil.updateLayout(
+			publishedContentPageSpecification, layout,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+		return layout.getPlid();
 	}
 
 	private long _getPreviewFileEntryId(long groupId, MasterPage masterPage)
@@ -303,9 +544,40 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 
 		serviceContext.setCreateDate(masterPage.getDateCreated());
 		serviceContext.setModifiedDate(masterPage.getDateModified());
+		serviceContext.setUserId(contextUser.getUserId());
 		serviceContext.setUuid(masterPage.getUuid());
 
 		return serviceContext;
+	}
+
+	private boolean _isPublishedLayout(PageSpecification[] pageSpecifications) {
+		if (pageSpecifications == null) {
+			return false;
+		}
+
+		if (pageSpecifications.length != 2) {
+			throw new UnsupportedOperationException();
+		}
+
+		ContentPageSpecification publishedContentPageSpecification =
+			(ContentPageSpecification)pageSpecifications[0];
+
+		if (Validator.isNull(
+				publishedContentPageSpecification.
+					getDraftContentPageSpecificationExternalReferenceCode())) {
+
+			publishedContentPageSpecification =
+				(ContentPageSpecification)pageSpecifications[1];
+		}
+
+		if (Objects.equals(
+				publishedContentPageSpecification.getStatus(),
+				PageSpecification.Status.APPROVED)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	@Reference
@@ -325,6 +597,9 @@ public class MasterPageResourceImpl extends BaseMasterPageResourceImpl {
 	)
 	private DTOConverter<Layout, PageSpecification>
 		_pageSpecificationDTOConverter;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private PortletFileRepository _portletFileRepository;

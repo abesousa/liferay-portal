@@ -204,34 +204,15 @@ public class ModulesStructureTest {
 							gitRepoSettingsGradleTemplate);
 					}
 					else {
-						Path gradlePropertiesPath = dirPath.resolve(
-							"gradle.properties");
-
-						boolean liferaySpringBootDefaultsPlugin = false;
-
-						if (Files.exists(buildGradlePath)) {
-							String applyPlugin =
-								"apply plugin: " +
-									"\"com.liferay.spring.boot.defaults\"";
-							String content = ModulesStructureTestUtil.read(
-								buildGradlePath);
-
-							if (content.contains(applyPlugin)) {
-								liferaySpringBootDefaultsPlugin = true;
-							}
-						}
-
 						if (!dirName.endsWith("playwright") &&
-							!dirName.endsWith("poshi-standalone") &&
-							!liferaySpringBootDefaultsPlugin) {
+							!dirName.endsWith("poshi-standalone")) {
+
+							Path gradlePropertiesPath = dirPath.resolve(
+								"gradle.properties");
 
 							Assert.assertFalse(
 								"Forbidden " + gradlePropertiesPath,
 								Files.deleteIfExists(gradlePropertiesPath));
-						}
-
-						if (!dirName.endsWith("playwright") &&
-							!dirName.endsWith("poshi-standalone")) {
 
 							Path settingsGradlePath = dirPath.resolve(
 								"settings.gradle");
@@ -259,14 +240,12 @@ public class ModulesStructureTest {
 											"plugin\""));
 						}
 
-						if (!liferaySpringBootDefaultsPlugin) {
-							Path buildExtGradlePath = dirPath.resolve(
-								"build-ext.gradle");
+						Path buildExtGradlePath = dirPath.resolve(
+							"build-ext.gradle");
 
-							Assert.assertFalse(
-								"Forbidden " + buildExtGradlePath,
-								Files.deleteIfExists(buildExtGradlePath));
-						}
+						Assert.assertFalse(
+							"Forbidden " + buildExtGradlePath,
+							Files.deleteIfExists(buildExtGradlePath));
 					}
 
 					if (Files.exists(dirPath.resolve("package.json")) &&

@@ -11576,6 +11576,7 @@ public class RolePersistenceImpl
 		ctMergeColumnNames.add("description");
 		ctMergeColumnNames.add("type_");
 		ctMergeColumnNames.add("subtype");
+		ctMergeColumnNames.add("status");
 		ctMergeColumnNames.add("groups_");
 		ctMergeColumnNames.add("users");
 

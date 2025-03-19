@@ -10,7 +10,12 @@ import React, {useContext, useRef} from 'react';
 import FrontendDataSetContext, {
 	IFrontendDataSetContext,
 } from '../../FrontendDataSetContext';
-import {ICardSchema, IItemsActions} from '../../index';
+import {
+	DisplayType,
+	ICardLabelSchema,
+	ICardSchema,
+	IItemsActions,
+} from '../../index';
 import filterItemActions from '../../utils/actionItems/filterItemActions';
 import formatActionURL from '../../utils/actionItems/formatActionURL';
 import handleActionClick from '../../utils/actionItems/handleActionClick';
@@ -57,6 +62,41 @@ const Card = ({item, schema}: {item: any; schema: ICardSchema}) => {
 		actionsRef.current &&
 		(filterItemActions(actionsRef.current, item) as any);
 
+	const getLabels = (
+		item: any
+	): Array<{
+		displayType: DisplayType;
+		value: string;
+	}> => {
+		if (!schema.labels) {
+			return [];
+		}
+
+		return schema.labels.flatMap((label: ICardLabelSchema) => {
+			const {displayTypeKey, displayTypeValues} = label;
+			let {displayType} = label;
+
+			if (!displayType && displayTypeValues && displayTypeKey) {
+				const keyValue = getLocalizedValue(item, displayTypeKey)?.value;
+
+				displayType = displayTypeValues[keyValue!];
+			}
+
+			const value = getLocalizedValue(item, label.value)?.value;
+
+			if (!value) {
+				return [];
+			}
+
+			return [
+				{
+					displayType: displayType || DisplayType.UNSTYLED,
+					value,
+				},
+			];
+		});
+	};
+
 	return (
 		<ClayCardWithInfo
 			actions={formattedActions?.map((action: IItemsActions) => ({
@@ -83,6 +123,7 @@ const Card = ({item, schema}: {item: any; schema: ICardSchema}) => {
 			description={localizedDescription}
 			href={(schema.link && item[schema.link]) || null}
 			imgProps={imageProps}
+			labels={getLabels(item)}
 			onSelectChange={
 				selectable
 					? () => {

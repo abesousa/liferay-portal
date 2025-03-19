@@ -444,10 +444,19 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		if (!layout.isDraftLayout() &&
 			(layout.isTypeAssetDisplay() || layout.isTypeContent())) {
 
+			serviceContext.setAttribute(
+				"defaultSegmentsExperienceExternalReferenceCode",
+				serviceContext.getAttribute(
+					"draftLayoutDefaultSegmentsExperienceExternalReference" +
+						"Code"));
 			serviceContext.setModifiedDate(date);
 
 			addLayout(
-				null, userId, groupId, privateLayout, parentLayoutId,
+				GetterUtil.getString(
+					serviceContext.getAttribute(
+						"draftLayoutExternalReferenceCode"),
+					null),
+				userId, groupId, privateLayout, parentLayoutId,
 				_classNameLocalService.getClassNameId(Layout.class),
 				layout.getPlid(), nameMap, titleMap, descriptionMap,
 				keywordsMap, robotsMap, type, typeSettings, true, true,
@@ -3099,6 +3108,14 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout, iconBytes != null, iconBytes, "iconImageId", 0, 0, 0);
 
 		return layoutPersistence.update(layout);
+	}
+
+	@Override
+	public void updateLayoutContent(
+			String data, Layout layout, long segmentsExperienceId)
+		throws Exception {
+
+		throw new UnsupportedOperationException();
 	}
 
 	/**

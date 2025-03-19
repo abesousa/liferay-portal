@@ -25,8 +25,6 @@ import com.liferay.headless.commerce.delivery.cart.resource.v1_0.ShippingMethodR
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.TermResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -499,11 +497,12 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {cartByExternalReferenceCodeItems(externalReferenceCode: ___, page: ___, pageSize: ___, skuId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {cartByExternalReferenceCodeItems(externalReferenceCode: ___, page: ___, pageSize: ___, search: ___, skuId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField(description = "Retrieve cart items of a Cart.")
 	public CartItemPage cartByExternalReferenceCodeItems(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("search") String search,
 			@GraphQLName("skuId") Long skuId,
 			@GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -514,18 +513,19 @@ public class Query {
 			this::_populateResourceContext,
 			cartItemResource -> new CartItemPage(
 				cartItemResource.getCartByExternalReferenceCodeItemsPage(
-					externalReferenceCode, skuId,
+					externalReferenceCode, search, skuId,
 					Pagination.of(page, pageSize))));
 	}
 
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {cartItems(cartId: ___, page: ___, pageSize: ___, skuId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {cartItems(cartId: ___, page: ___, pageSize: ___, search: ___, skuId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField(description = "Retrieve cart items of a Cart.")
 	public CartItemPage cartItems(
 			@GraphQLName("cartId") Long cartId,
+			@GraphQLName("search") String search,
 			@GraphQLName("skuId") Long skuId,
 			@GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -536,7 +536,7 @@ public class Query {
 			this::_populateResourceContext,
 			cartItemResource -> new CartItemPage(
 				cartItemResource.getCartItemsPage(
-					cartId, skuId, Pagination.of(page, pageSize))));
+					cartId, search, skuId, Pagination.of(page, pageSize))));
 	}
 
 	/**
@@ -899,6 +899,7 @@ public class Query {
 
 		@GraphQLField(description = "Retrieve cart items of a Cart.")
 		public CartItemPage items(
+				@GraphQLName("search") String search,
 				@GraphQLName("skuId") Long skuId,
 				@GraphQLName("pageSize") int pageSize,
 				@GraphQLName("page") int page)
@@ -909,7 +910,8 @@ public class Query {
 				Query.this::_populateResourceContext,
 				cartItemResource -> new CartItemPage(
 					cartItemResource.getCartItemsPage(
-						_cart.getId(), skuId, Pagination.of(page, pageSize))));
+						_cart.getId(), search, skuId,
+						Pagination.of(page, pageSize))));
 		}
 
 		private Cart _cart;
@@ -1283,6 +1285,7 @@ public class Query {
 
 		@GraphQLField(description = "Retrieve cart items of a Cart.")
 		public CartItemPage byExternalReferenceCodeItems(
+				@GraphQLName("search") String search,
 				@GraphQLName("skuId") Long skuId,
 				@GraphQLName("pageSize") int pageSize,
 				@GraphQLName("page") int page)
@@ -1293,7 +1296,7 @@ public class Query {
 				Query.this::_populateResourceContext,
 				cartItemResource -> new CartItemPage(
 					cartItemResource.getCartByExternalReferenceCodeItemsPage(
-						_cart.getExternalReferenceCode(), skuId,
+						_cart.getExternalReferenceCode(), search, skuId,
 						Pagination.of(page, pageSize))));
 		}
 
@@ -1788,12 +1791,15 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 

@@ -236,7 +236,7 @@ public class ObjectEntryInfoItemObjectProviderTest {
 
 		_assertGetInfoItemNoSuchInfoItemException(
 			infoItemIdentifier,
-			"Unsupported info item identifier type " + infoItemIdentifier);
+			"Unsupported info item identifier " + infoItemIdentifier);
 
 		Mockito.verifyNoInteractions(_objectEntryLocalService);
 		Mockito.verifyNoInteractions(_objectEntryManagerRegistry);

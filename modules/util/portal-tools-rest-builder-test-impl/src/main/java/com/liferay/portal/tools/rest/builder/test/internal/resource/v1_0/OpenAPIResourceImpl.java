@@ -91,7 +91,13 @@ public class OpenAPIResourceImpl {
 
 			add(EntityModelResourceTestEntity2ResourceImpl.class);
 
+			add(FilterResourceImpl.class);
+
+			add(SchemaResourceImpl.class);
+
 			add(SiteTestEntityResourceImpl.class);
+
+			add(SortResourceImpl.class);
 
 			add(TestEntityResourceImpl.class);
 

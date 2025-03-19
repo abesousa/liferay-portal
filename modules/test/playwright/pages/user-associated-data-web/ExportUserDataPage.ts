@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {Locator, Page} from '@playwright/test';
+import {Locator, Page, expect} from '@playwright/test';
 
 export class ExportUserDataPage {
 	readonly addExportProcessesButton: Locator;
@@ -21,7 +21,10 @@ export class ExportUserDataPage {
 	readonly formsStatus: Locator;
 	readonly messageBoardsCheckbox: Locator;
 	readonly messageBoardsStatus: Locator;
+	readonly nameMenuItem: Locator;
+	readonly orderByButton: Locator;
 	readonly page: Page;
+	readonly paginationResults: Locator;
 	readonly webContentCheckbox: Locator;
 	readonly webContentStatus: Locator;
 	readonly wikiCheckbox: Locator;
@@ -54,10 +57,20 @@ export class ExportUserDataPage {
 		this.formsStatus = page.getByText('Forms Successful');
 		this.messageBoardsCheckbox = page.getByLabel('Message Boards');
 		this.messageBoardsStatus = page.getByText('Message Boards Successful');
+		this.nameMenuItem = page.getByRole('menuitem', {name: 'Name'});
+		this.orderByButton = page.getByLabel('Order');
 		this.page = page;
+		this.paginationResults = page.locator('.pagination-results');
 		this.webContentCheckbox = page.getByLabel('Web Content');
 		this.webContentStatus = page.getByText('Web Content Successful');
 		this.wikiCheckbox = page.getByLabel('Wiki');
 		this.wikiStatus = page.getByText('Wiki Successful');
+	}
+
+	async verifyPaginationResult(from: number, to: number, total: number) {
+		const expected = `Showing ${from} to ${to} of ${total} entries.`;
+		const resultsText = (await this.paginationResults.textContent()).trim();
+
+		expect(resultsText).toContain(expected);
 	}
 }

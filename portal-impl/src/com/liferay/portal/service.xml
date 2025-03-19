@@ -2191,6 +2191,7 @@
 		<column localized="true" name="description" type="String" />
 		<column name="type" type="int" />
 		<column name="subtype" type="String" />
+		<column name="status" type="int" />
 
 		<!-- Relationships -->
 

@@ -71,7 +71,7 @@ public class JournalArticleInfoItemIdentifierTranslator
 		}
 
 		throw new NoSuchInfoItemException(
-			"Unsupported info item identifier type " +
+			"Unsupported info item identifier " +
 				targetInfoItemIdentifierClass.getName());
 	}
 

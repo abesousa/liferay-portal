@@ -517,6 +517,20 @@ public interface RoleModel
 	 */
 	public void setSubtype(String subtype);
 
+	/**
+	 * Returns the status of this role.
+	 *
+	 * @return the status of this role
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this role.
+	 *
+	 * @param status the status of this role
+	 */
+	public void setStatus(int status);
+
 	@Override
 	public String[] getAvailableLanguageIds();
 

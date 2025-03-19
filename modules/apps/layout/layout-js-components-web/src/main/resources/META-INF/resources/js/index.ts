@@ -19,6 +19,7 @@ export {default as CreationModal} from './components/modals/CreationModal';
 export {default as MarketplaceButton} from './components/modals/MarketplaceButton';
 export {default as MarketplaceModal} from './components/modals/MarketplaceModal';
 export {default as MarketplacePresentationModal} from './components/modals/MarketplacePresentationModal';
+export {default as openConfirmModal} from './components/modals/openConfirmModal';
 export {default as openModalComponent} from './components/modals/openModalComponent';
 export {default as PageTemplateModal} from './components/page_template_modal/PageTemplateModal';
 export {default as Resizer} from './components/resizer/Resizer';
@@ -35,7 +36,6 @@ export {
 	useHasStyleErrors,
 } from './contexts/StyleErrorsContext';
 export {default as useControlledState} from './hooks/useControlledState';
-export {default as checkAccessibility} from './tests/checkAccessibility';
 export {default as SegmentExperience} from './types/SegmentExperience';
 export {default as convertRGBtoHex} from './utils/convertRGBtoHex';
 export {default as isNullOrUndefined} from './utils/isNullOrUndefined';

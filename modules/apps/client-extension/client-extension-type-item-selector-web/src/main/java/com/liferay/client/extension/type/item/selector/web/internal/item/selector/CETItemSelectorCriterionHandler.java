@@ -5,7 +5,7 @@
 
 package com.liferay.client.extension.type.item.selector.web.internal.item.selector;
 
-import com.liferay.client.extension.type.item.selector.criterion.CETItemSelectorCriterion;
+import com.liferay.client.extension.type.item.selector.CETItemSelectorCriterion;
 import com.liferay.item.selector.BaseItemSelectorCriterionHandler;
 import com.liferay.item.selector.ItemSelectorCriterionHandler;
 

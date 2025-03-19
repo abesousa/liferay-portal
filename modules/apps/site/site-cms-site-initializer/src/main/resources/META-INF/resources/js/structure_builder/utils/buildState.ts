@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {State} from '../contexts/StateContext';
+import {State, Uuid} from '../contexts/StateContext';
 import {ObjectDefinition, ObjectField} from '../types/ObjectDefinition';
 import {DB_TYPE_FIELD_TYPE, Field} from './field';
+import getUuid from './getUuid';
 
 export default function buildState(
 	objectDefinition: ObjectDefinition
@@ -14,7 +15,7 @@ export default function buildState(
 		return null;
 	}
 
-	const fields = new Map<string, Field>();
+	const fields = new Map<Uuid, Field>();
 
 	objectDefinition.objectFields?.forEach((objectField) => {
 		if (objectField.system) {
@@ -34,7 +35,9 @@ export default function buildState(
 					: undefined;
 		}
 
-		fields.set(objectField.name, {
+		const uuid = getUuid();
+
+		fields.set(uuid, {
 			erc: objectField.externalReferenceCode,
 			indexableConfig,
 			label: objectField.label,
@@ -43,6 +46,7 @@ export default function buildState(
 			required: objectField.required,
 			settings: getSettings(objectField),
 			type: DB_TYPE_FIELD_TYPE[objectField.DBType],
+			uuid,
 		});
 	});
 
@@ -53,11 +57,13 @@ export default function buildState(
 		error: null,
 		fields,
 		id: objectDefinition.id ?? null,
+		invalids: new Set(),
 		label: objectDefinition.label,
 		name: objectDefinition.name ?? '',
 		publishedFields: isPublished ? new Set(fields.keys()) : new Set(),
 		selection: [],
 		status: isPublished ? 'published' : 'draft',
+		uuid: getUuid(),
 	};
 }
 
@@ -75,20 +81,31 @@ function getSettings(objectField: ObjectField): Field['settings'] {
 			objectFieldSettings.acceptedFileExtensions;
 		settings.fileSource = objectFieldSettings.fileSource;
 		settings.maximumFileSize = objectFieldSettings.maximumFileSize;
+
+		if (objectFieldSettings.fileSource === 'userComputer') {
+			settings.showFilesInDocumentsAndMedia =
+				objectFieldSettings.showFilesInDocumentsAndMedia;
+			settings.storageDLFolderPath =
+				objectFieldSettings.storageDLFolderPath;
+		}
 	}
 	else if (objectField.businessType === 'DateTime') {
 		settings.timeStorage = objectFieldSettings.timeStorage;
 	}
-	else if (objectField.businessType === 'Text') {
-		if (settings.maxLength) {
+	else if (
+		objectField.businessType === 'Integer' ||
+		objectField.businessType === 'LongText' ||
+		objectField.businessType === 'Text'
+	) {
+		if (objectFieldSettings.maxLength) {
 			settings.maxLength = objectFieldSettings.maxLength;
 		}
 
-		if (settings.showCounter) {
+		if (objectFieldSettings.showCounter) {
 			settings.showCounter = objectFieldSettings.showCounter;
 		}
 
-		if (settings.uniqueValues) {
+		if (objectFieldSettings.uniqueValues) {
 			settings.uniqueValues = objectFieldSettings.uniqueValues;
 		}
 	}

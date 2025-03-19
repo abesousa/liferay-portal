@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.dao.db;
 
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.Connection;
@@ -12,11 +13,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 /**
@@ -96,10 +98,35 @@ public class DBInspectorUnitTest {
 	public void testIsObjectTable() {
 		DBInspector dbInspector = new DBInspector(_connection);
 
+		MockedStatic<PortalInstancePool> portalInstancePoolMockedStatic =
+			Mockito.mockStatic(PortalInstancePool.class);
+
+		portalInstancePoolMockedStatic.when(
+			PortalInstancePool::getCompanyIds
+		).thenReturn(
+			new long[] {1L}
+		);
+
+		Assert.assertTrue(dbInspector.isObjectTable("L_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable("l_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable("r_tableName"));
+	}
+
+	@Test
+	public void testIsObjectTableFilterByCompanyIds() {
+		DBInspector dbInspector = new DBInspector(_connection);
+
+		List<Long> companyIds = List.of(1L);
+
+		Assert.assertFalse(
+			dbInspector.isObjectTable(companyIds, "L_2_tableName"));
+		Assert.assertFalse(
+			dbInspector.isObjectTable(companyIds, "l_2_tableName"));
 		Assert.assertTrue(
-			dbInspector.isObjectTable(Arrays.asList(1L), "L_1_tableName"));
+			dbInspector.isObjectTable(companyIds, "L_1_tableName"));
 		Assert.assertTrue(
-			dbInspector.isObjectTable(Arrays.asList(1L), "l_1_tableName"));
+			dbInspector.isObjectTable(companyIds, "l_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable(companyIds, "r_tableName"));
 	}
 
 	private void _mockTableWithColumn(String tableName, String columnName)

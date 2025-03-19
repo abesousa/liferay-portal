@@ -6,6 +6,7 @@
 package com.liferay.saml.addon.keep.alive.web.internal.struts;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.struts.StrutsAction;
@@ -19,7 +20,6 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.saml.addon.keep.alive.web.internal.constants.SamlKeepAliveConstants;
 import com.liferay.saml.constants.SamlWebKeys;
 import com.liferay.saml.persistence.model.SamlIdpSpConnection;
-import com.liferay.saml.persistence.model.SamlIdpSpSession;
 import com.liferay.saml.persistence.model.SamlIdpSsoSession;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
 import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
@@ -31,7 +31,6 @@ import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -128,44 +127,41 @@ public class KeepAliveStrutsAction implements StrutsAction {
 			return Collections.emptyList();
 		}
 
-		List<String> keepAliveURLs = new ArrayList<>();
-
 		String entityId = ParamUtil.getString(httpServletRequest, "entityId");
 
-		List<SamlIdpSpSession> samlIdpSpSessions =
+		return TransformUtil.transform(
 			_samlIdpSpSessionLocalService.getSamlIdpSpSessions(
-				samlIdpSsoSession.getSamlIdpSsoSessionId());
+				samlIdpSsoSession.getSamlIdpSsoSessionId()),
+			samlIdpSpSession -> {
+				SamlPeerBinding samlPeerBinding =
+					_samlPeerBindingLocalService.getSamlPeerBinding(
+						samlIdpSpSession.getSamlPeerBindingId());
 
-		for (SamlIdpSpSession samlIdpSpSession : samlIdpSpSessions) {
-			SamlPeerBinding samlPeerBinding =
-				_samlPeerBindingLocalService.getSamlPeerBinding(
-					samlIdpSpSession.getSamlPeerBindingId());
+				if (entityId.equals(samlPeerBinding.getSamlPeerEntityId())) {
+					return null;
+				}
 
-			if (entityId.equals(samlPeerBinding.getSamlPeerEntityId())) {
-				continue;
-			}
+				SamlIdpSpConnection samlIdpSpConnection =
+					_samlIdpSpConnectionLocalService.getSamlIdpSpConnection(
+						samlIdpSpSession.getCompanyId(),
+						samlPeerBinding.getSamlPeerEntityId());
 
-			SamlIdpSpConnection samlIdpSpConnection =
-				_samlIdpSpConnectionLocalService.getSamlIdpSpConnection(
-					samlIdpSpSession.getCompanyId(),
-					samlPeerBinding.getSamlPeerEntityId());
+				ExpandoBridge expandoBridge =
+					samlIdpSpConnection.getExpandoBridge();
 
-			ExpandoBridge expandoBridge =
-				samlIdpSpConnection.getExpandoBridge();
+				String keepAliveURL = (String)expandoBridge.getAttribute(
+					SamlKeepAliveConstants.EXPANDO_COLUMN_NAME_KEEP_ALIVE_URL);
 
-			String keepAliveURL = (String)expandoBridge.getAttribute(
-				SamlKeepAliveConstants.EXPANDO_COLUMN_NAME_KEEP_ALIVE_URL);
+				if (!Validator.isBlank(keepAliveURL) &&
+					!keepAliveURL.equals(
+						SamlKeepAliveConstants.
+							EXPANDO_COLUMN_NAME_KEEP_ALIVE_URL)) {
 
-			if (!Validator.isBlank(keepAliveURL) &&
-				!keepAliveURL.equals(
-					SamlKeepAliveConstants.
-						EXPANDO_COLUMN_NAME_KEEP_ALIVE_URL)) {
+					return keepAliveURL;
+				}
 
-				keepAliveURLs.add(keepAliveURL);
-			}
-		}
-
-		return keepAliveURLs;
+				return null;
+			});
 	}
 
 	private static final String _BASE64_1X1_GIF =

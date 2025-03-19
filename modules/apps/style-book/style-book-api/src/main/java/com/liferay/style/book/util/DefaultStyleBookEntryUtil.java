@@ -6,7 +6,11 @@
 package com.liferay.style.book.util;
 
 import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalServiceUtil;
@@ -30,10 +34,22 @@ public class DefaultStyleBookEntryUtil {
 			}
 		}
 
-		if (styleBookEntry == null) {
+		if (styleBookEntry != null) {
+			return styleBookEntry;
+		}
+
+		try {
+			Theme theme = layout.getTheme();
+
 			styleBookEntry =
 				StyleBookEntryLocalServiceUtil.fetchDefaultStyleBookEntry(
-					StagingUtil.getLiveGroupId(layout.getGroupId()));
+					StagingUtil.getLiveGroupId(layout.getGroupId()),
+					theme.getThemeId());
+		}
+		catch (PortalException portalException) {
+			_log.error(
+				"Unable to get the layout's default style book entry",
+				portalException);
 		}
 
 		return styleBookEntry;
@@ -53,5 +69,8 @@ public class DefaultStyleBookEntryUtil {
 
 		return getDefaultMasterStyleBookEntry(layout);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DefaultStyleBookEntryUtil.class);
 
 }

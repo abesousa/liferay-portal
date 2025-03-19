@@ -9,8 +9,9 @@ import ClayForm from '@clayui/form';
 import ClayLabel from '@clayui/label';
 import ClayLayout from '@clayui/layout';
 import ClayTabs from '@clayui/tabs';
+import classNames from 'classnames';
 import {InputLocalized} from 'frontend-js-components-web';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {useSelector, useStateDispatch} from '../contexts/StateContext';
 import selectSelection from '../selectors/selectSelection';
@@ -18,6 +19,9 @@ import selectStructureERC from '../selectors/selectStructureERC';
 import selectStructureError from '../selectors/selectStructureError';
 import selectStructureLabel from '../selectors/selectStructureLabel';
 import selectStructureName from '../selectors/selectStructureName';
+import selectStructureStatus from '../selectors/selectStructureStatus';
+import selectStructureUuid from '../selectors/selectStructureUuid';
+import focusInvalidInput from '../utils/focusInvalidInput';
 import {getImage} from '../utils/getImage';
 import ERCInput from './ERCInput';
 import Input from './Input';
@@ -25,17 +29,19 @@ import StructureFieldSettings from './StructureFieldSettings';
 
 export default function () {
 	const selection = useSelector(selectSelection);
+	const structureUuid = useSelector(selectStructureUuid);
 
-	if (!selection.length) {
-		return <StructureSettings />;
-	}
-	else if (selection.length > 1) {
+	if (selection.length > 1) {
 		return <MultiselectionState />;
 	}
 
-	const [fieldName] = selection;
+	const [uuid] = selection;
 
-	return <StructureFieldSettings fieldName={fieldName} key={fieldName} />;
+	if (!uuid || uuid === structureUuid) {
+		return <StructureSettings />;
+	}
+
+	return <StructureFieldSettings key={uuid} uuid={uuid} />;
 }
 
 function StructureSettings() {
@@ -46,8 +52,12 @@ function StructureSettings() {
 	const [label, setLabel] =
 		useState<Liferay.Language.LocalizedValue<string>>(structureLabel);
 
+	useEffect(() => {
+		focusInvalidInput();
+	}, []);
+
 	return (
-		<ClayLayout.ContainerFluid size="md" view>
+		<ClayLayout.ContainerFluid className="px-4" size="md" view>
 			{error ? (
 				<ClayAlert
 					displayType="danger"
@@ -62,15 +72,22 @@ function StructureSettings() {
 				{Liferay.Language.get('content')}
 			</ClayLabel>
 
-			<ClayForm.Group>
+			<ClayForm.Group
+				className={classNames('ml-n3', {'has-error': !label})}
+			>
 				<InputLocalized
 					aria-label={Liferay.Language.get('structure-label')}
 					className="form-control-inline structure-builder__title-input"
+					error={
+						label
+							? ''
+							: Liferay.Language.get('this-field-is-required')
+					}
 					label=""
 					onBlur={() => {
 						dispatch({
 							label,
-							type: 'set-label',
+							type: 'update-structure',
 						});
 					}}
 					onChange={(label) => setLabel(label)}
@@ -78,6 +95,7 @@ function StructureSettings() {
 					translations={
 						label as Liferay.Language.LocalizedValue<string>
 					}
+					validate
 				/>
 			</ClayForm.Group>
 
@@ -93,11 +111,11 @@ function StructureSettings() {
 				</ClayTabs.List>
 
 				<ClayTabs.Panels fade>
-					<ClayTabs.TabPane>
+					<ClayTabs.TabPane className="px-0">
 						<GeneralTab />
 					</ClayTabs.TabPane>
 
-					<ClayTabs.TabPane>
+					<ClayTabs.TabPane className="px-0">
 						<ValidationsTab />
 					</ClayTabs.TabPane>
 				</ClayTabs.Panels>
@@ -110,10 +128,12 @@ function GeneralTab() {
 	const dispatch = useStateDispatch();
 	const name = useSelector(selectStructureName);
 	const erc = useSelector(selectStructureERC);
+	const status = useSelector(selectStructureStatus);
 
 	return (
 		<div>
 			<Input
+				disabled={status === 'published'}
 				label={Liferay.Language.get('structure-name')}
 				onValueChange={(value) =>
 					dispatch({name: value, type: 'update-structure'})

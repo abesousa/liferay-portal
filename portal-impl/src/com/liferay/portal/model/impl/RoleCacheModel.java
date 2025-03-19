@@ -67,7 +67,7 @@ public class RoleCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(35);
+		StringBundler sb = new StringBundler(37);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -103,6 +103,8 @@ public class RoleCacheModel
 		sb.append(type);
 		sb.append(", subtype=");
 		sb.append(subtype);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -187,6 +189,8 @@ public class RoleCacheModel
 			roleImpl.setSubtype(subtype);
 		}
 
+		roleImpl.setStatus(status);
+
 		roleImpl.resetOriginalValues();
 
 		return roleImpl;
@@ -220,6 +224,8 @@ public class RoleCacheModel
 
 		type = objectInput.readInt();
 		subtype = objectInput.readUTF();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -291,6 +297,8 @@ public class RoleCacheModel
 		else {
 			objectOutput.writeUTF(subtype);
 		}
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
@@ -310,5 +318,6 @@ public class RoleCacheModel
 	public String description;
 	public int type;
 	public String subtype;
+	public int status;
 
 }

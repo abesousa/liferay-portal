@@ -147,6 +147,8 @@ public class RolePersistenceTest {
 
 		newRole.setSubtype(RandomTestUtil.randomString());
 
+		newRole.setStatus(RandomTestUtil.nextInt());
+
 		_roles.add(_persistence.update(newRole));
 
 		Role existingRole = _persistence.findByPrimaryKey(
@@ -180,6 +182,7 @@ public class RolePersistenceTest {
 			existingRole.getDescription(), newRole.getDescription());
 		Assert.assertEquals(existingRole.getType(), newRole.getType());
 		Assert.assertEquals(existingRole.getSubtype(), newRole.getSubtype());
+		Assert.assertEquals(existingRole.getStatus(), newRole.getStatus());
 	}
 
 	@Test(expected = DuplicateRoleExternalReferenceCodeException.class)
@@ -354,7 +357,7 @@ public class RolePersistenceTest {
 			"externalReferenceCode", true, "roleId", true, "companyId", true,
 			"userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "classNameId", true, "classPK", true, "name",
-			true, "title", true, "type", true, "subtype", true);
+			true, "title", true, "type", true, "subtype", true, "status", true);
 	}
 
 	@Test
@@ -700,6 +703,8 @@ public class RolePersistenceTest {
 		role.setType(RandomTestUtil.nextInt());
 
 		role.setSubtype(RandomTestUtil.randomString());
+
+		role.setStatus(RandomTestUtil.nextInt());
 
 		_roles.add(_persistence.update(role));
 

@@ -53,7 +53,7 @@ public class ObjectEntryInfoItemObjectProvider
 			!(infoItemIdentifier instanceof ERCInfoItemIdentifier)) {
 
 			throw new NoSuchInfoItemException(
-				"Unsupported info item identifier type " + infoItemIdentifier);
+				"Unsupported info item identifier " + infoItemIdentifier);
 		}
 
 		if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {

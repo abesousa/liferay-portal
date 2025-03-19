@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
+import org.json.JSONObject;
+
 /**
  * @author Kenji Heigel
  */
@@ -101,6 +103,14 @@ public class RelevantRuleValidation {
 			String repositoryName, String upstreamBranchName)
 		throws IOException {
 
+		validate(repositoryName, upstreamBranchName, null);
+	}
+
+	public static void validate(
+			String repositoryName, String upstreamBranchName,
+			JSONObject jsonObject)
+		throws IOException {
+
 		Properties properties = JenkinsResultsParserUtil.getBuildProperties();
 
 		File portalDir = new File(
@@ -114,7 +124,7 @@ public class RelevantRuleValidation {
 		PortalAcceptancePullRequestJob portalAcceptancePullRequestJob =
 			(PortalAcceptancePullRequestJob)JobFactory.newJob(
 				Job.BuildProfile.DXP,
-				"test-portal-acceptance-pullrequest(master)", null,
+				"test-portal-acceptance-pullrequest(master)", jsonObject,
 				portalGitWorkingDirectory, upstreamBranchName, null,
 				repositoryName, "relevant", upstreamBranchName);
 

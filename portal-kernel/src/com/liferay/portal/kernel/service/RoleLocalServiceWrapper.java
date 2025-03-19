@@ -549,6 +549,17 @@ public class RoleLocalServiceWrapper
 		return _roleLocalService.getIndexableActionableDynamicQuery();
 	}
 
+	@Override
+	public Role getOrAddIncompleteRole(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK, String name, int type)
+		throws Exception {
+
+		return _roleLocalService.getOrAddIncompleteRole(
+			externalReferenceCode, companyId, userId, className, classPK, name,
+			type);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *

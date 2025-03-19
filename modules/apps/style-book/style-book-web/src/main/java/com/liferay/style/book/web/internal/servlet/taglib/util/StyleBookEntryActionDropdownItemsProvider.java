@@ -23,6 +23,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalServiceUtil;
+import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
 import com.liferay.style.book.web.internal.constants.StyleBookWebKeys;
 import com.liferay.style.book.web.internal.util.StyleBookUtil;
 
@@ -314,11 +315,13 @@ public class StyleBookEntryActionDropdownItemsProvider {
 					!_styleBookEntry.isDefaultStyleBookEntry()
 				).setParameter(
 					"styleBookEntryId", _styleBookEntry.getStyleBookEntryId()
+				).setParameter(
+					"themeId", _styleBookEntry.getThemeId()
 				).buildString());
 
 			StyleBookEntry defaultStyleBookEntry =
-				StyleBookEntryLocalServiceUtil.fetchDefaultStyleBookEntry(
-					_styleBookEntry.getGroupId());
+				DefaultStyleBookEntryUtil.getDefaultStyleBookEntry(
+					_themeDisplay.getLayout());
 
 			String defaultStyleBookEntryName = LanguageUtil.get(
 				_httpServletRequest, "styles-from-theme");
@@ -336,8 +339,20 @@ public class StyleBookEntryActionDropdownItemsProvider {
 						defaultStyleBookEntryName, _styleBookEntry.getName()
 					}));
 
-			dropdownItem.setLabel(
-				LanguageUtil.get(_httpServletRequest, "mark-as-default"));
+			if (FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-30204")) {
+
+				dropdownItem.setLabel(
+					LanguageUtil.format(
+						_httpServletRequest, "mark-as-default-for-x",
+						StyleBookUtil.getThemeName(
+							_themeDisplay.getCompanyId(), _httpServletRequest,
+							_styleBookEntry.getThemeId())));
+			}
+			else {
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "mark-as-default"));
+			}
 		};
 	}
 

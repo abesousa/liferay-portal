@@ -288,10 +288,12 @@ public class JobFactory {
 				testSuiteName, upstreamBranchName);
 		}
 
-		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
+		if (jsonObject == null) {
+			BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
 
-		if ((jsonObject == null) && buildDatabase.hasJob(key)) {
-			return buildDatabase.getJob(key);
+			if (buildDatabase.hasJob(key)) {
+				return buildDatabase.getJob(key);
+			}
 		}
 
 		Job job = _jobs.get(key);

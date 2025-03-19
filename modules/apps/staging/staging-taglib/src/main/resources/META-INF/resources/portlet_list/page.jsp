@@ -51,7 +51,7 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 			exportControls = stagingControls;
 		}
 
-		if (ArrayUtil.isEmpty(exportControls) && ArrayUtil.isEmpty(metadataControls)) {
+		if (!portletDataHandler.isEmptyControlsAllowed() && ArrayUtil.isEmpty(exportControls) && ArrayUtil.isEmpty(metadataControls)) {
 			continue;
 		}
 

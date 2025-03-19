@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {Uuid} from '../contexts/StateContext';
 import getRandomId from './getRandomId';
+import getUuid from './getUuid';
 import normalizeName from './normalizeName';
 
 // Constants
@@ -27,7 +29,7 @@ export const FIELD_TYPE_LABEL: Record<FieldType, string> = {
 	'date': Liferay.Language.get('date'),
 	'datetime': Liferay.Language.get('date-and-time'),
 	'decimal': Liferay.Language.get('decimal'),
-	'integer': Liferay.Language.get('integer'),
+	'integer': Liferay.Language.get('numeric'),
 	'long-text': Liferay.Language.get('long-text'),
 	'multiselect': Liferay.Language.get('multiselect'),
 	'rich-text': Liferay.Language.get('rich-text'),
@@ -109,36 +111,65 @@ type BaseField = {
 	localized: boolean;
 	name: string;
 	required: boolean;
+	uuid: Uuid;
 };
 
-export type TextField = BaseField & {
+export type UniqueValuesSettingsField = {
+	settings: {
+		uniqueValues?: boolean;
+	};
+};
+
+export type MaxLengthSettingsField = {
 	settings: {
 		maxLength?: number;
 		showCounter?: boolean;
-		uniqueValues?: boolean;
 	};
+};
+
+export type DateTimeField = BaseField & {
+	settings: {timeStorage: 'convertToUTC' | 'useInputAsEntered'};
+	type: 'datetime';
+};
+
+export type LongTextField = BaseField & {
+	type: 'long-text';
+} & MaxLengthSettingsField;
+
+export type NumericField = BaseField & {
+	type: 'integer';
+} & UniqueValuesSettingsField;
+
+export type TextField = BaseField & {
 	type: 'text';
+} & MaxLengthSettingsField &
+	UniqueValuesSettingsField;
+
+export type UploadField = BaseField & {
+	type: 'upload';
+} & {
+	settings: {
+		acceptedFileExtensions: string;
+		fileSource: 'userComputer' | 'documentsAndMedia';
+		maximumFileSize: number;
+		showFilesInDocumentsAndMedia?: boolean;
+		storageDLFolderPath?: string;
+	};
 };
 
 export type Field =
+	| DateTimeField
+	| LongTextField
+	| NumericField
 	| TextField
-	| (BaseField & {
-			settings: {timeStorage: 'convertToUTC'};
-			type: 'datetime';
-	  })
-	| (BaseField & {
-			settings: {
-				acceptedFileExtensions: string;
-				fileSource: 'userComputer';
-				maximumFileSize: number;
-			};
-			type: 'upload';
-	  })
+	| UploadField
 	| (BaseField & {
 			settings: {};
-			type: Exclude<FieldType, ['datetime', 'text', 'upload']>;
+			type: Exclude<
+				FieldType,
+				['datetime', 'long-text', 'numeric', 'text', 'upload']
+			>;
 	  });
-
 export type FieldType = (typeof FIELD_TYPES)[number];
 
 export type FieldBusinessType =
@@ -162,6 +193,7 @@ export function getDefaultField(type: FieldType): Field {
 		name: normalizeName(type),
 		required: false,
 		settings: {},
+		uuid: getUuid(),
 	};
 
 	if (type === 'datetime') {

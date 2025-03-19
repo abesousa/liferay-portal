@@ -49,6 +49,10 @@ create unique index IX_B421E018 on AssetTag (groupId, uuid_[$COLUMN_LENGTH:75$],
 create index IX_C43137AF on AssetTag (name[$COLUMN_LENGTH:75$]);
 create index IX_562A3FC4 on AssetTag (uuid_[$COLUMN_LENGTH:75$]);
 
+create index IX_7C87D905 on AssetTagGroupRel (groupId, tagId);
+create index IX_EE11675B on AssetTagGroupRel (tagId);
+create unique index IX_5A27ECFE on AssetTagGroupRel (uuid_[$COLUMN_LENGTH:75$], groupId, ctCollectionId);
+
 create index IX_B22D908C on AssetVocabulary (companyId);
 create unique index IX_E06DEF51 on AssetVocabulary (groupId, ctCollectionId, externalReferenceCode[$COLUMN_LENGTH:75$]);
 create unique index IX_32F2132B on AssetVocabulary (groupId, ctCollectionId, name[$COLUMN_LENGTH:75$]);
@@ -56,6 +60,10 @@ create index IX_C0AAD74D on AssetVocabulary (groupId, name[$COLUMN_LENGTH:75$]);
 create unique index IX_3966DE44 on AssetVocabulary (groupId, uuid_[$COLUMN_LENGTH:75$], ctCollectionId);
 create index IX_2F7F11EE on AssetVocabulary (groupId, visibilityType);
 create index IX_55F58818 on AssetVocabulary (uuid_[$COLUMN_LENGTH:75$]);
+
+create index IX_104CE969 on AssetVocabularyGroupRel (groupId, vocabularyId);
+create unique index IX_BD51FF2A on AssetVocabularyGroupRel (uuid_[$COLUMN_LENGTH:75$], groupId, ctCollectionId);
+create index IX_65F8A72B on AssetVocabularyGroupRel (vocabularyId);
 
 create unique index IX_E7B95510 on BrowserTracker (userId);
 

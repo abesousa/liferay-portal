@@ -456,6 +456,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 		return false;
 	}
 
+	public boolean isEmptyControlsAllowed() {
+		return _emptyControlsAllowed;
+	}
+
 	@Override
 	public boolean isModelCountSupported() {
 		return true;
@@ -799,6 +803,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 			deletionSystemEventStagedModelTypes;
 	}
 
+	protected void setEmptyControlsAllowed(boolean emptyControlsAllowed) {
+		_emptyControlsAllowed = emptyControlsAllowed;
+	}
+
 	protected void setExportControls(
 		PortletDataHandlerControl... exportControls) {
 
@@ -878,6 +886,7 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 	private String[] _dataPortletPreferences = StringPool.EMPTY_ARRAY;
 	private StagedModelType[] _deletionSystemEventStagedModelTypes =
 		new StagedModelType[0];
+	private boolean _emptyControlsAllowed;
 	private PortletDataHandlerControl[] _exportControls =
 		new PortletDataHandlerControl[0];
 	private PortletDataHandlerControl[] _exportMetadataControls =

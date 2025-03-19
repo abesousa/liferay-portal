@@ -65,10 +65,11 @@ public class SharingEntryModelImpl
 	public static final String TABLE_NAME = "SharingEntry";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"uuid_", Types.VARCHAR}, {"sharingEntryId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"sharingEntryId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"toUserGroupId", Types.BIGINT},
 		{"toUserId", Types.BIGINT}, {"classNameId", Types.BIGINT},
 		{"classPK", Types.BIGINT}, {"shareable", Types.BOOLEAN},
 		{"actionIds", Types.BIGINT}, {"expirationDate", Types.TIMESTAMP}
@@ -79,6 +80,7 @@ public class SharingEntryModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("sharingEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -86,6 +88,7 @@ public class SharingEntryModelImpl
 		TABLE_COLUMNS_MAP.put("userName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("createDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("toUserGroupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("toUserId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("classNameId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("classPK", Types.BIGINT);
@@ -95,7 +98,7 @@ public class SharingEntryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table SharingEntry (uuid_ VARCHAR(75) null,sharingEntryId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,toUserId LONG,classNameId LONG,classPK LONG,shareable BOOLEAN,actionIds LONG,expirationDate DATE null)";
+		"create table SharingEntry (uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,sharingEntryId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,toUserGroupId LONG,toUserId LONG,classNameId LONG,classPK LONG,shareable BOOLEAN,actionIds LONG,expirationDate DATE null)";
 
 	public static final String TABLE_SQL_DROP = "drop table SharingEntry";
 
@@ -139,32 +142,44 @@ public class SharingEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 16L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TOUSERID_COLUMN_BITMASK = 32L;
+	public static final long GROUPID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 64L;
+	public static final long TOUSERGROUPID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 128L;
+	public static final long TOUSERID_COLUMN_BITMASK = 128L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long USERID_COLUMN_BITMASK = 256L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 512L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SHARINGENTRYID_COLUMN_BITMASK = 256L;
+	public static final long SHARINGENTRYID_COLUMN_BITMASK = 1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -277,6 +292,9 @@ public class SharingEntryModelImpl
 
 			attributeGetterFunctions.put("uuid", SharingEntry::getUuid);
 			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				SharingEntry::getExternalReferenceCode);
+			attributeGetterFunctions.put(
 				"sharingEntryId", SharingEntry::getSharingEntryId);
 			attributeGetterFunctions.put("groupId", SharingEntry::getGroupId);
 			attributeGetterFunctions.put(
@@ -287,6 +305,8 @@ public class SharingEntryModelImpl
 				"createDate", SharingEntry::getCreateDate);
 			attributeGetterFunctions.put(
 				"modifiedDate", SharingEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"toUserGroupId", SharingEntry::getToUserGroupId);
 			attributeGetterFunctions.put("toUserId", SharingEntry::getToUserId);
 			attributeGetterFunctions.put(
 				"classNameId", SharingEntry::getClassNameId);
@@ -318,6 +338,10 @@ public class SharingEntryModelImpl
 				"uuid",
 				(BiConsumer<SharingEntry, String>)SharingEntry::setUuid);
 			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<SharingEntry, String>)
+					SharingEntry::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
 				"sharingEntryId",
 				(BiConsumer<SharingEntry, Long>)
 					SharingEntry::setSharingEntryId);
@@ -339,6 +363,9 @@ public class SharingEntryModelImpl
 			attributeSetterBiConsumers.put(
 				"modifiedDate",
 				(BiConsumer<SharingEntry, Date>)SharingEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"toUserGroupId",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setToUserGroupId);
 			attributeSetterBiConsumers.put(
 				"toUserId",
 				(BiConsumer<SharingEntry, Long>)SharingEntry::setToUserId);
@@ -392,6 +419,35 @@ public class SharingEntryModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -552,6 +608,31 @@ public class SharingEntryModelImpl
 		}
 
 		_modifiedDate = modifiedDate;
+	}
+
+	@JSON
+	@Override
+	public long getToUserGroupId() {
+		return _toUserGroupId;
+	}
+
+	@Override
+	public void setToUserGroupId(long toUserGroupId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_toUserGroupId = toUserGroupId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalToUserGroupId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("toUserGroupId"));
 	}
 
 	@JSON
@@ -788,6 +869,7 @@ public class SharingEntryModelImpl
 		SharingEntryImpl sharingEntryImpl = new SharingEntryImpl();
 
 		sharingEntryImpl.setUuid(getUuid());
+		sharingEntryImpl.setExternalReferenceCode(getExternalReferenceCode());
 		sharingEntryImpl.setSharingEntryId(getSharingEntryId());
 		sharingEntryImpl.setGroupId(getGroupId());
 		sharingEntryImpl.setCompanyId(getCompanyId());
@@ -795,6 +877,7 @@ public class SharingEntryModelImpl
 		sharingEntryImpl.setUserName(getUserName());
 		sharingEntryImpl.setCreateDate(getCreateDate());
 		sharingEntryImpl.setModifiedDate(getModifiedDate());
+		sharingEntryImpl.setToUserGroupId(getToUserGroupId());
 		sharingEntryImpl.setToUserId(getToUserId());
 		sharingEntryImpl.setClassNameId(getClassNameId());
 		sharingEntryImpl.setClassPK(getClassPK());
@@ -812,6 +895,8 @@ public class SharingEntryModelImpl
 		SharingEntryImpl sharingEntryImpl = new SharingEntryImpl();
 
 		sharingEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		sharingEntryImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		sharingEntryImpl.setSharingEntryId(
 			this.<Long>getColumnOriginalValue("sharingEntryId"));
 		sharingEntryImpl.setGroupId(
@@ -825,6 +910,8 @@ public class SharingEntryModelImpl
 			this.<Date>getColumnOriginalValue("createDate"));
 		sharingEntryImpl.setModifiedDate(
 			this.<Date>getColumnOriginalValue("modifiedDate"));
+		sharingEntryImpl.setToUserGroupId(
+			this.<Long>getColumnOriginalValue("toUserGroupId"));
 		sharingEntryImpl.setToUserId(
 			this.<Long>getColumnOriginalValue("toUserId"));
 		sharingEntryImpl.setClassNameId(
@@ -923,6 +1010,18 @@ public class SharingEntryModelImpl
 			sharingEntryCacheModel.uuid = null;
 		}
 
+		sharingEntryCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			sharingEntryCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			sharingEntryCacheModel.externalReferenceCode = null;
+		}
+
 		sharingEntryCacheModel.sharingEntryId = getSharingEntryId();
 
 		sharingEntryCacheModel.groupId = getGroupId();
@@ -956,6 +1055,8 @@ public class SharingEntryModelImpl
 		else {
 			sharingEntryCacheModel.modifiedDate = Long.MIN_VALUE;
 		}
+
+		sharingEntryCacheModel.toUserGroupId = getToUserGroupId();
 
 		sharingEntryCacheModel.toUserId = getToUserId();
 
@@ -1038,6 +1139,7 @@ public class SharingEntryModelImpl
 	}
 
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _sharingEntryId;
 	private long _groupId;
 	private long _companyId;
@@ -1046,6 +1148,7 @@ public class SharingEntryModelImpl
 	private Date _createDate;
 	private Date _modifiedDate;
 	private boolean _setModifiedDate;
+	private long _toUserGroupId;
 	private long _toUserId;
 	private long _classNameId;
 	private long _classPK;
@@ -1084,6 +1187,8 @@ public class SharingEntryModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("sharingEntryId", _sharingEntryId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1091,6 +1196,7 @@ public class SharingEntryModelImpl
 		_columnOriginalValues.put("userName", _userName);
 		_columnOriginalValues.put("createDate", _createDate);
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
+		_columnOriginalValues.put("toUserGroupId", _toUserGroupId);
 		_columnOriginalValues.put("toUserId", _toUserId);
 		_columnOriginalValues.put("classNameId", _classNameId);
 		_columnOriginalValues.put("classPK", _classPK);
@@ -1122,31 +1228,35 @@ public class SharingEntryModelImpl
 
 		columnBitmasks.put("uuid_", 1L);
 
-		columnBitmasks.put("sharingEntryId", 2L);
+		columnBitmasks.put("externalReferenceCode", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("sharingEntryId", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("groupId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("toUserId", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("classNameId", 512L);
+		columnBitmasks.put("toUserGroupId", 512L);
 
-		columnBitmasks.put("classPK", 1024L);
+		columnBitmasks.put("toUserId", 1024L);
 
-		columnBitmasks.put("shareable", 2048L);
+		columnBitmasks.put("classNameId", 2048L);
 
-		columnBitmasks.put("actionIds", 4096L);
+		columnBitmasks.put("classPK", 4096L);
 
-		columnBitmasks.put("expirationDate", 8192L);
+		columnBitmasks.put("shareable", 8192L);
+
+		columnBitmasks.put("actionIds", 16384L);
+
+		columnBitmasks.put("expirationDate", 32768L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

@@ -483,6 +483,16 @@ public class RoleLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static Role getOrAddIncompleteRole(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK, String name, int type)
+		throws Exception {
+
+		return getService().getOrAddIncompleteRole(
+			externalReferenceCode, companyId, userId, className, classPK, name,
+			type);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *

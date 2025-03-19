@@ -313,6 +313,7 @@ public class ObjectEntryLocalServiceImpl
 		int workflowAction = serviceContext.getWorkflowAction();
 
 		_validateWorkflowAction(
+			objectDefinition.getCompanyId(),
 			objectDefinition.isEnableObjectEntryDraft(), null, workflowAction);
 
 		User user = _userLocalService.getUser(userId);
@@ -1640,6 +1641,7 @@ public class ObjectEntryLocalServiceImpl
 		int workflowAction = serviceContext.getWorkflowAction();
 
 		_validateWorkflowAction(
+			objectDefinition.getCompanyId(),
 			objectDefinition.isEnableObjectEntryDraft(),
 			objectEntry.getStatus(), workflowAction);
 
@@ -1667,6 +1669,14 @@ public class ObjectEntryLocalServiceImpl
 		objectEntry.setModifiedDate(serviceContext.getModifiedDate(null));
 
 		_setRootObjectEntryId(objectDefinition, objectEntry, values);
+
+		if ((workflowAction == WorkflowConstants.ACTION_SAVE_DRAFT) &&
+			!objectEntry.isPending()) {
+
+			objectEntry.setStatus(WorkflowConstants.STATUS_DRAFT);
+			objectEntry.setStatusByUserId(user.getUserId());
+			objectEntry.setStatusDate(serviceContext.getModifiedDate(null));
+		}
 
 		objectEntry.setTransientValues(transientValues);
 
@@ -1707,6 +1717,12 @@ public class ObjectEntryLocalServiceImpl
 			ObjectActionTriggerConstants.KEY_ON_AFTER_UPDATE, objectDefinition,
 			objectEntry, originalObjectEntry, serviceContext.getLanguageId(),
 			user);
+
+		if (objectEntry.isPending() || originalObjectEntry.isDraft()) {
+			_updateLatestObjectEntryVersion(objectEntry);
+
+			return objectEntry;
+		}
 
 		return _addObjectEntryVersion(objectEntry);
 	}
@@ -1887,7 +1903,19 @@ public class ObjectEntryLocalServiceImpl
 				serviceContext.getLanguageId(), user);
 		}
 
-		return objectEntry;
+		if (originalObjectEntry.isDraft() || originalObjectEntry.isPending()) {
+			List<ObjectEntryVersion> objectEntryVersions =
+				_objectEntryVersionLocalService.getObjectEntryVersions(
+					objectEntry.getObjectEntryId());
+
+			if (!objectEntryVersions.isEmpty()) {
+				_updateLatestObjectEntryVersion(objectEntry);
+			}
+
+			return objectEntry;
+		}
+
+		return _addObjectEntryVersion(objectEntry);
 	}
 
 	@Activate
@@ -2169,7 +2197,7 @@ public class ObjectEntryLocalServiceImpl
 		throws PortalException {
 
 		if (!FeatureFlagManagerUtil.isEnabled(
-				objectEntry.getCompanyId(), "LPD-37104")) {
+				objectEntry.getCompanyId(), "LPD-17564")) {
 
 			return objectEntry;
 		}
@@ -4939,6 +4967,19 @@ public class ObjectEntryLocalServiceImpl
 		}
 	}
 
+	private void _updateLatestObjectEntryVersion(ObjectEntry objectEntry)
+		throws PortalException {
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				objectEntry.getCompanyId(), "LPD-17564")) {
+
+			return;
+		}
+
+		_objectEntryVersionLocalService.updateLatestObjectEntryVersion(
+			objectEntry);
+	}
+
 	private void _updateResourcePermissions(
 			ObjectDefinition objectDefinition, ObjectEntry objectEntry,
 			ServiceContext serviceContext)
@@ -5846,14 +5887,17 @@ public class ObjectEntryLocalServiceImpl
 	}
 
 	private void _validateWorkflowAction(
-			boolean enableObjectEntryDraft, Integer status,
+			long companyId, boolean enableObjectEntryDraft, Integer status,
 			Integer workflowAction)
 		throws PortalException {
 
-		if ((!enableObjectEntryDraft ||
-			 ((status != null) &&
-			  (status != WorkflowConstants.STATUS_DRAFT))) &&
-			(workflowAction == WorkflowConstants.ACTION_SAVE_DRAFT)) {
+		if (workflowAction != WorkflowConstants.ACTION_SAVE_DRAFT) {
+			return;
+		}
+
+		if (!enableObjectEntryDraft ||
+			((status != null) && (status != WorkflowConstants.STATUS_DRAFT) &&
+			 !FeatureFlagManagerUtil.isEnabled(companyId, "LPD-17564"))) {
 
 			throw new ObjectEntryStatusException("Draft status is not allowed");
 		}

@@ -8,6 +8,7 @@ package com.liferay.analytics.batch.exportimport.internal.engine;
 import com.liferay.analytics.batch.exportimport.internal.dto.v1_0.converter.constants.DTOConverterConstants;
 import com.liferay.analytics.batch.exportimport.internal.engine.util.DTOConverterUtil;
 import com.liferay.analytics.dxp.entity.rest.dto.v1_0.DXPEntity;
+import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.pagination.Page;
@@ -79,7 +80,8 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 	}
 
 	private DynamicQuery _buildDynamicQuery(
-		long companyId, Map<String, Serializable> parameters) {
+			long companyId, Map<String, Serializable> parameters)
+		throws Exception {
 
 		ExpandoTable organizationExpandoTable =
 			_expandoTableLocalService.fetchTable(
@@ -98,13 +100,19 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 
 		DynamicQuery dynamicQuery = _expandoColumnLocalService.dynamicQuery();
 
+		AnalyticsConfiguration analyticsConfiguration =
+			_analyticsSettingsManager.getAnalyticsConfiguration(companyId);
+		Property nameProperty = PropertyFactoryUtil.forName("name");
 		Property tableIdProperty = PropertyFactoryUtil.forName("tableId");
 
 		if ((organizationExpandoTable != null) && (userExpandoTable != null)) {
 			dynamicQuery.add(
 				RestrictionsFactoryUtil.or(
 					tableIdProperty.eq(organizationExpandoTable.getTableId()),
-					tableIdProperty.eq(userExpandoTable.getTableId())));
+					RestrictionsFactoryUtil.and(
+						tableIdProperty.eq(userExpandoTable.getTableId()),
+						nameProperty.in(
+							analyticsConfiguration.syncedUserFieldNames()))));
 		}
 		else if (organizationExpandoTable != null) {
 			dynamicQuery.add(
@@ -112,6 +120,8 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 		}
 		else {
 			dynamicQuery.add(tableIdProperty.eq(userExpandoTable.getTableId()));
+			dynamicQuery.add(
+				nameProperty.in(analyticsConfiguration.syncedUserFieldNames()));
 		}
 
 		return buildDynamicQuery(companyId, dynamicQuery, parameters);

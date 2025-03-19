@@ -10,7 +10,7 @@
  */
 
 module.exports = {
-	hash: '9a5335532af04c2fe0bad2d5345c973dc211470092d9e7263175749aaac3208c',
+	hash: '204909c5fd8e71544e2a457dc44b954184d205875a83a9626976795f73670ea0',
 	imports: {
 		'@liferay/accessibility-settings-state-web': [],
 		'@liferay/address-web': [],
@@ -155,6 +155,7 @@ module.exports = {
 		],
 		'item-selector-taglib': [],
 		'item-selector-web': [],
+		'layout-taglib': ['./render'],
 		'portal-search-web': ['./search-bar'],
 		'social-bookmarks-taglib': [],
 	},
@@ -197,6 +198,7 @@ module.exports = {
 			'ImageBlock',
 			'ImageCaption',
 			'ImageInline',
+			'ImageResize',
 			'ImageStyle',
 			'ImageToolbar',
 			'Indent',
@@ -204,6 +206,7 @@ module.exports = {
 			'Italic',
 			'Link',
 			'List',
+			'MediaEmbed',
 			'Paragraph',
 			'Plugin',
 			'RemoveFormat',

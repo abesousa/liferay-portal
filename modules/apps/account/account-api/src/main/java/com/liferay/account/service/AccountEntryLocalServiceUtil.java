@@ -410,6 +410,15 @@ public class AccountEntryLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static AccountEntry getOrAddIncompleteAccountEntry(
+			String externalReferenceCode, long companyId, long userId,
+			String name, String type)
+		throws Exception {
+
+		return getService().getOrAddIncompleteAccountEntry(
+			externalReferenceCode, companyId, userId, name, type);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *

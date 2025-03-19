@@ -1,0 +1,36 @@
+{
+	"attributes": [
+		{
+			"caseExact": false,
+			"description": "",
+			"multiValued": false,
+			"mutability": "readWrite",
+			"name": "birthday",
+			"required": false,
+			"returned": "default",
+			"type": "dateTime",
+			"uniqueness": "none"
+		},
+		{
+			"caseExact": false,
+			"description": "",
+			"multiValued": false,
+			"mutability": "readWrite",
+			"name": "male",
+			"required": false,
+			"returned": "default",
+			"type": "boolean",
+			"uniqueness": "none"
+		}
+	],
+	"description": "User Schema Extension",
+	"id": "urn:ietf:params:scim:schemas:extension:liferay:2.0:User",
+	"meta": {
+		"location": "/urn:ietf:params:scim:schemas:extension:liferay:2.0:User",
+		"resourceType": "Schema"
+	},
+	"name": "UserSchemaExtension",
+	"schemas": [
+		"urn:ietf:params:scim:schemas:core:2.0:Schema"
+	]
+}

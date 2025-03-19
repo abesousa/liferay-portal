@@ -10,7 +10,7 @@ import com.liferay.client.extension.type.CET;
 import com.liferay.client.extension.type.GlobalCSSCET;
 import com.liferay.client.extension.type.GlobalJSCET;
 import com.liferay.client.extension.type.ThemeCSSCET;
-import com.liferay.client.extension.type.item.selector.criterion.CETItemSelectorCriterion;
+import com.liferay.client.extension.type.item.selector.CETItemSelectorCriterion;
 import com.liferay.client.extension.type.manager.CETManager;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;

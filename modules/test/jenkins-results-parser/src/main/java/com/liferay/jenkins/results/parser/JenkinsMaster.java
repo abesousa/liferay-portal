@@ -142,6 +142,11 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 		}
 	}
 
+	@Override
+	public List<String> getAssignedLabels() {
+		return _assignedLabels;
+	}
+
 	public int getAvailableSlavesCount() {
 		List<AWSFleetCloud> awsFleetClouds = getAWSFleetClouds();
 
@@ -565,19 +570,20 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 		return _masterURL;
 	}
 
-	public boolean isAvailable() {
+	public synchronized boolean isAvailable() {
 		if ((_availableTimestamp == -1) ||
 			((System.currentTimeMillis() - _availableTimestamp) >
 				_AVAILABLE_TIMEOUT)) {
 
 			try {
 				if (!isBlackListed()) {
-					JenkinsResultsParserUtil.toString(getURL(), false, 0, 0, 0);
+					JenkinsResultsParserUtil.toJSONObject(
+						getURL() + "/api/json?tree=mode", false, 1, 1, 1000);
 
 					_available = true;
 				}
 			}
-			catch (IOException ioException) {
+			catch (Exception exception) {
 				System.out.println(getName() + " is unreachable.");
 
 				_available = false;
@@ -806,6 +812,7 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 
 	public synchronized void update(boolean minimal) {
 		if (!isAvailable()) {
+			_assignedLabels.clear();
 			_batchSizes.clear();
 			_buildURLs.clear();
 			_jenkinsSlavesMap.clear();
@@ -823,8 +830,8 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 			computerAPIJSONObject = JenkinsResultsParserUtil.toJSONObject(
 				JenkinsResultsParserUtil.getLocalURL(
 					JenkinsResultsParserUtil.combine(
-						_masterURL,
-						"/computer/api/json?tree=computer[displayName,",
+						_masterURL, "/computer/api/json?tree=computer",
+						"[assignedLabels[name],displayName,",
 						"executors[currentExecutable[url]],idle,offline,",
 						"offlineCauseReason]")),
 				false, 5000);
@@ -844,6 +851,7 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 				false, 5000);
 		}
 		catch (Exception exception) {
+			_assignedLabels.clear();
 			_batchSizes.clear();
 			_buildURLs.clear();
 			_jenkinsSlavesMap.clear();
@@ -867,7 +875,32 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 			String jenkinsSlaveName = computerJSONObject.getString(
 				"displayName");
 
-			if (jenkinsSlaveName.equals("master")) {
+			if (jenkinsSlaveName.equals("Built-In Node") ||
+				jenkinsSlaveName.equals("master")) {
+
+				JSONArray assignedLabelsJSONArray =
+					computerJSONObject.optJSONArray("assignedLabels");
+
+				if (assignedLabelsJSONArray == null) {
+					continue;
+				}
+
+				for (int j = 0; j < assignedLabelsJSONArray.length(); j++) {
+					JSONObject assignedLabelJSONObject =
+						assignedLabelsJSONArray.getJSONObject(j);
+
+					String assignedLabelName =
+						assignedLabelJSONObject.optString("name");
+
+					if (JenkinsResultsParserUtil.isNullOrEmpty(
+							assignedLabelName)) {
+
+						continue;
+					}
+
+					_assignedLabels.add(assignedLabelName);
+				}
+
 				continue;
 			}
 
@@ -1130,6 +1163,7 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 		}
 	}
 
+	private final List<String> _assignedLabels = new ArrayList<>();
 	private boolean _available;
 	private long _availableTimestamp = -1;
 	private long _awsFleetCloudLastUpdateTimestamp;

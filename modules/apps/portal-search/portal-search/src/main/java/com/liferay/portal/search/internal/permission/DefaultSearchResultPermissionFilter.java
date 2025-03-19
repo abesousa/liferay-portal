@@ -43,9 +43,15 @@ import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.configuration.DefaultSearchResultPermissionFilterConfiguration;
 import com.liferay.portal.search.facet.nested.NestedFacet;
+import com.liferay.portal.search.hits.SearchHit;
+import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.hits.SearchHitsBuilder;
+import com.liferay.portal.search.hits.SearchHitsBuilderFactory;
 import com.liferay.portal.search.internal.facet.FacetImpl;
 import com.liferay.portal.search.internal.facet.NestedFacetImpl;
 import com.liferay.portal.search.internal.facet.SimpleFacetCollector;
+import com.liferay.portal.search.internal.hits.SearchHitsBuilderFactoryImpl;
+import com.liferay.portal.search.internal.searcher.SearchResponseImpl;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.util.PropsValues;
@@ -111,6 +117,8 @@ public class DefaultSearchResultPermissionFilter
 
 			if (!_isGroupAdmin(searchContext)) {
 				_filterHits(null, hits, searchContext);
+
+				_updateSearchHits(hits, searchContext);
 			}
 
 			return hits;
@@ -335,8 +343,54 @@ public class DefaultSearchResultPermissionFilter
 		return false;
 	}
 
+	private void _updateSearchHits(Hits hits, SearchContext searchContext) {
+		SearchResponseImpl searchResponseImpl =
+			(SearchResponseImpl)searchContext.getAttribute("search.response");
+
+		if (searchResponseImpl == null) {
+			return;
+		}
+
+		SearchHits searchHits = searchResponseImpl.getSearchHits();
+
+		List<SearchHit> searchHitsList = searchHits.getSearchHits();
+
+		if (searchHitsList.isEmpty()) {
+			return;
+		}
+
+		Document[] documents = hits.getDocs();
+
+		SearchHitsBuilderFactory searchHitsBuilderFactory =
+			new SearchHitsBuilderFactoryImpl();
+
+		SearchHitsBuilder searchHitsBuilder =
+			searchHitsBuilderFactory.getSearchHitsBuilder();
+
+		if (documents.length == 0) {
+			searchResponseImpl.setSearchHits(searchHitsBuilder.build());
+
+			return;
+		}
+
+		List<String> ids = new ArrayList<>();
+
+		ArrayUtil.isNotEmptyForEach(
+			documents, document -> ids.add(document.get("uid")));
+
+		searchHitsList.removeIf(searchHit -> !ids.contains(searchHit.getId()));
+
+		searchHitsBuilder.addSearchHits(searchHitsList);
+		searchHitsBuilder.maxScore(searchHits.getMaxScore());
+		searchHitsBuilder.searchTime(searchHits.getSearchTime());
+		searchHitsBuilder.totalHits(hits.getLength());
+
+		searchResponseImpl.setSearchHits(searchHitsBuilder.build());
+	}
+
 	private static final String[] _PERMISSION_SELECTED_FIELD_NAMES = {
-		Field.COMPANY_ID, Field.ENTRY_CLASS_NAME, Field.ENTRY_CLASS_PK
+		Field.COMPANY_ID, Field.ENTRY_CLASS_NAME, Field.ENTRY_CLASS_PK,
+		Field.UID
 	};
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -475,6 +529,12 @@ public class DefaultSearchResultPermissionFilter
 						hits, hitsStart, recalculatedHitsSize,
 						slidingWindowHelper, slidingWindowStopWatch,
 						totalDocsNeededCount);
+
+					hitFilteringStopWatch.resume();
+
+					_updateSearchHits(hits, searchContext);
+
+					hitFilteringStopWatch.suspend();
 
 					_mergeFacets(facetCountHelper, searchContext);
 

@@ -82,6 +82,7 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -97,6 +98,7 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -1346,9 +1348,9 @@ public class ObjectDefinitionLocalServiceTest {
 			() -> _objectDefinitionLocalService.addSystemObjectDefinition(
 				null, TestPropsValues.getUserId(), 0,
 				ObjectDefinitionTestUtil.getRandomName(), null, false, true,
-				true, false, RandomTestUtil.randomLocaleStringMap(), false,
-				ObjectDefinitionTestUtil.getRandomName(), null, null, null,
-				null, RandomTestUtil.randomLocaleStringMap(), false,
+				true, false, false, RandomTestUtil.randomLocaleStringMap(),
+				false, ObjectDefinitionTestUtil.getRandomName(), null, null,
+				null, null, RandomTestUtil.randomLocaleStringMap(), false,
 				ObjectDefinitionConstants.SCOPE_COMPANY, null, 1,
 				WorkflowConstants.STATUS_APPROVED, Collections.emptyList(),
 				Collections.emptyList()));
@@ -1362,7 +1364,7 @@ public class ObjectDefinitionLocalServiceTest {
 			() -> ObjectDefinitionLocalServiceUtil.addSystemObjectDefinition(
 				null, TestPropsValues.getUserId(), 0,
 				ObjectDefinitionTestUtil.getRandomName(), null, false, false,
-				true, true,
+				true, true, false,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				false, "Test", null, null, null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
@@ -1907,11 +1909,22 @@ public class ObjectDefinitionLocalServiceTest {
 			TestPropsValues.getUserId(),
 			objectDefinition.getObjectDefinitionId());
 
+		ClassName className = _classNameLocalService.getClassName(
+			objectDefinition.getClassName());
+
+		Assert.assertNotNull(
+			_classNameLocalService.fetchByClassNameId(
+				className.getClassNameId()));
+
 		_objectDefinitionLocalService.updateRootObjectDefinitionId(
 			objectDefinition.getObjectDefinitionId(), 0);
 
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			objectDefinition.getObjectDefinitionId());
+
+		Assert.assertNull(
+			_classNameLocalService.fetchByClassNameId(
+				className.getClassNameId()));
 
 		// Database table
 
@@ -3962,6 +3975,9 @@ public class ObjectDefinitionLocalServiceTest {
 
 	@Inject
 	private static ObjectFolderLocalService _objectFolderLocalService;
+
+	@Inject
+	private ClassNameLocalService _classNameLocalService;
 
 	@Inject
 	private CompanyLocalService _companyLocalService;

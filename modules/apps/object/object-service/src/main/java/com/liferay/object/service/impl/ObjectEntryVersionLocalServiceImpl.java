@@ -9,6 +9,7 @@ import com.liferay.object.entry.util.ObjectEntryDTOConverterUtil;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectEntryVersion;
 import com.liferay.object.service.base.ObjectEntryVersionLocalServiceBaseImpl;
+import com.liferay.object.util.comparator.ObjectEntryVersionVersionComparator;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -35,11 +36,35 @@ public class ObjectEntryVersionLocalServiceImpl
 	public ObjectEntryVersion addObjectEntryVersion(ObjectEntry objectEntry)
 		throws PortalException {
 
-		ObjectEntryVersion objectEntryVersion =
+		return _updateObjectEntryVersion(
+			objectEntry,
 			objectEntryVersionPersistence.create(
-				counterLocalService.increment());
+				counterLocalService.increment()),
+			objectEntry.getVersion() + 1);
+	}
 
-		objectEntryVersion.setCompanyId(objectEntry.getCompanyId());
+	@Override
+	public List<ObjectEntryVersion> getObjectEntryVersions(long objectEntryId) {
+		return objectEntryVersionPersistence.findByObjectEntryId(objectEntryId);
+	}
+
+	@Override
+	public ObjectEntryVersion updateLatestObjectEntryVersion(
+			ObjectEntry objectEntry)
+		throws PortalException {
+
+		return _updateObjectEntryVersion(
+			objectEntry,
+			objectEntryVersionPersistence.fetchByObjectEntryId_First(
+				objectEntry.getObjectEntryId(),
+				ObjectEntryVersionVersionComparator.getInstance(false)),
+			objectEntry.getVersion());
+	}
+
+	private ObjectEntryVersion _updateObjectEntryVersion(
+			ObjectEntry objectEntry, ObjectEntryVersion objectEntryVersion,
+			int version)
+		throws PortalException {
 
 		User user = _userLocalService.getUser(objectEntry.getUserId());
 
@@ -59,19 +84,10 @@ public class ObjectEntryVersionLocalServiceImpl
 			throw new PortalException(exception);
 		}
 
-		int count = objectEntryVersionPersistence.countByObjectEntryId(
-			objectEntry.getObjectEntryId());
-
-		objectEntryVersion.setVersion(++count);
-
+		objectEntryVersion.setVersion(version);
 		objectEntryVersion.setStatus(objectEntry.getStatus());
 
 		return objectEntryVersionPersistence.update(objectEntryVersion);
-	}
-
-	@Override
-	public List<ObjectEntryVersion> getObjectEntryVersions(long objectEntryId) {
-		return objectEntryVersionPersistence.findByObjectEntryId(objectEntryId);
 	}
 
 	@Reference

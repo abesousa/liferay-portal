@@ -19,6 +19,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -54,6 +55,7 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -459,10 +461,15 @@ public class TestrayManagerImpl implements TestrayManager {
 				testrayBuildId, testrayCache,
 				propertiesMap.get("testray.run.id"), userId);
 
-			_addTestrayCases(
+			JSONObject jsonObject = _addTestrayCases(
 				companyId, element, serviceContext,
 				propertiesMap.get("testray.build.date"), testrayBuildId,
 				testrayCache, testrayProjectId, testrayRunId, userId);
+
+			_patchObjectEntry(
+				Collections.singletonMap(
+					"playwrightReports", jsonObject.toString()),
+				testrayBuildId, userId);
 		}
 		catch (Exception exception) {
 			_log.error(exception);
@@ -547,16 +554,7 @@ public class TestrayManagerImpl implements TestrayManager {
 			map.put("caseResult" + key, facetValue.getNumberOfOccurrences());
 		}
 
-		ObjectEntry objectEntry = _objectEntryLocalService.getObjectEntry(
-			testrayBuildId);
-
-		Map<String, Serializable> values = objectEntry.getValues();
-
-		values.putAll(map);
-
-		return _objectEntryLocalService.updateObjectEntry(
-			userId, objectEntry.getObjectEntryId(), values,
-			new ServiceContext());
+		return _patchObjectEntry(map, testrayBuildId, userId);
 	}
 
 	private void _addDefaultFactors(
@@ -603,8 +601,8 @@ public class TestrayManagerImpl implements TestrayManager {
 
 	private void _addOrUpdateTestrayCaseResult(
 			ServiceContext serviceContext, Node testcaseNode,
-			String testrayBuildDate, long testrayBuildId,
-			TestrayCache testrayCache, long testrayCaseId,
+			JSONArray testrayAttachmentsJSONArray, String testrayBuildDate,
+			long testrayBuildId, TestrayCache testrayCache, long testrayCaseId,
 			Map<String, Serializable> testrayCasePropertiesMap,
 			long testrayComponentId, long testrayRunId, long testrayTeamId,
 			long userId)
@@ -623,7 +621,7 @@ public class TestrayManagerImpl implements TestrayManager {
 
 		Map<String, Serializable> properties =
 			HashMapBuilder.<String, Serializable>put(
-				"attachments", _addTestrayAttachments(testcaseNode)
+				"attachments", testrayAttachmentsJSONArray
 			).put(
 				"closedDate", Timestamp.valueOf(testrayBuildDate)
 			).put(
@@ -711,55 +709,10 @@ public class TestrayManagerImpl implements TestrayManager {
 		testrayCache.incrementTestrayCaseResultAmount();
 	}
 
-	private JSONArray _addTestrayAttachments(Node testcaseNode)
-		throws Exception {
-
-		JSONArray jsonArray = _jsonFactory.createJSONArray();
-
-		Element testcaseElement = (Element)testcaseNode;
-
-		NodeList attachmentsNodeList = testcaseElement.getElementsByTagName(
-			"attachments");
-
-		for (int i = 0; i < attachmentsNodeList.getLength(); i++) {
-			Node attachmentsNode = attachmentsNodeList.item(i);
-
-			if (attachmentsNode.getNodeType() != Node.ELEMENT_NODE) {
-				continue;
-			}
-
-			Element attachmentsElement = (Element)attachmentsNode;
-
-			NodeList fileNodeList = attachmentsElement.getElementsByTagName(
-				"file");
-
-			for (int j = 0; j < fileNodeList.getLength(); j++) {
-				Node fileNode = fileNodeList.item(j);
-
-				if (fileNode.getNodeType() != Node.ELEMENT_NODE) {
-					continue;
-				}
-
-				Element fileElement = (Element)fileNode;
-
-				jsonArray.put(
-					JSONUtil.put(
-						"name", fileElement.getAttribute("name")
-					).put(
-						"url", fileElement.getAttribute("url")
-					).put(
-						"value", fileElement.getAttribute("value")
-					));
-			}
-		}
-
-		return jsonArray;
-	}
-
 	private void _addTestrayCase(
 			long companyId, ServiceContext serviceContext, Node testcaseNode,
-			String testrayBuildDate, long testrayBuildId,
-			TestrayCache testrayCache,
+			JSONArray testrayAttachmentsJSONArray, String testrayBuildDate,
+			long testrayBuildId, TestrayCache testrayCache,
 			Map<String, Serializable> testrayCasePropertiesMap,
 			long testrayProjectId, long testrayRunId, long userId)
 		throws Exception {
@@ -843,31 +796,62 @@ public class TestrayManagerImpl implements TestrayManager {
 		}
 
 		_addOrUpdateTestrayCaseResult(
-			serviceContext, testcaseNode, testrayBuildDate, testrayBuildId,
-			testrayCache, testrayCaseId, testrayCasePropertiesMap,
-			testrayComponentId, testrayRunId, testrayTeamId, userId);
+			serviceContext, testcaseNode, testrayAttachmentsJSONArray,
+			testrayBuildDate, testrayBuildId, testrayCache, testrayCaseId,
+			testrayCasePropertiesMap, testrayComponentId, testrayRunId,
+			testrayTeamId, userId);
 	}
 
-	private void _addTestrayCases(
+	private JSONObject _addTestrayCases(
 			long companyId, Element element, ServiceContext serviceContext,
 			String testrayBuildDate, long testrayBuildId,
 			TestrayCache testrayCache, long testrayProjectId, long testrayRunId,
 			long userId)
 		throws Exception {
 
+		JSONObject playwrightReportsJSONObject = _jsonFactory.createJSONObject(
+			GetterUtil.getString(
+				_objectEntryLocalService.getValues(
+					testrayBuildId
+				).get(
+					"playwrightReports"
+				)));
+
 		NodeList testCaseNodeList = element.getElementsByTagName("testcase");
 
 		for (int i = 0; i < testCaseNodeList.getLength(); i++) {
 			Node testcaseNode = testCaseNodeList.item(i);
 
+			JSONArray testrayAttachmentsJSONArray =
+				_getTestrayAttachmentsJSONArray(testcaseNode);
+
 			Map<String, Serializable> testrayCasePropertiesMap =
 				_getTestrayCaseProperties((Element)testcaseNode);
 
 			_addTestrayCase(
-				companyId, serviceContext, testcaseNode, testrayBuildDate,
-				testrayBuildId, testrayCache, testrayCasePropertiesMap,
-				testrayProjectId, testrayRunId, userId);
+				companyId, serviceContext, testcaseNode,
+				testrayAttachmentsJSONArray, testrayBuildDate, testrayBuildId,
+				testrayCache, testrayCasePropertiesMap, testrayProjectId,
+				testrayRunId, userId);
+
+			for (int j = 0; j < testrayAttachmentsJSONArray.length(); j++) {
+				JSONObject jsonObject =
+					testrayAttachmentsJSONArray.getJSONObject(j);
+
+				if (!StringUtil.startsWith(
+						jsonObject.getString("name"), "Playwright Report")) {
+
+					continue;
+				}
+
+				playwrightReportsJSONObject.put(
+					jsonObject.getString("url"),
+					GetterUtil.getString(
+						testrayCasePropertiesMap.get("testray.testcase.name")));
+			}
 		}
+
+		return playwrightReportsJSONObject;
 	}
 
 	private void _addTestrayFactor(
@@ -1027,6 +1011,51 @@ public class TestrayManagerImpl implements TestrayManager {
 		return map;
 	}
 
+	private JSONArray _getTestrayAttachmentsJSONArray(Node testcaseNode)
+		throws Exception {
+
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
+
+		Element testcaseElement = (Element)testcaseNode;
+
+		NodeList attachmentsNodeList = testcaseElement.getElementsByTagName(
+			"attachments");
+
+		for (int i = 0; i < attachmentsNodeList.getLength(); i++) {
+			Node attachmentsNode = attachmentsNodeList.item(i);
+
+			if (attachmentsNode.getNodeType() != Node.ELEMENT_NODE) {
+				continue;
+			}
+
+			Element attachmentsElement = (Element)attachmentsNode;
+
+			NodeList fileNodeList = attachmentsElement.getElementsByTagName(
+				"file");
+
+			for (int j = 0; j < fileNodeList.getLength(); j++) {
+				Node fileNode = fileNodeList.item(j);
+
+				if (fileNode.getNodeType() != Node.ELEMENT_NODE) {
+					continue;
+				}
+
+				Element fileElement = (Element)fileNode;
+
+				jsonArray.put(
+					JSONUtil.put(
+						"name", fileElement.getAttribute("name")
+					).put(
+						"url", fileElement.getAttribute("url")
+					).put(
+						"value", fileElement.getAttribute("value")
+					));
+			}
+		}
+
+		return jsonArray;
+	}
+
 	private String _getTestrayBuildDescription(
 		Map<String, String> propertiesMap) {
 
@@ -1081,16 +1110,9 @@ public class TestrayManagerImpl implements TestrayManager {
 			testrayCache, userId);
 
 		if (testrayBuildId != 0) {
-			ObjectEntry objectEntry = _objectEntryLocalService.getObjectEntry(
-				testrayBuildId);
-
-			Map<String, Serializable> values = objectEntry.getValues();
-
-			values.put("importStatus", "INPROGRESS");
-
-			_objectEntryLocalService.updateObjectEntry(
-				userId, objectEntry.getObjectEntryId(), values,
-				new ServiceContext());
+			_patchObjectEntry(
+				Collections.singletonMap("importStatus", "INPROGRESS"),
+				testrayBuildId, userId);
 
 			return testrayBuildId;
 		}
@@ -1772,6 +1794,22 @@ public class TestrayManagerImpl implements TestrayManager {
 						values.get("r_projectToTeams_c_projectIds"))),
 				GetterUtil.getLong(values.get("c_teamId")));
 		}
+	}
+
+	private ObjectEntry _patchObjectEntry(
+			Map<String, Serializable> map, long objectEntryId, long userId)
+		throws Exception {
+
+		ObjectEntry objectEntry = _objectEntryLocalService.getObjectEntry(
+			objectEntryId);
+
+		Map<String, Serializable> values = objectEntry.getValues();
+
+		values.putAll(map);
+
+		return _objectEntryLocalService.updateObjectEntry(
+			userId, objectEntry.getObjectEntryId(), values,
+			new ServiceContext());
 	}
 
 	private ObjectEntry _updateObjectEntry(

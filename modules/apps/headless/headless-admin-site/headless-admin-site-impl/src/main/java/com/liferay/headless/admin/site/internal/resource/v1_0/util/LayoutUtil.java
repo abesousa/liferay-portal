@@ -81,7 +81,8 @@ public class LayoutUtil {
 		}
 
 		return updateLayout(
-			contentPageSpecification, draftLayout, serviceContext);
+			contentPageSpecification, draftLayout,
+			WorkflowConstants.STATUS_DRAFT, serviceContext);
 	}
 
 	public static boolean isPublished(Layout layout) {
@@ -104,7 +105,7 @@ public class LayoutUtil {
 
 	public static Layout updateLayout(
 			ContentPageSpecification contentPageSpecification, Layout layout,
-			ServiceContext serviceContext)
+			int status, ServiceContext serviceContext)
 		throws Exception {
 
 		updateLayout(
@@ -114,8 +115,8 @@ public class LayoutUtil {
 			layout, contentPageSpecification.getPageExperiences());
 
 		return LayoutLocalServiceUtil.updateStatus(
-			serviceContext.getUserId(), layout.getPlid(),
-			WorkflowConstants.STATUS_DRAFT, serviceContext);
+			serviceContext.getUserId(), layout.getPlid(), status,
+			serviceContext);
 	}
 
 	public static Layout updateLayout(
@@ -276,7 +277,7 @@ public class LayoutUtil {
 		return styleBookEntry.getStyleBookEntryId();
 	}
 
-	private static void _updateLayoutPageTemplateStructureData(
+	private static void _updateLayoutContent(
 			Layout layout, PageExperience pageExperience,
 			SegmentsExperience segmentsExperience)
 		throws Exception {
@@ -309,12 +310,9 @@ public class LayoutUtil {
 			_addChildPageElements(newLayoutStructure, pageElement);
 		}
 
-		LayoutPageTemplateStructureLocalServiceUtil.
-			updateLayoutPageTemplateStructureData(
-				layoutPageTemplateStructure.getGroupId(),
-				layoutPageTemplateStructure.getPlid(),
-				segmentsExperience.getSegmentsExperienceId(),
-				newLayoutStructure.toString());
+		LayoutLocalServiceUtil.updateLayoutContent(
+			newLayoutStructure.toString(), layout,
+			segmentsExperience.getSegmentsExperienceId());
 	}
 
 	private static Layout _updateLookAndFeel(Layout layout, Settings settings)
@@ -446,7 +444,7 @@ public class LayoutUtil {
 		}
 
 		for (PageExperience pageExperience : pageExperiences) {
-			_updateLayoutPageTemplateStructureData(
+			_updateLayoutContent(
 				layout, pageExperience,
 				segmentsExperiencesMap.get(
 					pageExperience.getExternalReferenceCode()));

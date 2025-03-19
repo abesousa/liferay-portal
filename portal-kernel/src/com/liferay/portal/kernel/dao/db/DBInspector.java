@@ -7,8 +7,10 @@ package com.liferay.portal.kernel.dao.db;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -291,6 +293,11 @@ public class DBInspector {
 		}
 
 		return false;
+	}
+
+	public boolean isObjectTable(String tableName) {
+		return isObjectTable(
+			ListUtil.fromArray(PortalInstancePool.getCompanyIds()), tableName);
 	}
 
 	public boolean isPartitionedControlTable(String tableName) {

@@ -9,9 +9,11 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.entry.folder.util.ObjectEntryFolderThreadLocal;
 import com.liferay.object.exception.DuplicateObjectEntryFolderExternalReferenceCodeException;
 import com.liferay.object.exception.ObjectEntryFolderNameException;
 import com.liferay.object.exception.ObjectEntryFolderScopeException;
+import com.liferay.object.exception.RequiredObjectEntryFolderException;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
@@ -19,6 +21,7 @@ import com.liferay.object.model.ObjectEntryFolder;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryFolderLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.AssertUtils;
@@ -145,6 +148,9 @@ public class ObjectEntryFolderLocalServiceTest {
 
 	@Test
 	public void testDeleteObjectEntryFolder() throws Exception {
+
+		// Object entry folder
+
 		ObjectEntryFolder objectEntryFolder1 = _addObjectEntryFolder(
 			StringUtil.randomString(), _group.getGroupId(),
 			StringUtil.randomString(),
@@ -177,6 +183,49 @@ public class ObjectEntryFolderLocalServiceTest {
 		Assert.assertNull(
 			_objectEntryFolderLocalService.fetchObjectEntryFolder(
 				objectEntryFolder3.getObjectEntryFolderId()));
+
+		// System object entry folder
+
+		String externalReferenceCode =
+			ObjectEntryFolderConstants.
+				EXTERNAL_REFERENCE_CODE_PREFIX_SYSTEM_OBJECT_ENTRY_FOLDER +
+					StringUtil.randomString();
+
+		AssertUtils.assertFailure(
+			RequiredObjectEntryFolderException.class,
+			"System object entry folder " + externalReferenceCode +
+				" cannot be deleted",
+			() -> {
+				ObjectEntryFolder systemObjectEntryFolder =
+					_addObjectEntryFolder(
+						externalReferenceCode, _group.getGroupId(),
+						StringUtil.randomString(),
+						ObjectEntryFolderConstants.
+							PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT);
+
+				_objectEntryFolderLocalService.deleteObjectEntryFolder(
+					systemObjectEntryFolder.getObjectEntryFolderId());
+			});
+
+		ObjectEntryFolder systemObjectEntryFolder = _addObjectEntryFolder(
+			ObjectEntryFolderConstants.
+				EXTERNAL_REFERENCE_CODE_PREFIX_SYSTEM_OBJECT_ENTRY_FOLDER +
+					StringUtil.randomString(),
+			_group.getGroupId(), StringUtil.randomString(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT);
+
+		try (SafeCloseable safeCloseable =
+				ObjectEntryFolderThreadLocal.
+					setForceDeleteSystemObjectEntryFolderWithSafeCloseable(
+						true)) {
+
+			_objectEntryFolderLocalService.deleteObjectEntryFolder(
+				systemObjectEntryFolder.getObjectEntryFolderId());
+		}
+
+		Assert.assertNull(
+			_objectEntryFolderLocalService.fetchObjectEntryFolder(
+				systemObjectEntryFolder.getObjectEntryFolderId()));
 	}
 
 	@Test

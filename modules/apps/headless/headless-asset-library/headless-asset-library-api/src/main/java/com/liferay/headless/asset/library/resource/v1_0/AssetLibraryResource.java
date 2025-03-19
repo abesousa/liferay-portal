@@ -6,8 +6,6 @@
 package com.liferay.headless.asset.library.resource.v1_0;
 
 import com.liferay.headless.asset.library.dto.v1_0.AssetLibrary;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -16,6 +14,8 @@ import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
 import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.util.Collections;
 import java.util.List;
@@ -43,15 +43,30 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface AssetLibraryResource {
 
+	public Page<AssetLibrary> getAssetLibrariesPage(
+			String keywords, String search,
+			com.liferay.portal.kernel.search.filter.Filter filter,
+			Pagination pagination,
+			com.liferay.portal.kernel.search.Sort[] sorts)
+		throws Exception;
+
 	public AssetLibrary postAssetLibrary(AssetLibrary assetLibrary)
 		throws Exception;
 
-	public void deleteAssetLibraryBySite(Long siteId) throws Exception;
+	public void deleteAssetLibraryByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception;
 
-	public AssetLibrary getAssetLibraryBySite(Long siteId) throws Exception;
+	public AssetLibrary getAssetLibraryByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception;
 
-	public AssetLibrary patchAssetLibraryBySite(
-			Long siteId, AssetLibrary assetLibrary)
+	public AssetLibrary patchAssetLibraryByExternalReferenceCode(
+			String externalReferenceCode, AssetLibrary assetLibrary)
+		throws Exception;
+
+	public AssetLibrary putAssetLibraryByExternalReferenceCode(
+			String externalReferenceCode, AssetLibrary assetLibrary)
 		throws Exception;
 
 	public void deleteAssetLibrary(Long assetLibraryId) throws Exception;
@@ -60,30 +75,6 @@ public interface AssetLibraryResource {
 
 	public AssetLibrary patchAssetLibrary(
 			Long assetLibraryId, AssetLibrary assetLibrary)
-		throws Exception;
-
-	public AssetLibrary deleteAssetLibraryLinkToSite(
-			Long assetLibraryId, Long toSiteId)
-		throws Exception;
-
-	public AssetLibrary postAssetLibraryLinkToSite(
-			Long assetLibraryId, Long toSiteId)
-		throws Exception;
-
-	public AssetLibrary deleteAssetLibraryUserAccountUser(
-			Long assetLibraryId, Long userId)
-		throws Exception;
-
-	public AssetLibrary postAssetLibraryUserAccountUser(
-			Long assetLibraryId, Long userId)
-		throws Exception;
-
-	public AssetLibrary deleteAssetLibraryUserGroup(
-			Long assetLibraryId, Long userGroupId)
-		throws Exception;
-
-	public AssetLibrary postAssetLibraryUserGroup(
-			Long assetLibraryId, Long userGroupId)
 		throws Exception;
 
 	public default void setContextAcceptLanguage(
@@ -108,7 +99,8 @@ public interface AssetLibraryResource {
 		com.liferay.portal.kernel.model.User contextUser);
 
 	public void setExpressionConvert(
-		ExpressionConvert<Filter> expressionConvert);
+		ExpressionConvert<com.liferay.portal.kernel.search.filter.Filter>
+			expressionConvert);
 
 	public void setFilterParserProvider(
 		FilterParserProvider filterParserProvider);
@@ -125,19 +117,23 @@ public interface AssetLibraryResource {
 
 	public void setSortParserProvider(SortParserProvider sortParserProvider);
 
-	public default Filter toFilter(String filterString) {
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(
+		String filterString) {
+
 		return toFilter(
 			filterString, Collections.<String, List<String>>emptyMap());
 	}
 
-	public default Filter toFilter(
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
 
 		return null;
 	}
 
-	public default Sort[] toSorts(String sortsString) {
-		return new Sort[0];
+	public default com.liferay.portal.kernel.search.Sort[] toSorts(
+		String sortsString) {
+
+		return new com.liferay.portal.kernel.search.Sort[0];
 	}
 
 	@ProviderType
