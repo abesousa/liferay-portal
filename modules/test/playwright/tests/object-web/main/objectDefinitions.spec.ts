@@ -542,7 +542,7 @@ test.describe('Manage object definitions through Model Builder', () => {
 					en_US: 'Department',
 					pt_BR: 'Departamento',
 				},
-				name: 'Department',
+				name: 'Department' + getRandomInt(),
 				objectFields: createObjectFields('text', [
 					{
 						label: 'Name',
@@ -570,7 +570,7 @@ test.describe('Manage object definitions through Model Builder', () => {
 					en_US: 'Employee',
 					pt_BR: 'Funcionario',
 				},
-				name: 'Employee',
+				name: 'Employee' + getRandomInt(),
 				objectFolderExternalReferenceCode:
 					objectFolder.externalReferenceCode,
 				panelCategoryKey: 'site_administration.design',

@@ -74,4 +74,23 @@ export class ListTypeAdminApiHelper {
 			{data: requestBody}
 		);
 	}
+
+	async postSystemListTypeDefinition(): Promise<ListTypeDefinition> {
+		const listTypeDefinitionExternalReferenceCode =
+			'ListTypeDefinition' + getRandomInt();
+
+		const requestBody = {
+			externalReferenceCode: listTypeDefinitionExternalReferenceCode,
+			name: listTypeDefinitionExternalReferenceCode,
+			name_i18n: {
+				en_US: listTypeDefinitionExternalReferenceCode,
+			},
+			system: true,
+		};
+
+		return this.apiHelpers.post(
+			`${this.apiHelpers.baseUrl}${this.basePath}/list-type-definitions`,
+			{data: requestBody}
+		);
+	}
 }

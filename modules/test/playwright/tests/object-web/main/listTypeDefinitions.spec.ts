@@ -38,7 +38,6 @@ export const testSystemPicklist = mergeTests(
 	test,
 	featureFlagsTest({
 		'LPD-24055': {enabled: true},
-		'LPS-178642': {enabled: true},
 	})
 );
 
@@ -528,10 +527,13 @@ test.describe('ensure picklist translation', () => {
 
 testSystemPicklist(
 	'can create, edit and delete a custom item in a system picklist',
-	async ({listTypeDefinitionPage, page}) => {
-		await listTypeDefinitionPage.goto();
+	async ({apiHelpers, listTypeDefinitionPage, page}) => {
+		const systemPicklist: ListTypeDefinition =
+			await apiHelpers.listTypeAdmin.postSystemListTypeDefinition();
 
-		const systemPicklistName = 'Scope';
+		const systemPicklistName: string = systemPicklist.name;
+
+		await listTypeDefinitionPage.goto();
 
 		await page.getByRole('link', {name: systemPicklistName}).click();
 
