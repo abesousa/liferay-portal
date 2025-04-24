@@ -70,6 +70,8 @@ public interface DestinationNames {
 
 	public static final String MAIL = "liferay/mail";
 
+	public static final String MAIL_SENT = "liferay/mail_sent";
+
 	public static final String MESSAGE_BOARDS_MAILING_LIST =
 		"liferay/message_boards_mailing_list";
 

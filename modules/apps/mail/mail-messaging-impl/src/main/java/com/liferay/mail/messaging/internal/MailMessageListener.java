@@ -12,6 +12,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBusUtil;
 import com.liferay.portal.kernel.messaging.MessageListener;
 import com.liferay.portal.kernel.security.auth.EmailAddressGenerator;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -94,6 +95,8 @@ public class MailMessageListener extends BaseMessageListener {
 			ArrayUtil.isNotEmpty(bcc) || ArrayUtil.isNotEmpty(bulkAddresses)) {
 
 			MailEngine.send(mailMessage);
+
+			MessageBusUtil.sendMessage(DestinationNames.MAIL_SENT, mailMessage);
 		}
 	}
 

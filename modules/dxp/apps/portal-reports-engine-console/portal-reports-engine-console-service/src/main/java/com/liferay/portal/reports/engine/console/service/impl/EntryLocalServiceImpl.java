@@ -8,8 +8,6 @@ package com.liferay.portal.reports.engine.console.service.impl;
 import com.liferay.document.library.kernel.store.Store;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.petra.memory.DeleteFileFinalizeAction;
-import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
@@ -53,6 +51,7 @@ import com.liferay.portal.reports.engine.console.exception.DefinitionNameExcepti
 import com.liferay.portal.reports.engine.console.exception.EntryEmailDeliveryException;
 import com.liferay.portal.reports.engine.console.exception.EntryEmailNotificationsException;
 import com.liferay.portal.reports.engine.console.internal.constants.ReportsEngineDestinationNames;
+import com.liferay.portal.reports.engine.console.internal.messaging.MailSentMessageListener;
 import com.liferay.portal.reports.engine.console.internal.util.ReportsEngineConsoleSubscriptionSender;
 import com.liferay.portal.reports.engine.console.model.Definition;
 import com.liferay.portal.reports.engine.console.model.Entry;
@@ -523,10 +522,7 @@ public class EntryLocalServiceImpl extends EntryLocalServiceBaseImpl {
 		if (!notification) {
 			File file = _getTemporaryReportFile(entry, fileName, notification);
 
-			FinalizeManager.register(
-				subscriptionSender,
-				new DeleteFileFinalizeAction(file.getAbsolutePath()),
-				FinalizeManager.PHANTOM_REFERENCE_FACTORY);
+			MailSentMessageListener.registerFile(file);
 
 			subscriptionSender.addFileAttachment(file, reportName);
 		}
