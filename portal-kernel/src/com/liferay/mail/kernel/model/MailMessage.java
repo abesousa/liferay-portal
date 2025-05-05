@@ -63,6 +63,14 @@ public class MailMessage implements Serializable {
 		_fileAttachments.add(fileAttachment);
 	}
 
+	public void addFileAttachment(FileAttachment fileAttachment) {
+		if (fileAttachment == null) {
+			return;
+		}
+
+		_fileAttachments.add(fileAttachment);
+	}
+
 	public InternetAddress[] getBCC() {
 		return _bcc;
 	}
