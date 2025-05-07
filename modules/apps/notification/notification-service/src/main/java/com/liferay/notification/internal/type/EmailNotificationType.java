@@ -14,6 +14,7 @@ import com.liferay.info.field.type.RelationshipInfoFieldType;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
+import com.liferay.mail.kernel.model.FileAttachment;
 import com.liferay.mail.kernel.model.MailMessage;
 import com.liferay.notification.constants.NotificationConstants;
 import com.liferay.notification.constants.NotificationQueueEntryConstants;
@@ -72,7 +73,6 @@ import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.templateparser.TemplateNode;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.KeyValuePair;
@@ -513,8 +513,8 @@ public class EmailNotificationType extends BaseNotificationType {
 						notificationQueueEntryAttachment.getFileEntryId());
 
 				mailMessage.addFileAttachment(
-					FileUtil.createTempFile(fileEntry.getContentStream()),
-					fileEntry.getFileName());
+					new FileAttachment(
+						fileEntry.getFileName(), fileEntry.getContentStream()));
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
