@@ -10,6 +10,7 @@ import com.liferay.commerce.notification.model.CommerceNotificationQueueEntry;
 import com.liferay.commerce.notification.service.CommerceNotificationAttachmentLocalService;
 import com.liferay.commerce.notification.service.base.CommerceNotificationQueueEntryLocalServiceBaseImpl;
 import com.liferay.commerce.notification.util.comparator.CommerceNotificationAttachmentCreateDateComparator;
+import com.liferay.mail.kernel.model.FileAttachment;
 import com.liferay.mail.kernel.model.MailMessage;
 import com.liferay.mail.kernel.service.MailService;
 import com.liferay.petra.string.StringPool;
@@ -26,7 +27,6 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 
@@ -254,8 +254,8 @@ public class CommerceNotificationQueueEntryLocalServiceImpl
 					commerceNotificationAttachment.getFileEntry();
 
 				mailMessage.addFileAttachment(
-					_file.createTempFile(fileEntry.getContentStream()),
-					fileEntry.getFileName());
+					new FileAttachment(
+						fileEntry.getFileName(), fileEntry.getContentStream()));
 			}
 
 			List<InternetAddress> bccInternetAddresses = new ArrayList<>();
@@ -357,9 +357,6 @@ public class CommerceNotificationQueueEntryLocalServiceImpl
 	@Reference
 	private CommerceNotificationAttachmentLocalService
 		_commerceNotificationAttachmentLocalService;
-
-	@Reference
-	private File _file;
 
 	@Reference
 	private MailService _mailService;
