@@ -75,6 +75,14 @@ public class ListTypeEntryServiceUtil {
 			externalReferenceCode, companyId, listTypeDefinitionId);
 	}
 
+	public static ListTypeEntry getOrAddIncompleteListTypeEntry(
+			long userId, long listTypeDefinitionId, String key)
+		throws PortalException {
+
+		return getService().getOrAddIncompleteListTypeEntry(
+			userId, listTypeDefinitionId, key);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *

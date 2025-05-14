@@ -291,6 +291,49 @@ public class ListTypeEntryServiceHttp {
 		}
 	}
 
+	public static com.liferay.list.type.model.ListTypeEntry
+			getOrAddIncompleteListTypeEntry(
+				HttpPrincipal httpPrincipal, long userId,
+				long listTypeDefinitionId, String key)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				ListTypeEntryServiceUtil.class,
+				"getOrAddIncompleteListTypeEntry",
+				_getOrAddIncompleteListTypeEntryParameterTypes6);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, userId, listTypeDefinitionId, key);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.list.type.model.ListTypeEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.list.type.model.ListTypeEntry updateListTypeEntry(
 			HttpPrincipal httpPrincipal, String externalReferenceCode,
 			long listTypeEntryId,
@@ -300,7 +343,7 @@ public class ListTypeEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				ListTypeEntryServiceUtil.class, "updateListTypeEntry",
-				_updateListTypeEntryParameterTypes6);
+				_updateListTypeEntryParameterTypes7);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, externalReferenceCode, listTypeEntryId, nameMap);
@@ -353,7 +396,11 @@ public class ListTypeEntryServiceHttp {
 		_getListTypeEntryByExternalReferenceCodeParameterTypes5 = new Class[] {
 			String.class, long.class, long.class
 		};
-	private static final Class<?>[] _updateListTypeEntryParameterTypes6 =
+	private static final Class<?>[]
+		_getOrAddIncompleteListTypeEntryParameterTypes6 = new Class[] {
+			long.class, long.class, String.class
+		};
+	private static final Class<?>[] _updateListTypeEntryParameterTypes7 =
 		new Class[] {String.class, long.class, java.util.Map.class};
 
 }
