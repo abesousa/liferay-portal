@@ -121,6 +121,23 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 	}
 
 	@Override
+	public ListTypeEntry getOrAddIncompleteListTypeEntry(
+			long userId, long listTypeDefinitionId, String key)
+		throws PortalException {
+
+		ListTypeDefinition listTypeDefinition =
+			_listTypeDefinitionPersistence.findByPrimaryKey(
+				listTypeDefinitionId);
+
+		_listTypeDefinitionModelResourcePermission.check(
+			getPermissionChecker(),
+			listTypeDefinition.getListTypeDefinitionId(), ActionKeys.UPDATE);
+
+		return listTypeEntryLocalService.getOrAddIncompleteListTypeEntry(
+			userId, listTypeDefinitionId, key);
+	}
+
+	@Override
 	public ListTypeEntry updateListTypeEntry(
 			String externalReferenceCode, long listTypeEntryId,
 			Map<Locale, String> nameMap)
