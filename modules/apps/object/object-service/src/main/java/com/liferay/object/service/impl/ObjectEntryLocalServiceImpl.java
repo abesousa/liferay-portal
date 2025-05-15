@@ -24,8 +24,10 @@ import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
 import com.liferay.dynamic.data.mapping.util.NumberUtil;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.list.type.exception.NoSuchListTypeEntryException;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeEntryLocalService;
+import com.liferay.list.type.service.ListTypeEntryService;
 import com.liferay.object.action.engine.ObjectActionEngine;
 import com.liferay.object.action.util.ObjectActionThreadLocal;
 import com.liferay.object.configuration.ObjectConfiguration;
@@ -5793,14 +5795,21 @@ public class ObjectEntryLocalServiceImpl
 			List<ValidationError> validationErrors)
 		throws PortalException {
 
-		ListTypeEntry listTypeEntry =
-			_listTypeEntryLocalService.fetchListTypeEntry(
-				objectField.getListTypeDefinitionId(), listTypeEntryKey);
-
-		if ((listTypeEntry == null) && Validator.isNotNull(listTypeEntryKey)) {
+		try {
+			_listTypeEntryService.getOrAddIncompleteListTypeEntry(
+				objectField.getUserId(), objectField.getListTypeDefinitionId(),
+				listTypeEntryKey);
+		}
+		catch (NoSuchListTypeEntryException noSuchListTypeEntryException) {
 			_handle(
 				new ObjectEntryValuesException.ListTypeEntry(
-					objectField.getName()),
+					noSuchListTypeEntryException, objectField.getName()),
+				validationErrors);
+		}
+		catch (PrincipalException.MustHavePermission principalException) {
+			_handle(
+				new ObjectEntryValuesException.MustHavePermission(
+					principalException.getMessage()),
 				validationErrors);
 		}
 	}
@@ -6528,6 +6537,9 @@ public class ObjectEntryLocalServiceImpl
 
 	@Reference
 	private ListTypeEntryLocalService _listTypeEntryLocalService;
+
+	@Reference
+	private ListTypeEntryService _listTypeEntryService;
 
 	@Reference
 	private Localization _localization;

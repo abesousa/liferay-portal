@@ -5,6 +5,7 @@
 
 package com.liferay.object.exception;
 
+import com.liferay.list.type.exception.NoSuchListTypeEntryException;
 import com.liferay.object.model.ObjectState;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -266,21 +267,39 @@ public class ObjectEntryValuesException extends PortalException {
 
 	public static class ListTypeEntry extends ObjectEntryValuesException {
 
-		public ListTypeEntry(String objectFieldName) {
+		public ListTypeEntry(
+			NoSuchListTypeEntryException noSuchListTypeEntryException,
+			String objectFieldName) {
+
 			super(
 				String.format(
 					"Object field name \"%s\" is not mapped to a valid list " +
 						"type entry",
 					objectFieldName));
 
+			_noSuchListTypeEntryException = noSuchListTypeEntryException;
 			_objectFieldName = objectFieldName;
+		}
+
+		public NoSuchListTypeEntryException getNoSuchListTypeEntryException() {
+			return _noSuchListTypeEntryException;
 		}
 
 		public String getObjectFieldName() {
 			return _objectFieldName;
 		}
 
+		private final NoSuchListTypeEntryException
+			_noSuchListTypeEntryException;
 		private final String _objectFieldName;
+
+	}
+
+	public static class MustHavePermission extends ObjectEntryValuesException {
+
+		public MustHavePermission(String message) {
+			super(message);
+		}
 
 	}
 
