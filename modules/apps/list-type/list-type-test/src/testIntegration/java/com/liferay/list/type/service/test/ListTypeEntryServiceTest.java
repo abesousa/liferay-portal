@@ -11,6 +11,8 @@ import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeDefinitionLocalService;
 import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.list.type.service.ListTypeEntryService;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
@@ -18,11 +20,13 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -143,6 +147,25 @@ public class ListTypeEntryServiceTest {
 	}
 
 	@Test
+	@TestInfo("LPD-55656")
+	public void testGetOrAddIncompleteListTypeEntry() throws Exception {
+		try {
+			_testGetOrAddIncompleteListTypeEntry(_guestUser);
+			Assert.fail();
+		}
+		catch (PrincipalException.MustHavePermission principalException) {
+			String message = principalException.getMessage();
+
+			Assert.assertTrue(
+				message.contains(
+					"User " + _guestUser.getUserId() +
+						" must have UPDATE permission for"));
+		}
+
+		_testGetOrAddIncompleteListTypeEntry(_user);
+	}
+
+	@Test
 	public void testUpdateListTypeEntry() throws Exception {
 		try {
 			_testUpdateListTypeEntry(_guestUser);
@@ -249,6 +272,32 @@ public class ListTypeEntryServiceTest {
 				listTypeEntry.getExternalReferenceCode(),
 				listTypeEntry.getCompanyId(),
 				_listTypeDefinition.getListTypeDefinitionId());
+		}
+		finally {
+			if (listTypeEntry != null) {
+				_listTypeEntryLocalService.deleteListTypeEntry(listTypeEntry);
+			}
+		}
+	}
+
+	private void _testGetOrAddIncompleteListTypeEntry(User user)
+		throws Exception {
+
+		ListTypeEntry listTypeEntry = null;
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			_setUser(user);
+
+			listTypeEntry =
+				_listTypeEntryService.getOrAddIncompleteListTypeEntry(
+					user.getUserId(),
+					_listTypeDefinition.getListTypeDefinitionId(),
+					RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_INCOMPLETE, listTypeEntry.getStatus());
 		}
 		finally {
 			if (listTypeEntry != null) {
