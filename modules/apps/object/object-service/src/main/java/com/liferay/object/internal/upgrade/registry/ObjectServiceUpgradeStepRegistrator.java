@@ -628,6 +628,18 @@ public class ObjectServiceUpgradeStepRegistrator
 			"10.18.0", "10.19.0",
 			new com.liferay.object.internal.upgrade.v10_19_0.
 				ObjectDefinitionUpgradeProcess());
+
+		registry.register(
+			"10.19.0", "10.20.0",
+			new com.liferay.object.internal.upgrade.v10_20_0.
+				ObjectFieldUpgradeProcess());
+
+		registry.register(
+			"10.20.0", "10.21.0",
+			UpgradeProcessFactory.addColumns(
+				"ObjectEntryFolder", "status INTEGER"),
+			UpgradeProcessFactory.runSQL(
+				"update ObjectEntryFolder set status = 0"));
 	}
 
 	@Reference
