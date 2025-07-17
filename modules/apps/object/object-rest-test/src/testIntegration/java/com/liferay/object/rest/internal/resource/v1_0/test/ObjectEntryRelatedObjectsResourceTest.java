@@ -20,6 +20,7 @@ import com.liferay.object.rest.test.util.ObjectFieldTestUtil;
 import com.liferay.object.rest.test.util.ObjectRelationshipTestUtil;
 import com.liferay.object.rest.test.util.UserAccountTestUtil;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.object.system.JaxRsApplicationDescriptor;
@@ -40,6 +41,7 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -632,6 +634,99 @@ public class ObjectEntryRelatedObjectsResourceTest {
 						Http.Method.GET));
 			}
 		);
+	}
+
+	@Test
+	@TestInfo("LPD-60423")
+	public void testExportAndImportRelatedObjectEntryWithDifferentScope()
+		throws Exception {
+
+		ObjectRelationship objectRelationship1 = _addObjectRelationship(
+			_objectDefinition1, _objectDefinition2,
+			_objectEntry1.getPrimaryKey(), _objectEntry2.getPrimaryKey(),
+			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
+
+		ObjectDefinition siteScopedObjectDefinition =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				Collections.singletonList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						RandomTestUtil.randomString(), _OBJECT_FIELD_NAME_1,
+						false)),
+				ObjectDefinitionConstants.SCOPE_SITE);
+
+		_objectDefinitions.add(siteScopedObjectDefinition);
+
+		ObjectEntry objectEntry3 = ObjectEntryTestUtil.addObjectEntry(
+			siteScopedObjectDefinition, _OBJECT_FIELD_NAME_1,
+			_OBJECT_FIELD_VALUE_2);
+
+		ObjectRelationship objectRelationship2 = _addObjectRelationship(
+			_objectDefinition1, siteScopedObjectDefinition,
+			_objectEntry1.getPrimaryKey(), objectEntry3.getPrimaryKey(),
+			ObjectRelationshipConstants.TYPE_MANY_TO_MANY);
+
+		JSONObject objectEntryExportJSONObject =
+			HTTPTestUtil.invokeToJSONObject(
+				null,
+				_getEndpoint(
+					String.valueOf(objectEntry3.getObjectEntryId()),
+					objectRelationship2, siteScopedObjectDefinition),
+				Http.Method.GET);
+
+		objectEntryExportJSONObject.remove("actions");
+
+		_objectEntryLocalService.deleteObjectEntry(objectEntry3);
+
+		JSONObject importedObjectEntryJSONObject =
+			HTTPTestUtil.invokeToJSONObject(
+				objectEntryExportJSONObject.toString(),
+				_getSiteScopedObjectDefinitionEndpoint(
+					siteScopedObjectDefinition, TestPropsValues.getGroupId()),
+				Http.Method.POST);
+
+		Assert.assertEquals(
+			0,
+			importedObjectEntryJSONObject.getJSONObject(
+				"status"
+			).get(
+				"code"
+			));
+
+		JSONObject nestedObjectEntryJSONObject =
+			HTTPTestUtil.invokeToJSONObject(
+				null,
+				_getEndpointNestedObjectEntry(
+					siteScopedObjectDefinition,
+					importedObjectEntryJSONObject.getLong("id"),
+					objectRelationship2.getName(),
+					objectRelationship1.getName()),
+				Http.Method.GET);
+
+		JSONArray objectEntry1JSONArray =
+			nestedObjectEntryJSONObject.getJSONArray("items");
+
+		Assert.assertNotNull(objectEntry1JSONArray);
+
+		JSONObject objectEntry1JSONObject = objectEntry1JSONArray.getJSONObject(
+			0);
+
+		Assert.assertEquals(
+			_objectEntry1.getExternalReferenceCode(),
+			objectEntry1JSONObject.get("externalReferenceCode"));
+
+		JSONArray objectEntry2JSONArray = objectEntry1JSONObject.getJSONArray(
+			objectRelationship1.getName());
+
+		Assert.assertNotNull(objectEntry2JSONArray);
+
+		JSONObject objectEntry2JSONObject = objectEntry2JSONArray.getJSONObject(
+			0);
+
+		Assert.assertEquals(
+			_objectEntry2.getExternalReferenceCode(),
+			objectEntry2JSONObject.get("externalReferenceCode"));
 	}
 
 	@Test
@@ -1566,6 +1661,23 @@ public class ObjectEntryRelatedObjectsResourceTest {
 			objectEntryId, "?nestedFields=", objectRelationship.getName());
 	}
 
+	private String _getEndpointNestedObjectEntry(
+		ObjectDefinition objectDefinition, long objectEntryId,
+		String endPointRelationshipName, String nestedRelationshipName) {
+
+		return StringBundler.concat(
+			objectDefinition.getRESTContextPath(), StringPool.SLASH,
+			objectEntryId, StringPool.SLASH, endPointRelationshipName,
+			"?nestedFields=", nestedRelationshipName);
+	}
+
+	private String _getSiteScopedObjectDefinitionEndpoint(
+		ObjectDefinition objectDefinition, long groupId) {
+
+		return StringBundler.concat(
+			objectDefinition.getRESTContextPath(), "/scopes/", groupId);
+	}
+
 	private String _getSystemObjectEntryId(
 			String customObjectEntryId, boolean manyToOne,
 			ObjectRelationship objectRelationship)
@@ -2127,6 +2239,9 @@ public class ObjectEntryRelatedObjectsResourceTest {
 	private ObjectEntry _objectEntry2;
 	private ObjectEntry _objectEntry3;
 	private ObjectEntry _objectEntry4;
+
+	@Inject
+	private ObjectEntryLocalService _objectEntryLocalService;
 
 	@Inject
 	private ObjectFieldLocalService _objectFieldLocalService;
