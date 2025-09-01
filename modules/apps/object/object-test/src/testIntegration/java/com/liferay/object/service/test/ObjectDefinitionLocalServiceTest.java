@@ -78,6 +78,7 @@ import com.liferay.object.test.util.TreeTestUtil;
 import com.liferay.object.tree.Node;
 import com.liferay.object.tree.ObjectDefinitionTreeFactory;
 import com.liferay.object.tree.Tree;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
@@ -95,6 +96,7 @@ import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.User;
@@ -102,6 +104,8 @@ import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.UserNotificationDeliveryConstants;
 import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.model.UserNotificationEventTable;
+import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
+import com.liferay.portal.kernel.model.WorkflowDefinitionLinkModel;
 import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -114,10 +118,13 @@ import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -132,6 +139,7 @@ import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.language.override.model.PLOEntry;
 import com.liferay.portal.language.override.service.PLOEntryLocalService;
 import com.liferay.portal.test.rule.FeatureFlag;
@@ -141,6 +149,8 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+import com.liferay.portal.workflow.constants.WorkflowDefinitionConstants;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 import com.liferay.sharing.security.permission.SharingEntryAction;
 import com.liferay.sharing.service.SharingEntryLocalService;
 
@@ -945,6 +955,72 @@ public class ObjectDefinitionLocalServiceTest {
 
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition1);
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition2);
+	}
+
+	@FeatureFlag("LPD-17564")
+	@Test
+	@TestInfo("LPD-63539")
+	public void testAddObjectDefinitionWithWorkflowDefinitionLinks()
+		throws Exception {
+
+		// Company Scope
+
+		WorkflowDefinition workflowDefinition1 =
+			_workflowDefinitionManager.getWorkflowDefinition(
+				WorkflowDefinitionConstants.
+					EXTERNAL_REFERENCE_CODE_SINGLE_APPROVER,
+				TestPropsValues.getCompanyId());
+
+		List<WorkflowDefinitionLink> workflowDefinitionLinks = Arrays.asList(
+			_createWorkflowDefinitionLink(0, workflowDefinition1.getName()));
+
+		ObjectDefinition objectDefinition = _addObjectDefiniton(
+			ObjectDefinitionConstants.SCOPE_COMPANY, workflowDefinitionLinks);
+
+		_assertWorkflowDefinitionLinks(
+			objectDefinition, workflowDefinitionLinks);
+
+		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
+
+		// Site scope
+
+		Group group1 = GroupTestUtil.addGroup();
+
+		String content = workflowDefinition1.getContentAsXML();
+
+		WorkflowDefinition workflowDefinition2 =
+			_workflowDefinitionManager.deployWorkflowDefinition(
+				null, TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), content.getBytes());
+
+		AssertUtils.assertFailure(
+			PortalException.class,
+			"Duplicated Workflow assignment for group id: " +
+				group1.getGroupId(),
+			() -> _addObjectDefiniton(
+				ObjectDefinitionConstants.SCOPE_SITE,
+				Arrays.asList(
+					_createWorkflowDefinitionLink(
+						group1.getGroupId(), workflowDefinition1.getName()),
+					_createWorkflowDefinitionLink(
+						group1.getGroupId(), workflowDefinition2.getName()))));
+
+		Group group2 = GroupTestUtil.addGroup();
+
+		workflowDefinitionLinks = Arrays.asList(
+			_createWorkflowDefinitionLink(
+				group1.getGroupId(), workflowDefinition1.getName()),
+			_createWorkflowDefinitionLink(
+				group2.getGroupId(), workflowDefinition2.getName()));
+
+		objectDefinition = _addObjectDefiniton(
+			ObjectDefinitionConstants.SCOPE_SITE, workflowDefinitionLinks);
+
+		_assertWorkflowDefinitionLinks(
+			objectDefinition, workflowDefinitionLinks);
+
+		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
 	}
 
 	@Test
@@ -2784,6 +2860,59 @@ public class ObjectDefinitionLocalServiceTest {
 			unmodifiableSystemObjectDefinition);
 	}
 
+	@FeatureFlag("LPD-17564")
+	@Test
+	@TestInfo("LPD-63539")
+	public void testUpdateObjectDefinitionWithWorkflowDefinitionLinks()
+		throws Exception {
+
+		WorkflowDefinition workflowDefinition1 =
+			_workflowDefinitionManager.getWorkflowDefinition(
+				WorkflowDefinitionConstants.
+					EXTERNAL_REFERENCE_CODE_SINGLE_APPROVER,
+				TestPropsValues.getCompanyId());
+
+		Group group1 = GroupTestUtil.addGroup();
+
+		String content = workflowDefinition1.getContentAsXML();
+
+		WorkflowDefinition workflowDefinition2 =
+			_workflowDefinitionManager.deployWorkflowDefinition(
+				null, TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), content.getBytes());
+
+		Group group2 = GroupTestUtil.addGroup();
+
+		ObjectDefinition objectDefinition = _addObjectDefiniton(
+			ObjectDefinitionConstants.SCOPE_SITE,
+			Arrays.asList(
+				_createWorkflowDefinitionLink(
+					group1.getGroupId(), workflowDefinition1.getName()),
+				_createWorkflowDefinitionLink(
+					group2.getGroupId(), workflowDefinition2.getName())));
+
+		List<WorkflowDefinitionLink> workflowDefinitionLinks = Arrays.asList(
+			_createWorkflowDefinitionLink(
+				group1.getGroupId(), workflowDefinition1.getName()),
+			_createWorkflowDefinitionLink(
+				group2.getGroupId(), workflowDefinition1.getName()));
+
+		_updateObjectDefinition(objectDefinition, workflowDefinitionLinks);
+
+		_assertWorkflowDefinitionLinks(
+			objectDefinition, workflowDefinitionLinks);
+
+		workflowDefinitionLinks = Arrays.asList(
+			_createWorkflowDefinitionLink(
+				group1.getGroupId(), workflowDefinition1.getName()));
+
+		_updateObjectDefinition(objectDefinition, workflowDefinitionLinks);
+
+		_assertWorkflowDefinitionLinks(
+			objectDefinition, workflowDefinitionLinks);
+	}
+
 	@Test
 	public void testUpdateObjectFolderId() throws Exception {
 		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
@@ -3150,6 +3279,22 @@ public class ObjectDefinitionLocalServiceTest {
 			Collections.emptyList());
 	}
 
+	private ObjectDefinition _addObjectDefiniton(
+			String scope, List<WorkflowDefinitionLink> workflowDefinitionLinks)
+		throws PortalException {
+
+		return _objectDefinitionLocalService.addCustomObjectDefinition(
+			TestPropsValues.getUserId(), 0, null, false, false, true, false,
+			false, false, false, false,
+			FriendlyURLResolverConstants.URL_SEPARATOR_Y_OBJECT_ENTRY,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			ObjectDefinitionTestUtil.getRandomName(), null, null,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			true, scope, ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+			Collections.emptyList(), Collections.emptyList(),
+			workflowDefinitionLinks);
+	}
+
 	private ObjectFolder _addObjectFolder() throws Exception {
 		return _objectFolderLocalService.addObjectFolder(
 			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
@@ -3279,6 +3424,26 @@ public class ObjectDefinitionLocalServiceTest {
 			expectedObjectField.isState(), objectField.isState());
 	}
 
+	private void _assertWorkflowDefinitionLinks(
+		ObjectDefinition objectDefinition,
+		List<WorkflowDefinitionLink> expectedWorkflowDefinitionLinks) {
+
+		List<String> expectedWorkflowDefinitionNames = TransformUtil.transform(
+			expectedWorkflowDefinitionLinks,
+			WorkflowDefinitionLinkModel::getWorkflowDefinitionName);
+		List<String> actualWorkflowDefinitionNames = TransformUtil.transform(
+			_workflowDefinitionLinkLocalService.getWorkflowDefinitionLinks(
+				objectDefinition.getCompanyId(),
+				objectDefinition.getClassName()),
+			WorkflowDefinitionLinkModel::getWorkflowDefinitionName);
+
+		Collections.sort(expectedWorkflowDefinitionNames);
+		Collections.sort(actualWorkflowDefinitionNames);
+
+		Assert.assertEquals(
+			expectedWorkflowDefinitionNames, actualWorkflowDefinitionNames);
+	}
+
 	private ObjectAction _createObjectAction(String objectActionName) {
 		ObjectAction objectAction =
 			ObjectActionLocalServiceUtil.createObjectAction(0);
@@ -3314,6 +3479,22 @@ public class ObjectDefinitionLocalServiceTest {
 			).buildString());
 
 		return objectAction;
+	}
+
+	private WorkflowDefinitionLink _createWorkflowDefinitionLink(
+			long groupId, String workflowDefinitionName)
+		throws PortalException {
+
+		WorkflowDefinitionLink workflowDefinitionLink =
+			_workflowDefinitionLinkLocalService.createWorkflowDefinitionLink(
+				0L);
+
+		workflowDefinitionLink.setGroupId(groupId);
+		workflowDefinitionLink.setUserId(TestPropsValues.getUserId());
+		workflowDefinitionLink.setWorkflowDefinitionName(
+			workflowDefinitionName);
+
+		return workflowDefinitionLink;
 	}
 
 	private int _getObjectEntryVersionsCount(long objectDefinitionId) {
@@ -3828,6 +4009,40 @@ public class ObjectDefinitionLocalServiceTest {
 			Collections.emptyList(), Collections.emptyList());
 	}
 
+	private void _updateObjectDefinition(
+			ObjectDefinition objectDefinition,
+			List<WorkflowDefinitionLink> workflowDefinitionLinks)
+		throws Exception {
+
+		_objectDefinitionLocalService.updateCustomObjectDefinition(
+			objectDefinition.getExternalReferenceCode(),
+			objectDefinition.getObjectDefinitionId(),
+			objectDefinition.getAccountEntryRestrictedObjectFieldId(),
+			objectDefinition.getDescriptionObjectFieldId(),
+			objectDefinition.getObjectFolderId(),
+			objectDefinition.getTitleObjectFieldId(),
+			objectDefinition.isAccountEntryRestricted(),
+			objectDefinition.isActive(), objectDefinition.getClassName(),
+			objectDefinition.isEnableCategorization(),
+			objectDefinition.isEnableComments(),
+			objectDefinition.isEnableFriendlyURLCustomization(),
+			objectDefinition.isEnableIndexSearch(),
+			objectDefinition.isEnableLocalization(),
+			objectDefinition.isEnableObjectEntryDraft(),
+			objectDefinition.isEnableObjectEntryHistory(),
+			objectDefinition.isEnableObjectEntrySchedule(),
+			objectDefinition.isEnableObjectEntrySubscription(),
+			objectDefinition.isEnableObjectEntryVersioning(),
+			objectDefinition.getFriendlyURLSeparator(),
+			objectDefinition.getLabelMap(), "Test",
+			objectDefinition.getPanelAppOrder(),
+			objectDefinition.getPanelCategoryKey(),
+			objectDefinition.isPortlet(), objectDefinition.getPluralLabelMap(),
+			objectDefinition.getScope(), objectDefinition.getStatus(),
+			objectDefinition.getObjectDefinitionSettings(),
+			workflowDefinitionLinks);
+	}
+
 	private static ObjectFolder _defaultObjectFolder;
 
 	@Inject
@@ -3884,5 +4099,12 @@ public class ObjectDefinitionLocalServiceTest {
 
 	@Inject
 	private SharingEntryLocalService _sharingEntryLocalService;
+
+	@Inject
+	private WorkflowDefinitionLinkLocalService
+		_workflowDefinitionLinkLocalService;
+
+	@Inject
+	private WorkflowDefinitionManager _workflowDefinitionManager;
 
 }
