@@ -1473,7 +1473,6 @@ public class DefaultObjectEntryManagerImpl
 									String.valueOf(
 										nestedObjectEntry.get(
 											"externalReferenceCode")),
-									relatedObjectDefinition.getCompanyId(),
 									dtoConverterContext.getUser());
 
 						nestedObjectEntryId =
