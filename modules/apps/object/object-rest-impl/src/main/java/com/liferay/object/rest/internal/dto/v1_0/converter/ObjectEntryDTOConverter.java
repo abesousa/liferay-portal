@@ -82,6 +82,8 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.PermissionService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
@@ -553,6 +555,22 @@ public class ObjectEntryDTOConverter
 								_systemObjectDefinitionManagerRegistry.
 									getSystemObjectDefinitionManager(
 										objectDefinition.getName());
+
+						try {
+							systemObjectDefinitionManager.
+								checkModelResourcePermission(
+									objectDefinition.getObjectDefinitionId(),
+									PermissionThreadLocal.
+										getPermissionChecker(),
+									primaryKey, ActionKeys.VIEW);
+						}
+						catch (PrincipalException principalException) {
+							if (_log.isWarnEnabled()) {
+								_log.warn(principalException);
+							}
+
+							return (Serializable)Collections.emptyMap();
+						}
 
 						BaseModel<?> baseModel =
 							systemObjectDefinitionManager.
