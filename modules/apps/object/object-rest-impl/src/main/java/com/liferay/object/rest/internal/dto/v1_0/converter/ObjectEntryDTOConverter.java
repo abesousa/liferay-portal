@@ -1393,6 +1393,20 @@ public class ObjectEntryDTOConverter
 			SystemObjectDefinitionManager systemObjectDefinitionManager)
 		throws Exception {
 
+		try {
+			systemObjectDefinitionManager.checkModelResourcePermission(
+				objectDefinition.getObjectDefinitionId(),
+				PermissionThreadLocal.getPermissionChecker(),
+				(long)baseModel.getPrimaryKeyObj(), ActionKeys.VIEW);
+		}
+		catch (PrincipalException principalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(principalException);
+			}
+
+			return null;
+		}
+
 		DTOConverter<BaseModel<?>, ?> dtoConverter =
 			ObjectEntryDTOConverterUtil.getDTOConverter(
 				dtoConverterContext.getDTOConverterRegistry(),
