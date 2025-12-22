@@ -3422,7 +3422,7 @@ public class DefaultObjectEntryManagerImpl
 					}
 
 					return _addAction(
-						ActionKeys.UPDATE, "postObjectEntryExpire",
+						ActionKeys.UPDATE, "postByExternalReferenceCodeExpire",
 						serviceBuilderObjectEntry,
 						dtoConverterContext.getUriInfo());
 				}
