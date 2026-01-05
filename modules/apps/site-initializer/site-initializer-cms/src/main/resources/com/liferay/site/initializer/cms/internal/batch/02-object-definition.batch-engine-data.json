@@ -119,6 +119,114 @@
 			"titleObjectFieldName": "title"
 		},
 		{
+			"active": true,
+			"className": "com.liferay.object.model.ObjectDefinition#S7R9",
+			"enableCategorization": true,
+			"enableComments": true,
+			"enableFriendlyURLCustomization": true,
+			"enableFormContainer": true,
+			"enableIndexSearch": true,
+			"enableLocalization": true,
+			"enableObjectEntryDraft": true,
+			"externalReferenceCode": "L_CMS_EXERCISE_TEAM",
+			"label": {
+				"en_US": "CMSExerciseTeam"
+			},
+			"modifiable": true,
+			"name": "Team",
+			"objectDefinitionSettings": [
+				{
+					"name": "acceptAllGroups",
+					"value": "true"
+				},
+				{
+					"name": "visible",
+					"value": "true"
+				}
+			],
+			"objectFields": [
+				{
+					"indexed": true,
+					"defaultValue": "null",
+					"localized": false,
+					"objectFieldSettings": [],
+					"readOnly": "false",
+					"DBType": "Integer",
+					"label": {
+						"en_US": "Size"
+					},
+					"type": "Integer",
+					"required": false,
+					"externalReferenceCode": "SIZE",
+					"indexedAsKeyword": false,
+					"system": true,
+					"indexedLanguageId": "",
+					"unique": false,
+					"name": "size",
+					"state": false,
+					"businessType": "Integer",
+					"readOnlyConditionExpression": ""
+				},
+				{
+					"indexed": true,
+					"defaultValue": "null",
+					"localized": false,
+					"objectFieldSettings": [],
+					"readOnly": "false",
+					"DBType": "Clob",
+					"label": {
+						"en_US": "Description"
+					},
+					"type": "Clob",
+					"required": false,
+					"externalReferenceCode": "DESCRIPTION",
+					"indexedAsKeyword": false,
+					"system": true,
+					"indexedLanguageId": "en_US",
+					"unique": false,
+					"name": "description",
+					"state": false,
+					"businessType": "LongText",
+					"readOnlyConditionExpression": ""
+				},
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"defaultValue": "null",
+					"externalReferenceCode": "TITLE",
+					"indexed": true,
+					"indexedAsKeyword": false,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Title"
+					},
+					"localized": true,
+					"name": "title",
+					"objectFieldSettings": [
+					],
+					"readOnly": "false",
+					"readOnlyConditionExpression": "",
+					"required": true,
+					"state": false,
+					"system": true,
+					"type": "String",
+					"unique": false
+				}
+			],
+			"objectFolderExternalReferenceCode": "L_CMS_CONTENT_STRUCTURES",
+			"panelCategoryKey": "",
+			"pluralLabel": {
+				"en_US": "Teams"
+			},
+			"portlet": true,
+			"scope": "depot",
+			"status": {
+				"code": 0
+			},
+			"system": true,
+			"titleObjectFieldName": "title"
+		},
+		{
 			"className": "com.liferay.object.model.ObjectDefinition#H4T4",
 			"enableCategorization": true,
 			"enableComments": true,

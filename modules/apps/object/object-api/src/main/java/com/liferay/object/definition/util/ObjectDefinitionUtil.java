@@ -134,6 +134,8 @@ public class ObjectDefinitionUtil {
 		).put(
 			"CMSBasicDocument", "/cms/basic-documents"
 		).put(
+			"Team", "/teams"
+		).put(
 			"CMSBasicWebContent", "/cms/basic-web-contents"
 		).put(
 			"CMSBlog", "/cms/blogs"
