@@ -42,6 +42,25 @@
 				"update": {
 				}
 			},
+			"externalReferenceCode": "L_CMS_CMP_EXERCISE",
+			"label": {
+				"en_US": "CMS CMP Exercise"
+			},
+			"name": "CMSCMPExercise",
+			"objectFolderItems": [
+			]
+		},
+		{
+			"actions": {
+				"delete": {
+				},
+				"get": {
+				},
+				"permissions": {
+				},
+				"update": {
+				}
+			},
 			"externalReferenceCode": "L_CMS_CONTENT_STRUCTURES",
 			"label": {
 				"en_US": "CMS Content Structures"
