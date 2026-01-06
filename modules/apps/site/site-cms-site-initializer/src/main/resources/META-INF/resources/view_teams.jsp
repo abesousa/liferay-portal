@@ -11,13 +11,14 @@
 ViewTeamsDisplayContext viewTeamsDisplayContext = (ViewTeamsDisplayContext)request.getAttribute(ViewTeamsDisplayContext.class.getName());
 %>
 
-<div class="cms-section">
-	<div>
-		<frontend-data-set:headless-display
-			apiURL=""
-			formName="fm"
-			id="<%= CMSSiteInitializerFDSNames.VIEW_TEAMS %>"
-			itemsPerPage="<%= 20 %>"
-		/>
-	</div>
+<div class="cms-section custom-empty-state">
+	<frontend-data-set:headless-display
+       apiURL="<%= viewTeamsDisplayContext.getAPIURL() %>"
+       emptyState="<%= viewTeamsDisplayContext.getEmptyState() %>"
+       formName="fm"
+       id="<%= CMSSiteInitializerFDSNames.VIEW_TEAMS %>"
+       itemsPerPage="<%= 20 %>"
+       selectedItemsKey="id"
+       style="fluid"
+    />
 </div>
