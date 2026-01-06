@@ -550,7 +550,7 @@ public abstract class BaseSectionDisplayContext {
 		BaseSectionDisplayContext.class);
 
 	private final DLConfiguration _dlConfiguration;
-	private final ObjectDefinitionService _objectDefinitionService;
+	protected final ObjectDefinitionService _objectDefinitionService;
 	private final SectionDisplayContextHelper _sectionDisplayContextHelper;
 	private final TranslationInfoItemFieldValuesExporterRegistry
 		_translationInfoItemFieldValuesExporterRegistry;
