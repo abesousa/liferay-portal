@@ -14,6 +14,7 @@ ViewTeamsDisplayContext viewTeamsDisplayContext = (ViewTeamsDisplayContext)reque
 <div class="cms-section custom-empty-state">
 	<frontend-data-set:headless-display
        apiURL="<%= viewTeamsDisplayContext.getAPIURL() %>"
+       creationMenu="<%= viewTeamsDisplayContext.getCreationMenu() %>"
        emptyState="<%= viewTeamsDisplayContext.getEmptyState() %>"
        formName="fm"
        id="<%= CMSSiteInitializerFDSNames.VIEW_TEAMS %>"
