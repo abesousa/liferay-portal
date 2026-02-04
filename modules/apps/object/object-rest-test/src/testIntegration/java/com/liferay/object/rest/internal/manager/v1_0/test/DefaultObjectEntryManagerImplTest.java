@@ -1498,17 +1498,18 @@ public class DefaultObjectEntryManagerImplTest
 							"txt"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE,
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER),
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE,
 							"100"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.
-								NAME_SHOW_FILES_IN_DOCS_AND_MEDIA,
+								NAME_SHOW_FILES_IN_LIBRARY,
 							"true"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.
-								NAME_STORAGE_DL_FOLDER_PATH,
+								NAME_STORAGE_LIBRARY_PATH,
 							"/" + dlFolderName))
 				).build()),
 			ObjectDefinitionConstants.SCOPE_SITE);
@@ -2463,7 +2464,8 @@ public class DefaultObjectEntryManagerImplTest
 					).name(
 						ObjectFieldSettingConstants.NAME_FILE_SOURCE
 					).value(
-						ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+						ObjectFieldSettingConstants.
+							VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 					).build(),
 					new ObjectFieldSettingBuilder(
 					).name(
@@ -7435,7 +7437,8 @@ public class DefaultObjectEntryManagerImplTest
 							"txt"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE,
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER),
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE,
 							"100"))
@@ -7502,7 +7505,8 @@ public class DefaultObjectEntryManagerImplTest
 						).name(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE
 						).value(
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 						).build(),
 						new ObjectFieldSettingBuilder(
 						).name(
