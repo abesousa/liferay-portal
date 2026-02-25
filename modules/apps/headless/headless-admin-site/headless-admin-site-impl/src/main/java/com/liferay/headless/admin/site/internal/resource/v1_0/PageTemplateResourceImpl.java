@@ -6,7 +6,6 @@
 package com.liferay.headless.admin.site.internal.resource.v1_0;
 
 import com.liferay.client.extension.type.manager.CETManager;
-import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.headless.admin.site.dto.v1_0.ContentPageSpecification;
@@ -27,6 +26,7 @@ import com.liferay.headless.admin.site.internal.resource.v1_0.util.LayoutUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.PageSpecificationUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.PageTemplateSetUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.ServiceContextUtil;
+import com.liferay.headless.admin.site.internal.util.EnabledUtil;
 import com.liferay.headless.admin.site.resource.v1_0.PageTemplateResource;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
@@ -40,7 +40,6 @@ import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionServ
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -67,6 +66,9 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
+
 import jakarta.ws.rs.core.MultivaluedMap;
 
 import java.util.Collections;
@@ -92,14 +94,13 @@ public class PageTemplateResourceImpl
 	implements ExportImportVulcanBatchEngineTaskItemDelegate<PageTemplate> {
 
 	@Override
+	@Tags({@Tag(description = "[BETA]", name = "PageTemplate")})
 	public void deleteSitePageTemplate(
 			String siteExternalReferenceCode,
 			String pageTemplateExternalReferenceCode)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		_layoutPageTemplateEntryService.deleteLayoutPageTemplateEntry(
 			pageTemplateExternalReferenceCode,
@@ -148,11 +149,6 @@ public class PageTemplateResourceImpl
 			}
 
 			@Override
-			public boolean isActive(PortletDataContext portletDataContext) {
-				return FeatureFlagManagerUtil.isEnabled("LPD-35443");
-			}
-
-			@Override
 			public boolean isStagingSupported() {
 				return true;
 			}
@@ -166,9 +162,7 @@ public class PageTemplateResourceImpl
 			String pageTemplateSetExternalReferenceCode, Boolean flatten)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		long groupId = GroupUtil.getGroupId(
 			true, contextCompany.getCompanyId(), siteExternalReferenceCode);
@@ -208,16 +202,14 @@ public class PageTemplateResourceImpl
 			ContentPageSpecification contentPageSpecification)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.
 				fetchLayoutPageTemplateEntryByExternalReferenceCode(
 					pageTemplateExternalReferenceCode,
-					GroupUtil.getGroupId(
-						false, contextCompany.getCompanyId(),
+					GroupUtil.getStagingAwareGroupId(
+						contextCompany.getCompanyId(),
 						siteExternalReferenceCode));
 
 		if (!Objects.equals(
@@ -249,16 +241,14 @@ public class PageTemplateResourceImpl
 			PageTemplate pageTemplate)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionService.
 				getLayoutPageTemplateCollection(
 					pageTemplateSetExternalReferenceCode,
-					GroupUtil.getGroupId(
-						false, contextCompany.getCompanyId(),
+					GroupUtil.getStagingAwareGroupId(
+						contextCompany.getCompanyId(),
 						siteExternalReferenceCode));
 
 		if (!Objects.equals(
@@ -280,9 +270,7 @@ public class PageTemplateResourceImpl
 			String pageTemplateExternalReferenceCode)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.
@@ -318,9 +306,7 @@ public class PageTemplateResourceImpl
 			Sort[] sorts)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		long groupId = GroupUtil.getGroupId(
 			true, true, contextCompany.getCompanyId(),
@@ -357,13 +343,11 @@ public class PageTemplateResourceImpl
 			String siteExternalReferenceCode, PageTemplate pageTemplate)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		return _addPageTemplate(
-			GroupUtil.getGroupId(
-				_isTypeWidgetPageTemplate(pageTemplate), false,
+			GroupUtil.getStagingAwareGroupId(
+				_isTypeWidgetPageTemplate(pageTemplate),
 				contextCompany.getCompanyId(), siteExternalReferenceCode),
 			pageTemplate);
 	}
@@ -374,12 +358,10 @@ public class PageTemplateResourceImpl
 			String pageTemplateExternalReferenceCode, PageTemplate pageTemplate)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
-		long groupId = GroupUtil.getGroupId(
-			_isTypeWidgetPageTemplate(pageTemplate), false,
+		long groupId = GroupUtil.getStagingAwareGroupId(
+			_isTypeWidgetPageTemplate(pageTemplate),
 			contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
@@ -534,7 +516,7 @@ public class PageTemplateResourceImpl
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
 				contentPageTemplate.getExternalReferenceCode(), groupId,
 				layoutPageTemplateCollectionId, contentPageTemplate.getKey(), 0,
-				0, contentPageTemplate.getName(),
+				null, contentPageTemplate.getName(),
 				LayoutPageTemplateEntryTypeConstants.BASIC,
 				FileEntryUtil.getPreviewFileEntryId(
 					groupId, getResourceName(), serviceContext,
@@ -719,9 +701,9 @@ public class PageTemplateResourceImpl
 		Layout layout = LayoutUtil.addContentLayout(
 			_cetManager, _fragmentEntryProcessorRegistry, groupId,
 			_infoItemServiceRegistry,
-			contentPageTemplate.getPageSpecifications(),
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, true, nameMap, null, null,
-			null, null, LayoutConstants.TYPE_CONTENT, null, true, true,
+			contentPageTemplate.getPageSpecifications(), true,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap, null, null, null,
+			null, LayoutConstants.TYPE_CONTENT, null, true, true,
 			Collections.emptyMap(), WorkflowConstants.STATUS_APPROVED,
 			serviceContext);
 

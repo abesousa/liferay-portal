@@ -7,16 +7,25 @@ package com.liferay.portal.search.aggregation.metrics;
 
 import com.liferay.portal.search.aggregation.AggregationResult;
 
-import org.osgi.annotation.versioning.ProviderType;
-
 /**
  * @author Michael C. Han
  */
-@ProviderType
-public interface AvgAggregationResult extends AggregationResult {
+public class AvgAggregationResult extends AggregationResult {
 
-	public double getValue();
+	public AvgAggregationResult(String name, double value) {
+		super(name);
 
-	public void setValue(double value);
+		_value = value;
+	}
+
+	public double getValue() {
+		return _value;
+	}
+
+	public void setValue(double value) {
+		_value = value;
+	}
+
+	private double _value;
 
 }

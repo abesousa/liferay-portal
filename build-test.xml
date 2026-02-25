@@ -860,7 +860,7 @@ jdbc.default.password=${database.password}
 
 jdbc.default.connectionTimeout=600000
 jdbc.default.maximumPoolSize=30
-jdbc.default.minimumIdle=5]]></echo>
+jdbc.default.minimumIdle=0]]></echo>
 
 			<if>
 				<equals arg1="${database.type}" arg2="oracle" />
@@ -3344,7 +3344,8 @@ tenantId=&quot;${ms.exchange.tenant.id}&quot;</echo>
 
 	<macrodef name="prepare-portal-elasticsearch-osgi-configuration">
 		<sequential>
-			<echo file="${liferay.home}/osgi/configs/com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config">additionalConfigurations="http.host:\ _local_,_site_"${line.separator}logExceptionsOnly=B"false"${line.separator}sidecarShutdownTimeout=L"20000"${line.separator}sidecarHttpPort="AUTO"${line.separator}sidecarJVMOptions=["-Xms256m","-Xmx512m"]</echo>
+			<echo file="${liferay.home}/osgi/configs/com.liferay.portal.search.elasticsearch8.configuration.ElasticsearchConfiguration.config">additionalConfigurations="http.host:\ _local_,_site_"${line.separator}logExceptionsOnly=B"false"${line.separator}sidecarShutdownTimeout=L"20000"${line.separator}sidecarHttpPort="AUTO"${line.separator}sidecarJVMOptions=["-Xms256m","-Xmx512m"]</echo>
+			<echo file="${liferay.home}/osgi/configs/com.liferay.portal.search.internal.background.task.ReindexPortalBackgroundTaskExecutor.config">parallelIndexing=B"false"</echo>
 		</sequential>
 	</macrodef>
 
@@ -6247,6 +6248,7 @@ ${custom.upgrade.properties}</echo>
 									<equals arg1="${database.type}" arg2="postgresql" />
 									<then>
 										<get-database-property property.name="database.host" />
+										<get-database-property property.name="database.password" />
 										<get-database-property property.name="database.username" />
 
 										<condition property="database.host" value="localhost">
@@ -6263,6 +6265,7 @@ ${custom.upgrade.properties}</echo>
 												<arg value="${database.host}" />
 												<arg value="-U" />
 												<arg value="${database.username}" />
+												<env key="PGPASSWORD" value="${database.password}" />
 											</exec>
 										</retry>
 									</then>
@@ -6781,6 +6784,160 @@ ${custom.upgrade.properties}</echo>
 		</sequential>
 	</macrodef>
 
+	<macrodef name="set-playwright-click-to-chat-properties">
+		<sequential>
+			<var name="env.click.to.chat.chatwoot.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_CHATWOOT_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.chatwoot.password" value="--env=CLICK_TO_CHAT_CHATWOOT_PASSWORD=${env.CLICK_TO_CHAT_CHATWOOT_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.chatwoot.password" />
+					<then>
+						<var name="env.click.to.chat.chatwoot.password" value="--env=CLICK_TO_CHAT_CHATWOOT_PASSWORD=${click.to.chat.chatwoot.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.crisp.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_CRISP_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.crisp.password" value="--env=CLICK_TO_CHAT_CRISP_PASSWORD=${env.CLICK_TO_CHAT_CRISP_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.crisp.password" />
+					<then>
+						<var name="env.click.to.chat.crisp.password" value="--env=CLICK_TO_CHAT_CRISP_PASSWORD=${click.to.chat.crisp.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.hubspot.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_HUBSPOT_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.hubspot.password" value="--env=CLICK_TO_CHAT_HUBSPOT_PASSWORD=${env.CLICK_TO_CHAT_HUBSPOT_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.hubspot.password" />
+					<then>
+						<var name="env.click.to.chat.hubspot.password" value="--env=CLICK_TO_CHAT_HUBSPOT_PASSWORD=${click.to.chat.hubspot.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.jivochat.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_JIVOCHAT_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.jivochat.password" value="--env=CLICK_TO_CHAT_JIVOCHAT_PASSWORD=${env.CLICK_TO_CHAT_JIVOCHAT_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.jivochat.password" />
+					<then>
+						<var name="env.click.to.chat.jivochat.password" value="--env=CLICK_TO_CHAT_JIVOCHAT_PASSWORD=${click.to.chat.jivochat.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.livechat.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_LIVECHAT_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.livechat.password" value="--env=CLICK_TO_CHAT_LIVECHAT_PASSWORD=${env.CLICK_TO_CHAT_LIVECHAT_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.livechat.password" />
+					<then>
+						<var name="env.click.to.chat.livechat.password" value="--env=CLICK_TO_CHAT_LIVECHAT_PASSWORD=${click.to.chat.livechat.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.liveperson.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_LIVEPERSON_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.liveperson.password" value="--env=CLICK_TO_CHAT_LIVEPERSON_PASSWORD=${env.CLICK_TO_CHAT_LIVEPERSON_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.liveperson.password" />
+					<then>
+						<var name="env.click.to.chat.liveperson.password" value="--env=CLICK_TO_CHAT_LIVEPERSON_PASSWORD=${click.to.chat.liveperson.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.smartsupp.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_SMARTSUPP_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.smartsupp.password" value="--env=CLICK_TO_CHAT_SMARTSUPP_PASSWORD=${env.CLICK_TO_CHAT_SMARTSUPP_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.smartsupp.password" />
+					<then>
+						<var name="env.click.to.chat.smartsupp.password" value="--env=CLICK_TO_CHAT_SMARTSUPP_PASSWORD=${click.to.chat.smartsupp.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.tawkto.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_TAWKTO_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.tawkto.password" value="--env=CLICK_TO_CHAT_TAWKTO_PASSWORD=${env.CLICK_TO_CHAT_TAWKTO_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.tawkto.password" />
+					<then>
+						<var name="env.click.to.chat.tawkto.password" value="--env=CLICK_TO_CHAT_TAWKTO_PASSWORD=${click.to.chat.tawkto.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.tidio.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_TIDIO_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.tidio.password" value="--env=CLICK_TO_CHAT_TIDIO_PASSWORD=${env.CLICK_TO_CHAT_TIDIO_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.tidio.password" />
+					<then>
+						<var name="env.click.to.chat.tidio.password" value="--env=CLICK_TO_CHAT_TIDIO_PASSWORD=${click.to.chat.tidio.password}" />
+					</then>
+				</elseif>
+			</if>
+
+			<var name="env.click.to.chat.zendesk.password" value="" />
+
+			<if>
+				<isset property="env.CLICK_TO_CHAT_ZENDESK_PASSWORD" />
+				<then>
+					<var name="env.click.to.chat.zendesk.password" value="--env=CLICK_TO_CHAT_ZENDESK_PASSWORD=${env.CLICK_TO_CHAT_ZENDESK_PASSWORD}" />
+				</then>
+				<elseif>
+					<isset property="click.to.chat.zendesk.password" />
+					<then>
+						<var name="env.click.to.chat.zendesk.password" value="--env=CLICK_TO_CHAT_ZENDESK_PASSWORD=${click.to.chat.zendesk.password}" />
+					</then>
+				</elseif>
+			</if>
+		</sequential>
+	</macrodef>
+
 	<macrodef name="set-portal-impl-portal-test-ext-properties">
 		<sequential>
 			<generate-jdbc-properties properties.file="portal-impl/test/portal-test-ext.properties">
@@ -7266,7 +7423,7 @@ log.sanitizer.enabled=false</echo>
 						<elseif>
 							<contains string="${test.batch.name}" substring="remote-elasticsearch" />
 							<then>
-								<ant antfile="build-test-elasticsearch7.xml" target="start-elasticsearch" />
+								<ant antfile="build-test-elasticsearch8.xml" target="start-elasticsearch" />
 							</then>
 						</elseif>
 					</if>
@@ -7294,7 +7451,7 @@ log.sanitizer.enabled=false</echo>
 								<istrue value="${remote.elasticsearch.enabled}" />
 							</or>
 							<then>
-								<ant antfile="build-test-elasticsearch7.xml" target="start-elasticsearch" />
+								<ant antfile="build-test-elasticsearch8.xml" target="start-elasticsearch" />
 							</then>
 						</elseif>
 					</if>
@@ -7306,7 +7463,7 @@ log.sanitizer.enabled=false</echo>
 			<if>
 				<equals arg1="${delete.sidecar.bundle}" arg2="true" />
 				<then>
-					<delete dir="${liferay.home}/elasticsearch7" failonerror="false" />
+					<delete dir="${liferay.home}/elasticsearch8" failonerror="false" />
 				</then>
 			</if>
 		</sequential>
@@ -8344,6 +8501,8 @@ ${docker.start.error}</fail>
 				</elseif>
 			</if>
 
+			<set-playwright-click-to-chat-properties />
+
 			<local name="env.portal.url.arg" />
 
 			<condition else="" property="env.portal.url.arg" value="--env=PORTAL_URL=http://${env.NODE_NAME}:8080">
@@ -8368,6 +8527,16 @@ ${docker.start.error}</fail>
 				--add-host www.easy.com:${ip.address} \
 				--add-host www.fox.com:${ip.address} \
 				${env.ci.arg} \
+				${env.click.to.chat.chatwoot.password} \
+				${env.click.to.chat.crisp.password} \
+				${env.click.to.chat.hubspot.password} \
+				${env.click.to.chat.jivochat.password} \
+				${env.click.to.chat.livechat.password} \
+				${env.click.to.chat.liveperson.password} \
+				${env.click.to.chat.smartsupp.password} \
+				${env.click.to.chat.tawkto.password} \
+				${env.click.to.chat.tidio.password} \
+				${env.click.to.chat.zendesk.password} \
 				${env.osb.asah.api.token} \
 				${env.osb.asah.backend.url} \
 				${env.osb.asah.batch.curator.url} \
@@ -8871,7 +9040,7 @@ ${docker.start.error}</fail>
 								<var name="elasticsearch.bundle.count" value="${elasticsearch.total.bundles}" />
 
 								<antelope:repeat count="${elasticsearch.total.bundles}">
-									<ant antfile="build-test-elasticsearch7.xml" target="stop-elasticsearch">
+									<ant antfile="build-test-elasticsearch8.xml" target="stop-elasticsearch">
 										<property name="elasticsearch.bundle.number" value="${elasticsearch.bundle.count}" />
 									</ant>
 
@@ -8885,14 +9054,14 @@ ${docker.start.error}</fail>
 								</antelope:repeat>
 							</then>
 							<else>
-								<ant antfile="build-test-elasticsearch7.xml" target="stop-elasticsearch" />
+								<ant antfile="build-test-elasticsearch8.xml" target="stop-elasticsearch" />
 							</else>
 						</if>
 
 						<if>
 							<socket port="5601" server="localhost" />
 							<then>
-								<ant antfile="build-test-elasticsearch7.xml" target="stop-kibana" />
+								<ant antfile="build-test-elasticsearch8.xml" target="stop-kibana" />
 							</then>
 						</if>
 					</then>
@@ -12484,12 +12653,12 @@ ${update.properties}</echo>
 	</Loggers>
 </Configuration>]]></echo>
 
-		<echo file="${liferay.home}/osgi/log4j/com.liferay.portal.search.elasticsearch7.impl-log4j-ext.xml"><![CDATA[<?xml version="1.0"?>
+		<echo file="${liferay.home}/osgi/log4j/com.liferay.portal.search.elasticsearch8.impl-log4j-ext.xml"><![CDATA[<?xml version="1.0"?>
 <Configuration strict="true">
 	<Loggers>
-		<Logger level="ERROR" name="com.liferay.portal.search.elasticsearch7.internal.ElasticsearchSearchEngine" />
-		<Logger level="INFO" name="com.liferay.portal.search.elasticsearch7.internal.index.IndexFactory" />
-		<Logger level="ERROR" name="com.liferay.portal.search.elasticsearch7.internal.sidecar.SidecarManager" />
+		<Logger level="ERROR" name="com.liferay.portal.search.elasticsearch8.internal.ElasticsearchSearchEngine" />
+		<Logger level="INFO" name="com.liferay.portal.search.elasticsearch8.internal.index.IndexFactory" />
+		<Logger level="ERROR" name="com.liferay.portal.search.elasticsearch8.internal.sidecar.SidecarManager" />
 	</Loggers>
 </Configuration>]]></echo>
 
@@ -12624,7 +12793,7 @@ jdbc.default.password=${database.password}
 
 jdbc.default.connectionTimeout=600000
 jdbc.default.maximumPoolSize=${database.max.pool.size}
-jdbc.default.minimumIdle=5
+jdbc.default.minimumIdle=0
 
 enterprise.product.notification.enabled=false
 company.security.strangers.verify=false
@@ -15049,7 +15218,7 @@ ANT_OPTS=${env.ANT_OPTS}</echo>
 		<if>
 			<equals arg1="${app.server.type}" arg2="weblogic" />
 			<then>
-				<ant antfile="build-test-elasticsearch7.xml" target="get-sidecar-binaries" />
+				<ant antfile="build-test-elasticsearch8.xml" target="get-sidecar-binaries" />
 			</then>
 		</if>
 
@@ -15066,7 +15235,7 @@ ANT_OPTS=${env.ANT_OPTS}</echo>
 			tofile="${test.release.bundle.parent.dir}/bundles-original/data"
 		/>
 
-		<delete dir="${test.release.bundle.parent.dir}/bundles-original/data/elasticsearch7" />
+		<delete dir="${test.release.bundle.parent.dir}/bundles-original/data/elasticsearch8" />
 
 		<delete dir="${test.release.bundle.parent.dir}/bundles" />
 
@@ -15117,7 +15286,7 @@ ANT_OPTS=${env.ANT_OPTS}</echo>
 					tofile="${test.release.bundle.parent.dir}/bundles/data"
 				/>
 
-				<delete dir="${test.release.bundle.parent.dir}/bundles/data/elasticsearch7" />
+				<delete dir="${test.release.bundle.parent.dir}/bundles/data/elasticsearch8" />
 
 				<delete dir="${test.release.bundle.parent.dir}/bundles-original" />
 			</then>
@@ -15318,7 +15487,7 @@ cluster.link.bind.addr["cluster-link-udp"]=127.0.0.1</echo>
 				<contains string="${portal.version}" substring="u" />
 			</not>
 			<then>
-				<delete dir="${liferay.home}/data/elasticsearch7" />
+				<delete dir="${liferay.home}/data/elasticsearch8" />
 			</then>
 		</if>
 
@@ -15368,6 +15537,21 @@ cluster.link.bind.addr["cluster-link-udp"]=127.0.0.1</echo>
 					<else>
 						<property name="create.bare.mysql.sql.file" value="create-bare-mysql.sql" />
 					</else>
+				</if>
+
+				<get-testcase-property property.name="database.partition.enabled" />
+
+				<if>
+					<equals arg1="${database.partition.enabled}" arg2="true" />
+					<then>
+						<replaceregexp
+							byline="true"
+							file="${liferay.home}/${database.type}.sql"
+							flags="gi"
+							match="create database[^`]*`([^`]+)`"
+							replace="drop database if exists `\1`;&#10;create database if not exists `\1`"
+						/>
+					</then>
 				</if>
 			</then>
 		</if>
@@ -15794,6 +15978,7 @@ cluster.link.bind.addr["cluster-link-udp"]=127.0.0.1</echo>
 							</antcall>
 
 							<get-database-property property.name="database.host" />
+							<get-database-property property.name="database.password" />
 							<get-database-property property.name="database.schema" />
 							<get-database-property property.name="database.username" />
 
@@ -15808,6 +15993,7 @@ cluster.link.bind.addr["cluster-link-udp"]=127.0.0.1</echo>
 								<arg value="--file=${liferay.home}/${database.type}.sql" />
 								<arg value="--host=${database.host}" />
 								<arg value="--username=${database.username}" />
+								<env key="PGPASSWORD" value="${database.password}" />
 							</exec>
 						</then>
 					</elseif>
@@ -16976,7 +17162,7 @@ sendBlacklist=[]
 		<if>
 			<isset property="browser.docker.image" />
 			<then>
-				<echo append="true" file="${liferay.home}/osgi/configs/com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config">${line.separator}additionalConfigurations="http.host:\ _local_,_site_"</echo>
+				<echo append="true" file="${liferay.home}/osgi/configs/com.liferay.portal.search.elasticsearch8.configuration.ElasticsearchConfiguration.config">${line.separator}additionalConfigurations="http.host:\ _local_,_site_"</echo>
 			</then>
 		</if>
 

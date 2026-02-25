@@ -34,7 +34,6 @@ export const test = mergeTests(
 	exportImportPagesTest,
 	featureFlagsTest({
 		'LPD-35443': {enabled: true},
-		'LPD-35914': {enabled: true},
 	}),
 	loginTest(),
 	productMenuPageTest,
@@ -46,7 +45,6 @@ const rootModelTest = mergeTests(
 	featureFlagsTest({
 		'LPD-34594': {enabled: true},
 		'LPD-35443': {enabled: true},
-		'LPD-35914': {enabled: true},
 	})
 );
 
@@ -185,10 +183,13 @@ rootModelTest.describe(
 						'c/' + objectDefinitionC.name.toLowerCase() + 's'
 					);
 
-					const objectDefinitionRootCheckbox = page.getByLabel(
-						new RegExp(
-							`${objectDefinitionA.label.en_US}\\s*Root Object`
-						)
+					const objectDefinitionRootCheckbox = page.getByRole(
+						'checkbox',
+						{
+							name: new RegExp(
+								`^${objectDefinitionA.label.en_US}:?`
+							),
+						}
 					);
 
 					await applicationsMenuPage.goToExport();
@@ -207,7 +208,7 @@ rootModelTest.describe(
 
 					const filePath = await exportImportPage.export({
 						portletLabels: [
-							`${objectDefinitionA.name} Root Object 1 Items`,
+							`${objectDefinitionA.name}: Root Object 1 Items`,
 						],
 					});
 

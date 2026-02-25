@@ -23,6 +23,14 @@ public class AppServerBundleDownstreamBuild extends BaseDownstreamBuild {
 	}
 
 	protected void createBuildFailureObjectRef() throws IOException {
+		boolean bundleBuilderFailureCachingEnabled = Boolean.parseBoolean(
+			JenkinsResultsParserUtil.getBuildProperty(
+				"bundle.builder.failure.caching.enabled"));
+
+		if (!bundleBuilderFailureCachingEnabled) {
+			return;
+		}
+
 		Map<String, String> startPropertiesTempMap =
 			getStartPropertiesTempMap();
 

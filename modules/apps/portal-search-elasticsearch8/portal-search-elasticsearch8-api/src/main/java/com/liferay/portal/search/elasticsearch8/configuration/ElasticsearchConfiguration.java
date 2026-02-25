@@ -60,28 +60,6 @@ public interface ElasticsearchConfiguration {
 	)
 	public String clusterName();
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Meta.AD(
-		deflt = "9300-9400",
-		description = "discovery-zen-ping-unicast-hosts-port-help",
-		name = "discovery-zen-ping-unicast-hosts-port", required = false
-	)
-	public String discoveryZenPingUnicastHostsPort();
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #sidecarHttpPort()}
-	 */
-	@Deprecated
-	@Meta.AD(
-		deflt = "9201", description = "embedded-http-port-help",
-		name = "embedded-http-port", required = false
-	)
-	public int embeddedHttpPort();
-
 	@Meta.AD(
 		deflt = "/https?:\\/\\/localhost(:[0-9]+)?/",
 		description = "http-cors-allow-origin-help",
@@ -185,17 +163,6 @@ public interface ElasticsearchConfiguration {
 	)
 	public String nodeName();
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #productionModeEnabled()}
-	 */
-	@Deprecated
-	@Meta.AD(
-		deflt = "EMBEDDED", description = "operation-mode-help",
-		name = "operation-mode", required = false
-	)
-	public OperationMode operationMode();
-
 	@Meta.AD(
 		description = "override-type-mappings-help",
 		name = "override-type-mappings", required = false
@@ -246,12 +213,6 @@ public interface ElasticsearchConfiguration {
 	public String remoteClusterConnectionId();
 
 	@Meta.AD(
-		deflt = "ERROR", description = "rest-client-logger-level-help",
-		name = "rest-client-logger-level", required = false
-	)
-	public RESTClientLoggerLevel restClientLoggerLevel();
-
-	@Meta.AD(
 		deflt = "false", description = "sidecar-debug-help",
 		name = "sidecar-debug", required = false
 	)
@@ -277,13 +238,13 @@ public interface ElasticsearchConfiguration {
 	public String sidecarHome();
 
 	@Meta.AD(
-		description = "sidecar-http-port-help", name = "sidecar-http-port",
-		required = false
+		deflt = "9201", description = "sidecar-http-port-help",
+		name = "sidecar-http-port", required = false
 	)
 	public String sidecarHttpPort();
 
 	@Meta.AD(
-		deflt = "-XX:+AlwaysPreTouch|-Xms1g|-Xmx1g",
+		deflt = "-XX:+AlwaysPreTouch|-Xms1g|-Xmx2g",
 		description = "sidecar-jvm-options-help", name = "sidecar-jvm-options",
 		required = false
 	)
@@ -301,12 +262,6 @@ public interface ElasticsearchConfiguration {
 		name = "sidecar-shutdown-timeout", required = false
 	)
 	public long sidecarShutdownTimeout();
-
-	@Meta.AD(
-		deflt = "true", description = "track-total-hits-help",
-		name = "track-total-hits", required = false
-	)
-	public boolean trackTotalHits();
 
 	@Meta.AD(
 		deflt = "2147483647", description = "track-total-hits-limit-help",

@@ -15,7 +15,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -40,7 +39,6 @@ public class StatsIndexRequestExecutorTest {
 		_elasticsearchFixture.tearDown();
 	}
 
-	@Ignore
 	@Test
 	public void testStatsIndexRequestTranslationWithMoreThanOneIndex() {
 		StatsIndexRequest statsIndexRequest = new StatsIndexRequest(
@@ -54,11 +52,10 @@ public class StatsIndexRequestExecutorTest {
 				statsIndexRequest);
 
 		Assert.assertEquals(
-			"/liferay-1,liferay-2,liferay-3/_stats",
-			indicesStatsRequest.index());
+			"[liferay-1, liferay-2, liferay-3]",
+			String.valueOf(indicesStatsRequest.index()));
 	}
 
-	@Ignore
 	@Test
 	public void testStatsIndexRequestTranslationWithOneIndex() {
 		StatsIndexRequest statsIndexRequest = new StatsIndexRequest(
@@ -71,10 +68,10 @@ public class StatsIndexRequestExecutorTest {
 			statsIndexRequestExecutor.createIndicesStatsRequest(
 				statsIndexRequest);
 
-		Assert.assertEquals("/liferay-1/_stats", indicesStatsRequest.index());
+		Assert.assertEquals(
+			"[liferay-1]", String.valueOf(indicesStatsRequest.index()));
 	}
 
-	@Ignore
 	@Test
 	public void testStatsIndexRequestTranslationWithoutIndex() {
 		StatsIndexRequest statsIndexRequest = new StatsIndexRequest();
@@ -86,7 +83,8 @@ public class StatsIndexRequestExecutorTest {
 			statsIndexRequestExecutor.createIndicesStatsRequest(
 				statsIndexRequest);
 
-		Assert.assertEquals("/_all/_stats", indicesStatsRequest.index());
+		Assert.assertEquals(
+			"[_all]", String.valueOf(indicesStatsRequest.index()));
 	}
 
 	private ElasticsearchFixture _elasticsearchFixture;

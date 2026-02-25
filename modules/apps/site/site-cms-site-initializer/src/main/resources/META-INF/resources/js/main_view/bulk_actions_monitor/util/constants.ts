@@ -9,10 +9,13 @@ import React from 'react';
 
 import {IBulkActionTaskType} from '../../../common/types/BulkActionTask';
 
+export const BULK_ACTION_ASSIGN_DEFAULT_WORKFLOW =
+	'AssignStructureDefaultWorkflowBulkAction';
 export const BULK_ACTION_ASSIGN_TO = 'AssignToBulkAction';
 export const BULK_ACTION_CATEGORIES = 'TaxonomyCategoryBulkAction';
 export const BULK_ACTION_DEFAULT_PERMISSIONS = 'DefaultPermissionBulkAction';
 export const BULK_ACTION_DELETE = 'DeleteBulkAction';
+export const BULK_ACTION_DELETE_ASSET_VERSION = 'DeleteAssetVersionBulkAction';
 export const BULK_ACTION_DOWNLOAD = 'DownloadBulkAction';
 export const BULK_ACTION_DUE_DATE = 'DueDateBulkAction';
 export const BULK_ACTION_EXPIRE = 'ExpireBulkAction';
@@ -26,12 +29,17 @@ export const INTERVAL_TASK_POLLING_MS = 5000;
 
 export const LABELS_BULK_ACTIONS: {[key in keyof IBulkActionTaskType]: string} =
 	{
+		[BULK_ACTION_ASSIGN_DEFAULT_WORKFLOW]:
+			Liferay.Language.get('assign-workflow'),
 		[BULK_ACTION_ASSIGN_TO]: Liferay.Language.get('assign-to'),
 		[BULK_ACTION_CATEGORIES]: Liferay.Language.get('assets-categorization'),
 		[BULK_ACTION_DEFAULT_PERMISSIONS]: Liferay.Language.get(
 			'assets-permissioning'
 		),
 		[BULK_ACTION_DELETE]: Liferay.Language.get('assets-deletion'),
+		[BULK_ACTION_DELETE_ASSET_VERSION]: Liferay.Language.get(
+			'asset-versions-deletion'
+		),
 		[BULK_ACTION_DOWNLOAD]: Liferay.Language.get('assets-download'),
 		[BULK_ACTION_DUE_DATE]: Liferay.Language.get('due-date-update'),
 		[BULK_ACTION_EXPIRE]: Liferay.Language.get('expire'),

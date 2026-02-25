@@ -6,7 +6,6 @@
 package com.liferay.headless.admin.site.internal.resource.v1_0;
 
 import com.liferay.client.extension.type.manager.CETManager;
-import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.headless.admin.site.dto.v1_0.ContentPageSpecification;
@@ -19,6 +18,7 @@ import com.liferay.headless.admin.site.internal.resource.v1_0.util.GroupUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.LayoutUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.PageSpecificationUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.ServiceContextUtil;
+import com.liferay.headless.admin.site.internal.util.EnabledUtil;
 import com.liferay.headless.admin.site.resource.v1_0.MasterPageResource;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
@@ -26,7 +26,6 @@ import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.search.Field;
@@ -45,6 +44,9 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 
@@ -71,20 +73,18 @@ public class MasterPageResourceImpl
 	implements ExportImportVulcanBatchEngineTaskItemDelegate<MasterPage> {
 
 	@Override
+	@Tags({@Tag(description = "[BETA]", name = "MasterPage")})
 	public void deleteSiteMasterPage(
 			String siteExternalReferenceCode,
 			String masterPageExternalReferenceCode)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		_layoutPageTemplateEntryService.deleteLayoutPageTemplateEntry(
 			masterPageExternalReferenceCode,
-			GroupUtil.getGroupId(
-				false, contextCompany.getCompanyId(),
-				siteExternalReferenceCode));
+			GroupUtil.getStagingAwareGroupId(
+				contextCompany.getCompanyId(), siteExternalReferenceCode));
 	}
 
 	@Override
@@ -127,11 +127,6 @@ public class MasterPageResourceImpl
 			}
 
 			@Override
-			public boolean isActive(PortletDataContext portletDataContext) {
-				return FeatureFlagManagerUtil.isEnabled("LPD-35443");
-			}
-
-			@Override
 			public boolean isStagingSupported() {
 				return true;
 			}
@@ -146,16 +141,14 @@ public class MasterPageResourceImpl
 			ContentPageSpecification contentPageSpecification)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.
 				fetchLayoutPageTemplateEntryByExternalReferenceCode(
 					pageTemplateExternalReferenceCode,
-					GroupUtil.getGroupId(
-						false, contextCompany.getCompanyId(),
+					GroupUtil.getStagingAwareGroupId(
+						contextCompany.getCompanyId(),
 						siteExternalReferenceCode));
 
 		if (!Objects.equals(
@@ -186,9 +179,7 @@ public class MasterPageResourceImpl
 			String masterPageExternalReferenceCode)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.
@@ -221,9 +212,7 @@ public class MasterPageResourceImpl
 			Sort[] sorts)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		long groupId = GroupUtil.getGroupId(
 			true, contextCompany.getCompanyId(), siteExternalReferenceCode);
@@ -266,14 +255,11 @@ public class MasterPageResourceImpl
 			String siteExternalReferenceCode, MasterPage masterPage)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		return _addMasterPage(
-			GroupUtil.getGroupId(
-				false, contextCompany.getCompanyId(),
-				siteExternalReferenceCode),
+			GroupUtil.getStagingAwareGroupId(
+				contextCompany.getCompanyId(), siteExternalReferenceCode),
 			masterPage);
 	}
 
@@ -283,12 +269,10 @@ public class MasterPageResourceImpl
 			String masterPageExternalReferenceCode, MasterPage masterPage)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
-		long groupId = GroupUtil.getGroupId(
-			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
+		long groupId = GroupUtil.getStagingAwareGroupId(
+			contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.
@@ -422,7 +406,7 @@ public class MasterPageResourceImpl
 				masterPage.getExternalReferenceCode(), groupId,
 				LayoutPageTemplateConstants.
 					PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-				masterPage.getKey(), 0, 0, masterPage.getName(),
+				masterPage.getKey(), 0, null, masterPage.getName(),
 				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
 				FileEntryUtil.getPreviewFileEntryId(
 					groupId, getResourceName(), serviceContext,
@@ -457,9 +441,9 @@ public class MasterPageResourceImpl
 
 		Layout layout = LayoutUtil.addContentLayout(
 			_cetManager, _fragmentEntryProcessorRegistry, groupId,
-			_infoItemServiceRegistry, masterPage.getPageSpecifications(),
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, true, nameMap, null, null,
-			null, null, LayoutConstants.TYPE_CONTENT, null, true, true,
+			_infoItemServiceRegistry, masterPage.getPageSpecifications(), true,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap, null, null, null,
+			null, LayoutConstants.TYPE_CONTENT, null, true, true,
 			Collections.emptyMap(), WorkflowConstants.STATUS_APPROVED,
 			serviceContext);
 

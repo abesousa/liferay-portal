@@ -8,16 +8,29 @@ package com.liferay.portal.search.aggregation.metrics;
 import com.liferay.portal.search.aggregation.AggregationResult;
 import com.liferay.portal.search.geolocation.GeoLocationPoint;
 
-import org.osgi.annotation.versioning.ProviderType;
-
 /**
  * @author Michael C. Han
  */
-@ProviderType
-public interface GeoCentroidAggregationResult extends AggregationResult {
+public class GeoCentroidAggregationResult extends AggregationResult {
 
-	public GeoLocationPoint getCentroid();
+	public GeoCentroidAggregationResult(
+		String name, GeoLocationPoint centroidGeoLocationPoint, long count) {
 
-	public long getCount();
+		super(name);
+
+		_centroidGeoLocationPoint = centroidGeoLocationPoint;
+		_count = count;
+	}
+
+	public GeoLocationPoint getCentroid() {
+		return _centroidGeoLocationPoint;
+	}
+
+	public long getCount() {
+		return _count;
+	}
+
+	private final GeoLocationPoint _centroidGeoLocationPoint;
+	private final long _count;
 
 }

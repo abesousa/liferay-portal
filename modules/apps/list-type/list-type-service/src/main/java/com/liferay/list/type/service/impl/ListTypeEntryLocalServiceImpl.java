@@ -6,6 +6,7 @@
 package com.liferay.list.type.service.impl;
 
 import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManagerUtil;
 import com.liferay.list.type.exception.DuplicateListTypeEntryException;
 import com.liferay.list.type.exception.DuplicateListTypeEntryExternalReferenceCodeException;
 import com.liferay.list.type.exception.ListTypeEntryKeyException;
@@ -226,10 +227,11 @@ public class ListTypeEntryLocalServiceImpl
 			listTypeEntryId);
 
 		listTypeEntry.setNameMap(nameMap);
-
-		if (listTypeEntry.getStatus() == WorkflowConstants.STATUS_EMPTY) {
-			listTypeEntry.setStatus(WorkflowConstants.STATUS_APPROVED);
-		}
+		listTypeEntry.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, listTypeEntry.getModelClassName(),
+				listTypeEntry.getCompanyId(), 0, listTypeEntry.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		if (listTypeEntry.isSystem() &&
 			!ObjectDefinitionUtil.isInvokerBundleAllowed()) {

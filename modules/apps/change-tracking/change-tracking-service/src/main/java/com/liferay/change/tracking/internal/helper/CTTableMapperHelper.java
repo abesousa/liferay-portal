@@ -204,8 +204,8 @@ public class CTTableMapperHelper {
 						while (resultSet.next()) {
 							mappingChanges.add(
 								new AbstractMap.SimpleImmutableEntry<>(
-									resultSet.getLong(1),
-									resultSet.getLong(2)));
+									resultSet.getLong(_leftColumnName),
+									resultSet.getLong(_rightColumnName)));
 						}
 					}
 				}
@@ -233,7 +233,8 @@ public class CTTableMapperHelper {
 				while (resultSet.next()) {
 					entries.add(
 						new AbstractMap.SimpleImmutableEntry<>(
-							resultSet.getLong(1), resultSet.getLong(2)));
+							resultSet.getLong(_leftColumnName),
+							resultSet.getLong(_rightColumnName)));
 				}
 			}
 		}

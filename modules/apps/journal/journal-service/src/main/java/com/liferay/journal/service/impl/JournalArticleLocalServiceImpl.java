@@ -4454,7 +4454,7 @@ public class JournalArticleLocalServiceImpl
 				indexableActionableDynamicQuery.setCompanyId(
 					article.getCompanyId());
 
-				indexableActionableDynamicQuery.addDocuments(
+				indexableActionableDynamicQuery.addDocument(
 					indexer.getDocument(article));
 			});
 
@@ -6088,7 +6088,7 @@ public class JournalArticleLocalServiceImpl
 					updatePreviousApprovedArticle(article);
 
 					if (indexer != null) {
-						indexableActionableDynamicQuery.addDocuments(
+						indexableActionableDynamicQuery.addDocument(
 							indexer.getDocument(article));
 					}
 				}
@@ -7525,7 +7525,11 @@ public class JournalArticleLocalServiceImpl
 
 		targetArticle.setModifiedDate(modifiedDate);
 
-		targetArticle.setExternalReferenceCode(targetArticleId);
+		if (!newArticle) {
+			targetArticle.setExternalReferenceCode(
+				sourceArticle.getExternalReferenceCode());
+		}
+
 		targetArticle.setFolderId(sourceArticle.getFolderId());
 		targetArticle.setTreePath(sourceArticle.getTreePath());
 		targetArticle.setArticleId(targetArticleId);

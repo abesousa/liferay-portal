@@ -7,11 +7,13 @@ import {IAssetObjectEntry} from '../../../common/types/AssetType';
 import {
 	IBulkActionFDSData,
 	IBulkActionFDSDataItemTransformed,
+	IBulkActionTask,
 	IBulkActionTaskType,
 	TBulkActionTaskDTO,
 } from '../../../common/types/BulkActionTask';
 import {OBJECT_ENTRY_FOLDER_CLASS_NAME} from '../../../common/utils/constants';
 import {
+	TASK_STATUS_PROPS,
 	URL_BULK_ACTION_TASK,
 	URL_DOWNLOAD_BULK_ACTION_TASK,
 	URL_TASKS_REPORT_DETAIL,
@@ -34,6 +36,9 @@ export function composeCreateTaskURL(
 
 	if (searchQuery) {
 		postURL.searchParams.append('search', searchQuery);
+	}
+	else {
+		postURL.searchParams.append('emptySearch', 'true');
 	}
 
 	const fullFilters = filters.map(({odataFilterString}) => odataFilterString);
@@ -60,6 +65,8 @@ export function composeCreateTaskDTO(
 	return {
 		bulkActionItems: items.map(
 			({
+				className,
+				id,
 				embedded: {
 					externalReferenceCode: embeddedExternalReferenceCode,
 					file,
@@ -72,8 +79,11 @@ export function composeCreateTaskDTO(
 				const itemsTransformed = {
 					classExternalReferenceCode:
 						externalReferenceCode || embeddedExternalReferenceCode,
-					className: entryClassName || OBJECT_ENTRY_FOLDER_CLASS_NAME,
-					classPK,
+					className:
+						entryClassName ||
+						className ||
+						OBJECT_ENTRY_FOLDER_CLASS_NAME,
+					classPK: classPK || id,
 					name,
 				} as IBulkActionFDSDataItemTransformed;
 
@@ -101,4 +111,15 @@ export function getTaskReportLink(
 	const href = `${URL_TASKS_REPORT_DETAIL}${classNameId}/${taskId}`;
 
 	return `<a class="alert-link lead" href="${href}"><strong>${Liferay.Language.get('task-report')}</strong></a>`;
+}
+
+export function getTaskStatusProps(bulkActionTask: IBulkActionTask) {
+	const {executionStatus, numberOfFailedItems, numberOfItems} =
+		bulkActionTask as IBulkActionTask;
+
+	if (numberOfFailedItems === Number(numberOfItems)) {
+		return TASK_STATUS_PROPS.failed;
+	}
+
+	return TASK_STATUS_PROPS[executionStatus.key];
 }

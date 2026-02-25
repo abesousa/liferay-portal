@@ -13,6 +13,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -109,6 +110,18 @@ public class TestrayProject {
 		_initTestrayCases();
 
 		return _testrayCases.get(testCaseName);
+	}
+
+	public long getTestrayCaseIDByName(String testCaseName) {
+		_initTestrayCaseIDs();
+
+		Long testrayCaseID = _testrayCaseIDs.get(testCaseName);
+
+		if (testrayCaseID == null) {
+			return 0L;
+		}
+
+		return testrayCaseID;
 	}
 
 	public List<TestrayCase> getTestrayCases() {
@@ -338,10 +351,17 @@ public class TestrayProject {
 		_jsonObject = jsonObject;
 	}
 
-	private synchronized void _initTestrayCases() {
+	private synchronized void _initTestrayCaseIDs() {
 		if (_testrayCases != null) {
 			return;
 		}
+
+		long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
+
+		System.out.println(
+			JenkinsResultsParserUtil.combine(
+				"Gathering test case IDs for project ", getName(), " at ",
+				JenkinsResultsParserUtil.toDateString(new Date(start))));
 
 		_testrayCases = new HashMap<>();
 
@@ -350,7 +370,48 @@ public class TestrayProject {
 
 		try {
 			Set<JSONObject> entityJSONObjects = _testrayServer.requestGraphQL(
-				"cases", TestrayCase.FIELD_NAMES, filter, null);
+				"cases", TestrayCase.FIELD_NAMES_CASE_IDS, filter, null);
+
+			for (JSONObject entityJSONObject : entityJSONObjects) {
+				_testrayCaseIDs.put(
+					entityJSONObject.getString("name"),
+					entityJSONObject.getLong("id"));
+			}
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+		finally {
+			long duration =
+				JenkinsResultsParserUtil.getCurrentTimeMillis() - start;
+
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"Gathered test case IDs for project ", getName(), " in ",
+					JenkinsResultsParserUtil.toDurationString(duration)));
+		}
+	}
+
+	private synchronized void _initTestrayCases() {
+		if (_testrayCases != null) {
+			return;
+		}
+
+		long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
+
+		System.out.println(
+			JenkinsResultsParserUtil.combine(
+				"Gathering test cases for project ", getName(), " at ",
+				JenkinsResultsParserUtil.toDateString(new Date(start))));
+
+		_testrayCases = new HashMap<>();
+
+		String filter = JenkinsResultsParserUtil.combine(
+			"r_projectToCases_c_projectId eq '", String.valueOf(getID()), "'");
+
+		try {
+			Set<JSONObject> entityJSONObjects = _testrayServer.requestGraphQL(
+				"cases", TestrayCase.FIELD_NAMES, filter, null, 0, 50);
 
 			for (JSONObject entityJSONObject : entityJSONObjects) {
 				TestrayCase testrayCase = TestrayFactory.newTestrayCase(
@@ -362,9 +423,19 @@ public class TestrayProject {
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
+		finally {
+			long duration =
+				JenkinsResultsParserUtil.getCurrentTimeMillis() - start;
+
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"Gathered test cases for project ", getName(), " in ",
+					JenkinsResultsParserUtil.toDurationString(duration)));
+		}
 	}
 
 	private final JSONObject _jsonObject;
+	private final Map<String, Long> _testrayCaseIDs = new HashMap<>();
 	private Map<String, TestrayCase> _testrayCases;
 	private List<TestrayComponent> _testrayComponents;
 	private final TestrayServer _testrayServer;

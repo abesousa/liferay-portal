@@ -2545,9 +2545,12 @@ public class ObjectEntryLocalServiceImpl
 		throws PortalException {
 
 		String fileSource = ObjectFieldSettingUtil.getValue(
-			"fileSource", objectField.getObjectFieldSettings());
+			ObjectFieldSettingConstants.NAME_FILE_SOURCE,
+			objectField.getObjectFieldSettings());
 
-		if (Objects.equals(fileSource, "documentsAndMedia")) {
+		if (Objects.equals(
+				fileSource, ObjectFieldSettingConstants.VALUE_DOCS_AND_MEDIA)) {
+
 			return;
 		}
 
@@ -3166,10 +3169,13 @@ public class ObjectEntryLocalServiceImpl
 				objectEntry.getUserId(), objectDefinition.getPortletId(),
 				UserNotificationDeliveryConstants.TYPE_WEBSITE, false,
 				JSONUtil.put(
+					"classPK", objectEntry.getObjectEntryId()
+				).put(
 					"notificationMessage",
 					StringBundler.concat(
 						"The object entry ", objectEntry.getTitleValue(),
-						" has reached its review date.")));
+						" has reached its review date.")
+				));
 		}
 	}
 
@@ -3274,16 +3280,20 @@ public class ObjectEntryLocalServiceImpl
 
 			ObjectFieldSetting objectFieldSetting =
 				_objectFieldSettingPersistence.fetchByOFI_N(
-					objectField.getObjectFieldId(), "fileSource");
+					objectField.getObjectFieldId(),
+					ObjectFieldSettingConstants.NAME_FILE_SOURCE);
 
 			if (!Objects.equals(
-					objectFieldSetting.getValue(), "userComputer")) {
+					objectFieldSetting.getValue(),
+					ObjectFieldSettingConstants.
+						VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA)) {
 
 				continue;
 			}
 
 			objectFieldSetting = _objectFieldSettingPersistence.fetchByOFI_N(
-				objectField.getObjectFieldId(), "showFilesInDocumentsAndMedia");
+				objectField.getObjectFieldId(),
+				ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY);
 
 			if ((objectFieldSetting != null) &&
 				GetterUtil.getBoolean(objectFieldSetting.getValue())) {
@@ -7110,6 +7120,14 @@ public class ObjectEntryLocalServiceImpl
 			return;
 		}
 
+		ListTypeEntry listTypeEntry =
+			_listTypeEntryLocalService.fetchListTypeEntry(
+				objectField.getListTypeDefinitionId(), listTypeEntryKey);
+
+		if (listTypeEntry != null) {
+			return;
+		}
+
 		try {
 			_listTypeEntryService.getOrAddEmptyListTypeEntry(
 				objectField.getUserId(), objectField.getListTypeDefinitionId(),
@@ -7699,6 +7717,12 @@ public class ObjectEntryLocalServiceImpl
 
 				if (value instanceof List) {
 					listTypeEntryKeys = (List<String>)value;
+				}
+				else if (value instanceof Object[]) {
+					listTypeEntryKeys = TransformUtil.transformToList(
+						(Object[])value,
+						currentValue -> GetterUtil.getString(
+							String.valueOf(currentValue)));
 				}
 				else {
 					listTypeEntryKeys = ListUtil.fromString(

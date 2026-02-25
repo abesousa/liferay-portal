@@ -1,0 +1,85 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import ClayAlert from '@clayui/alert';
+import {ArrayHelpers, FieldArray, FormikValues, useFormikContext} from 'formik';
+import React from 'react';
+
+import {FieldCheckbox} from '../FieldCheckbox';
+
+interface FormikFieldMultiCheckboxProps {
+	'aria-describedby'?: string;
+	'aria-labelledby'?: string;
+	'name': string;
+	'options': Array<{
+		description?: string;
+		label: string;
+		value: string;
+	}>;
+}
+
+export function FormikFieldMultiCheckbox({
+	'aria-describedby': ariaDescribedby,
+	'aria-labelledby': ariaLabelledby,
+	name,
+	options,
+}: FormikFieldMultiCheckboxProps) {
+	const {errors, setFieldTouched, touched, values} =
+		useFormikContext<FormikValues>();
+
+	const fieldErrors = errors[name] as string | undefined;
+	const isInvalid = touched[name] && fieldErrors;
+
+	return (
+		<div
+			aria-describedby={
+				[ariaDescribedby, isInvalid && `${name}-error-message`]
+					.filter(Boolean)
+					.join(' ') || undefined
+			}
+			aria-invalid={isInvalid ? true : undefined}
+			aria-labelledby={ariaLabelledby}
+			role="group"
+		>
+			<FieldArray name={name}>
+				{(arrayHelper: ArrayHelpers) => {
+					const selectedValues: string[] =
+						values[name] && Array.isArray(values[name])
+							? values[name]
+							: [];
+
+					return options.map(({description, label, value}, index) => (
+						<FieldCheckbox
+							checked={selectedValues.includes(value)}
+							description={description}
+							key={value}
+							label={label}
+							name={`${name}[${index}]`}
+							onChange={(checked) => {
+								checked
+									? arrayHelper.push(value)
+									: arrayHelper.remove(
+											selectedValues.indexOf(value)
+										);
+
+								setFieldTouched(name, true);
+							}}
+						/>
+					));
+				}}
+			</FieldArray>
+
+			{isInvalid && (
+				<ClayAlert
+					displayType="danger"
+					id={`${name}-error-message`}
+					title={Liferay.Language.get('error-colon')}
+				>
+					{fieldErrors}
+				</ClayAlert>
+			)}
+		</div>
+	);
+}

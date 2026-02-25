@@ -383,7 +383,8 @@ public class ObjectEntryLocalServiceTest {
 						).name(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE
 						).value(
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 						).build(),
 						new ObjectFieldSettingBuilder(
 						).name(
@@ -551,7 +552,8 @@ public class ObjectEntryLocalServiceTest {
 					).name(
 						ObjectFieldSettingConstants.NAME_FILE_SOURCE
 					).value(
-						ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+						ObjectFieldSettingConstants.
+							VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 					).build(),
 					new ObjectFieldSettingBuilder(
 					).name(
@@ -830,6 +832,20 @@ public class ObjectEntryLocalServiceTest {
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
+				"emailAddressRequired", "john@liferay.com"
+			).put(
+				"listTypeEntryKeyRequired", "listTypeEntryKey1"
+			).put(
+				"multipleListTypeEntriesKey",
+				new String[] {
+					"multipleListTypeEntryKey1", "multipleListTypeEntryKey2"
+				}
+			).build());
+
+		_assertCount(6);
+
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
 				"bloodPressure", "12,8"
 			).put(
 				"emailAddressRequired", "diogo@liferay.com"
@@ -837,7 +853,7 @@ public class ObjectEntryLocalServiceTest {
 				"listTypeEntryKeyRequired", "listTypeEntryKey1"
 			).build());
 
-		_assertCount(6);
+		_assertCount(7);
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -848,7 +864,7 @@ public class ObjectEntryLocalServiceTest {
 				"listTypeEntryKeyRequired", "listTypeEntryKey1"
 			).build());
 
-		_assertCount(7);
+		_assertCount(8);
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -859,7 +875,7 @@ public class ObjectEntryLocalServiceTest {
 				"numberOfBooksWritten", "01"
 			).build());
 
-		_assertCount(8);
+		_assertCount(9);
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -870,7 +886,7 @@ public class ObjectEntryLocalServiceTest {
 				"listTypeEntryKeyRequired", "listTypeEntryKey1"
 			).build());
 
-		_assertCount(9);
+		_assertCount(10);
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -881,7 +897,7 @@ public class ObjectEntryLocalServiceTest {
 				"listTypeEntryKeyRequired", "listTypeEntryKey1"
 			).build());
 
-		_assertCount(10);
+		_assertCount(11);
 
 		String externalReferenceCode = RandomTestUtil.randomString();
 
@@ -1053,7 +1069,7 @@ public class ObjectEntryLocalServiceTest {
 				).getFileEntryId()
 			).build());
 
-		_assertCount(11);
+		_assertCount(12);
 
 		AssertUtils.assertFailure(
 			ObjectEntryValuesException.ListTypeEntry.class,
@@ -2489,7 +2505,8 @@ public class ObjectEntryLocalServiceTest {
 					).name(
 						ObjectFieldSettingConstants.NAME_FILE_SOURCE
 					).value(
-						ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+						ObjectFieldSettingConstants.
+							VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 					).build(),
 					new ObjectFieldSettingBuilder(
 					).name(
@@ -7892,7 +7909,8 @@ public class ObjectEntryLocalServiceTest {
 					).name(
 						ObjectFieldSettingConstants.NAME_FILE_SOURCE
 					).value(
-						ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+						ObjectFieldSettingConstants.
+							VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 					).build(),
 					new ObjectFieldSettingBuilder(
 					).name(

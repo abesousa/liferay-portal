@@ -14,6 +14,7 @@ import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.constants.ObjectValidationRuleSettingConstants;
 import com.liferay.object.definition.security.permission.resource.util.ObjectDefinitionResourcePermissionUtil;
+import com.liferay.object.definition.util.ObjectDefinitionThreadLocal;
 import com.liferay.object.definition.util.ObjectDefinitionUtil;
 import com.liferay.object.definition.util.ObjectDefinitionValidationThreadLocal;
 import com.liferay.object.exception.DuplicateObjectFieldExternalReferenceCodeException;
@@ -385,6 +386,11 @@ public class ObjectFieldLocalServiceImpl
 
 			_objectFieldSettingLocalService.deleteObjectFieldObjectFieldSetting(
 				objectField);
+
+			if (objectField.isState()) {
+				_objectStateFlowLocalService.deleteObjectFieldObjectStateFlow(
+					objectField.getObjectFieldId());
+			}
 		}
 	}
 
@@ -1240,6 +1246,12 @@ public class ObjectFieldLocalServiceImpl
 			_objectDefinitionPersistence.findByPrimaryKey(
 				objectField.getObjectDefinitionId());
 
+		if (ObjectDefinitionThreadLocal.isDeleteObjectDefinitionId(
+				objectField.getObjectDefinitionId())) {
+
+			return objectFieldPersistence.remove(objectField);
+		}
+
 		if (objectDefinition.isSystem() && objectField.isSystem() &&
 			!ObjectDefinitionUtil.isInvokerBundleAllowed()) {
 
@@ -1298,9 +1310,14 @@ public class ObjectFieldLocalServiceImpl
 
 			ObjectFieldSetting objectFieldSetting =
 				_objectFieldSettingPersistence.fetchByOFI_N(
-					objectField.getObjectFieldId(), "fileSource");
+					objectField.getObjectFieldId(),
+					ObjectFieldSettingConstants.NAME_FILE_SOURCE);
 
-			if (Objects.equals(objectFieldSetting.getValue(), "userComputer")) {
+			if (Objects.equals(
+					objectFieldSetting.getValue(),
+					ObjectFieldSettingConstants.
+						VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA)) {
+
 				List<ObjectEntry> objectEntries =
 					_objectEntryPersistence.findByObjectDefinitionId(
 						objectField.getObjectDefinitionId());

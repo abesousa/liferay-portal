@@ -4502,6 +4502,22 @@
 		]
 	},
 	{
+		"classNames": [
+			"CommerceLowStockActivity"
+		],
+		"classStructurePattern": true,
+		"issueKey": "LPD-48704",
+		"newImports": [
+			"com.liferay.portal.kernel.language.LanguageUtil",
+			"java.util.HashMap",
+			"java.util.Locale",
+			"java.util.Map"
+		],
+		"newMethods": [
+			"@Override\n\tpublic Map<Locale,String> getLabelMap() {\n\t\tMap<Locale, String> labelMap = new HashMap<>();\n\n\t\tfor (Locale locale : LanguageUtil.getAvailableLocales()) {\n\t\t\tlabelMap.put(locale, getLabel(locale));\n\t\t}\n\n\t\treturn labelMap;\n\t}"
+		]
+	},
+	{
 		"from": "regex:(?<utilName>CPAttachmentFileEntryServiceUtil|CPAttachmentFileEntryLocalServiceUtil)\\.fetchByExternalReferenceCode",
 		"issueKey": "LPD-48708",
 		"to": "${utilName}.fetchCPAttachmentFileEntryByExternalReferenceCode",
@@ -5162,6 +5178,24 @@
 			"com.liferay.portal.kernel.model.UserConstants"
 		],
 		"to": "addUser(param#0#, param#1#, param#2#, param#3#, param#4#, param#5#, param#6#, param#7#, param#8#, param#9#, param#10#, param#11#, param#12#, param#13#, param#14#, param#15#, param#16#, param#17#, param#18#, UserConstants.TYPE_REGULAR, param#19#, param#20#, param#21#, param#22#, param#23#, param#24#)"
+	},
+	{
+		"classNames": [
+			"FragmentEntryLinkLocalService",
+			"FragmentEntryLinkLocalServiceUtil"
+		],
+		"from": "addFragmentEntryLink(long paramName, long paramName, long paramName, long paramName, long paramName, long paramName, String paramName, String paramName, String paramName, String paramName, String paramName, String paramName, int paramName, String paramName, int paramName, ServiceContext paramName)",
+		"issueKey": "LPD-58603",
+		"to": "addFragmentEntryLink(null, param#0#, param#1#, param#2#, param#3#, param#4#, param#5#, param#6#, param#7#, param#8#, param#9#, param#10#, param#11#, param#12#, param#13#, param#14#, param#15#)"
+	},
+	{
+		"classNames": [
+			"FragmentEntryLinkService",
+			"FragmentEntryLinkServiceUtil"
+		],
+		"from": "addFragmentEntryLink(long paramName, long paramName, long paramName, long paramName, long paramName, String paramName, String paramName, String paramName, String paramName, String paramName, String paramName, int paramName, String paramName, int paramName, ServiceContext paramName)",
+		"issueKey": "LPD-58603",
+		"to": "addFragmentEntryLink(null, param#0#, param#1#, param#2#, param#3#, param#4#, param#5#, param#6#, param#7#, param#8#, param#9#, param#10#, param#11#, param#12#, param#13#, param#14#)"
 	},
 	{
 		"classNames": [

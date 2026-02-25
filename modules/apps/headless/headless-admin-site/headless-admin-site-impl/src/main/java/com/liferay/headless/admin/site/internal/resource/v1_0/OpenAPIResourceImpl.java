@@ -42,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 )
 @Generated("")
 @OpenAPIDefinition(
-	info = @Info(description = "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID 'com.liferay.headless.admin.site.client', and version '1.0.23'.", license = @License(name = "Apache 2.0", url = "http://www.apache.org/licenses/LICENSE-2.0.html"), title = "Liferay Admin Sites Headless API", version = "v1.0")
+	info = @Info(description = "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID 'com.liferay.headless.admin.site.client', and version '1.0.24'.", license = @License(name = "Apache 2.0", url = "http://www.apache.org/licenses/LICENSE-2.0.html"), title = "Liferay Admin Sites Headless API", version = "v1.0")
 )
 @Path("/v1.0")
 public class OpenAPIResourceImpl {
@@ -89,8 +89,6 @@ public class OpenAPIResourceImpl {
 
 			add(DisplayPageTemplateFolderResourceImpl.class);
 
-			add(FragmentCompositionResourceImpl.class);
-
 			add(FriendlyUrlHistoryResourceImpl.class);
 
 			add(MasterPageResourceImpl.class);
@@ -100,12 +98,6 @@ public class OpenAPIResourceImpl {
 			add(PageElementResourceImpl.class);
 
 			add(PageExperienceResourceImpl.class);
-
-			add(PageRuleResourceImpl.class);
-
-			add(PageRuleActionResourceImpl.class);
-
-			add(PageRuleConditionResourceImpl.class);
 
 			add(PageSpecificationResourceImpl.class);
 

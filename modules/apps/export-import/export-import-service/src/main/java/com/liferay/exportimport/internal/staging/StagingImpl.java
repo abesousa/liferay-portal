@@ -54,6 +54,7 @@ import com.liferay.exportimport.kernel.staging.constants.StagingConstants;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepositoryHelper;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepositoryRegistryUtil;
+import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.StringBundler;
@@ -80,9 +81,11 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutBranch;
+import com.liferay.portal.kernel.model.LayoutFriendlyURL;
 import com.liferay.portal.kernel.model.LayoutRevision;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
 import com.liferay.portal.kernel.model.Portlet;
@@ -196,7 +199,8 @@ public class StagingImpl implements Staging {
 		throws PortalException {
 
 		if (!(model instanceof StagedGroupedModel) ||
-			ExportImportThreadLocal.isInitialLayoutStagingInProcess()) {
+			ExportImportThreadLocal.isInitialLayoutStagingInProcess() ||
+			_isIgnoredModel(model)) {
 
 			return;
 		}
@@ -262,11 +266,24 @@ public class StagingImpl implements Staging {
 
 		long classPK = (long)stagedGroupedModel.getPrimaryKeyObj();
 
-		_changesetEntryLocalService.fetchOrAddChangesetEntry(
-			changesetCollection.getChangesetCollectionId(),
-			_classNameLocalService.getClassNameId(
-				stagedGroupedModel.getModelClassName()),
-			classPK);
+		if ((model instanceof
+				ExternalReferenceCodeModel externalReferenceCodeModel) &&
+			!(model instanceof JournalArticle)) {
+
+			_changesetEntryLocalService.fetchOrAddChangesetEntry(
+				changesetCollection.getChangesetCollectionId(),
+				externalReferenceCodeModel.getExternalReferenceCode(),
+				_classNameLocalService.getClassNameId(
+					stagedGroupedModel.getModelClassName()),
+				classPK);
+		}
+		else {
+			_changesetEntryLocalService.fetchOrAddChangesetEntry(
+				changesetCollection.getChangesetCollectionId(),
+				_classNameLocalService.getClassNameId(
+					stagedGroupedModel.getModelClassName()),
+				classPK);
+		}
 	}
 
 	@Override
@@ -3972,6 +3989,17 @@ public class StagingImpl implements Staging {
 		scheduleInformation.setStartCalendar(startCalendar);
 
 		return scheduleInformation;
+	}
+
+	private <T extends BaseModel> boolean _isIgnoredModel(T model) {
+		if ((model instanceof LayoutFriendlyURL) ||
+			((model instanceof Layout layout) && layout.isHidden() &&
+			 layout.isSystem())) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private boolean _isLayoutRevisionIncomplete(

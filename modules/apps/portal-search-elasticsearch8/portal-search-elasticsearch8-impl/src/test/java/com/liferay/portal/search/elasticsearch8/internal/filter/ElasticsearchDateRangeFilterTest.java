@@ -5,16 +5,15 @@
 
 package com.liferay.portal.search.elasticsearch8.internal.filter;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+
 import com.liferay.portal.search.elasticsearch8.internal.indexing.LiferayElasticsearchIndexingFixtureFactory;
 import com.liferay.portal.search.test.util.filter.BaseDateRangeFilterTestCase;
 import com.liferay.portal.search.test.util.indexing.IndexingFixture;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import org.elasticsearch.ElasticsearchStatusException;
-
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -51,7 +50,6 @@ public class ElasticsearchDateRangeFilterTest
 		assertHits("20001122000000");
 	}
 
-	@Ignore
 	@Test
 	public void testMalformed() throws Exception {
 		addDocument(getDate(2000, 11, 22));
@@ -62,7 +60,6 @@ public class ElasticsearchDateRangeFilterTest
 		assertElasticsearchException();
 	}
 
-	@Ignore
 	@Test
 	public void testMalformedMultiple() throws Exception {
 		addDocument(getDate(2000, 11, 22));
@@ -94,14 +91,12 @@ public class ElasticsearchDateRangeFilterTest
 
 					Assert.fail();
 				}
-				catch (ElasticsearchStatusException
-							elasticsearchStatusException) {
-
+				catch (ElasticsearchException elasticsearchException) {
 					Assert.assertEquals(
-						"Elasticsearch exception [" +
-							"type=search_phase_execution_exception, " +
-								"reason=all shards failed]",
-						elasticsearchStatusException.getMessage());
+						"[es/search] failed: " +
+							"[search_phase_execution_exception] all shards " +
+								"failed",
+						elasticsearchException.getMessage());
 				}
 			});
 	}

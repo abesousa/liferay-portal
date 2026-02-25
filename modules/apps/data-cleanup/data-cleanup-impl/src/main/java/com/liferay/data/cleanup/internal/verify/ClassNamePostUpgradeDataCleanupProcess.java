@@ -6,19 +6,24 @@
 package com.liferay.data.cleanup.internal.verify;
 
 import com.liferay.data.cleanup.internal.verify.util.PostUpgradeDataCleanupProcessUtil;
+import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.upgrade.data.cleanup.util.DataCleanupLoggingUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -40,9 +46,13 @@ public class ClassNamePostUpgradeDataCleanupProcess
 	extends BaseDBProcess implements PostUpgradeDataCleanupProcess {
 
 	public ClassNamePostUpgradeDataCleanupProcess(
-		ClassNameLocalService classNameLocalService, Connection connection) {
+		ClassNameLocalService classNameLocalService,
+		CompanyLocalService companyLocalService, Connection connection,
+		ObjectDefinitionLocalService objectDefinitionLocalService) {
 
 		_classNameLocalService = classNameLocalService;
+		_companyLocalService = companyLocalService;
+		_objectDefinitionLocalService = objectDefinitionLocalService;
 
 		this.connection = connection;
 	}
@@ -89,37 +99,71 @@ public class ClassNamePostUpgradeDataCleanupProcess
 					return;
 				}
 
-				int dashIndex = value.indexOf(StringPool.DASH);
-				int poundIndex = value.indexOf(StringPool.POUND);
+				if (StringUtil.startsWith(
+						value,
+						ObjectDefinitionConstants.
+							CLASS_NAME_PREFIX_CUSTOM_OBJECT_DEFINITION)) {
 
-				if (dashIndex != -1) {
-					value = value.substring(0, dashIndex);
+					AtomicReference<ObjectDefinition> objectDefinition =
+						new AtomicReference<>();
+
+					String finalValue = value;
+
+					_companyLocalService.forEachCompanyId(
+						companyId -> {
+							if (objectDefinition.get() != null) {
+								return;
+							}
+
+							objectDefinition.set(
+								_objectDefinitionLocalService.
+									fetchObjectDefinitionByClassName(
+										companyId, finalValue));
+						});
+
+					if (objectDefinition.get() != null) {
+						return;
+					}
 				}
 
-				if (poundIndex != -1) {
-					value = value.substring(0, poundIndex);
+				int index = value.indexOf(StringPool.DASH);
+
+				if ((index != -1) &&
+					StringUtil.startsWith(value, Layout.class.getName())) {
+
+					value = value.substring(0, index);
 				}
 
-				if (models.contains(value)) {
-					return;
-				}
+				boolean missingClass = false;
 
-				Class<?> clazz = null;
+				for (String currentValue : value.split("[-_]")) {
+					if (models.contains(currentValue)) {
+						continue;
+					}
 
-				for (Bundle bundle : bundleContext.getBundles()) {
-					try {
-						clazz = bundle.loadClass(value);
+					Class<?> clazz = null;
+
+					for (Bundle bundle : bundleContext.getBundles()) {
+						try {
+							clazz = bundle.loadClass(currentValue);
+
+							break;
+						}
+						catch (ClassNotFoundException classNotFoundException) {
+							if (_log.isDebugEnabled()) {
+								_log.debug(classNotFoundException);
+							}
+						}
+					}
+
+					if (clazz == null) {
+						missingClass = true;
 
 						break;
 					}
-					catch (ClassNotFoundException classNotFoundException) {
-						if (_log.isDebugEnabled()) {
-							_log.debug(classNotFoundException);
-						}
-					}
 				}
 
-				if (clazz != null) {
+				if (!missingClass) {
 					return;
 				}
 
@@ -170,5 +214,7 @@ public class ClassNamePostUpgradeDataCleanupProcess
 		ClassNamePostUpgradeDataCleanupProcess.class);
 
 	private final ClassNameLocalService _classNameLocalService;
+	private final CompanyLocalService _companyLocalService;
+	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 }

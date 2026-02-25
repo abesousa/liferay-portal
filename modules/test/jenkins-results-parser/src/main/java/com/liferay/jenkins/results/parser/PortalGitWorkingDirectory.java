@@ -52,7 +52,7 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 			JenkinsResultsParserUtil.combine(
 				"zip -r -y ", fileName,
 				" $(git ls-files --directory --no-empty-directory --others | ",
-				"grep -v \\\\.gradle/)"));
+				"grep -v \\\\.gradle/) modules/yarn.lock"));
 
 		if (executionResult.getExitValue() != 0) {
 			throw new GitWorkingDirectoryRuntimeException(
@@ -370,12 +370,35 @@ public class PortalGitWorkingDirectory extends GitWorkingDirectory {
 			for (Map.Entry<String, String> entry : env.entrySet()) {
 				String key = entry.getKey();
 
-				if (!key.startsWith("ANT_") && !key.startsWith("JAVA_")) {
+				if (!key.startsWith("ANT_") && !key.startsWith("JAVA_") &&
+					!key.startsWith("JENKINS_HOME")) {
+
 					continue;
 				}
 
 				filteredEnv.put(key, entry.getValue());
 			}
+
+			Properties properties = new Properties();
+
+			String[] propertyNames = {
+				"nodejs.npm.ci.registry", "nodejs.node.env", "nodejs.npm.args",
+				"nodejs.npm.ci.sass.binary.site"
+			};
+
+			for (String propertyName : propertyNames) {
+				properties.put(
+					propertyName,
+					JenkinsResultsParserUtil.getBuildProperty(
+						"portal.build.properties[" + propertyName + "]"));
+			}
+
+			JenkinsResultsParserUtil.writePropertiesFile(
+				new File(
+					getWorkingDirectory(),
+					JenkinsResultsParserUtil.combine(
+						"build.", System.getenv("HOSTNAME"), ".properties")),
+				properties, true);
 
 			AntUtil.callTarget(
 				workingDirectory, "build.xml", "setup-sdk setup-yarn", null,

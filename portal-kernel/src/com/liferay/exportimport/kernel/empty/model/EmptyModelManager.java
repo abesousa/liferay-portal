@@ -10,6 +10,7 @@ import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.portal.kernel.exception.PortalException;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -40,5 +41,9 @@ public interface EmptyModelManager {
 		throws E;
 
 	public boolean isEmptyModel();
+
+	public int solveEmptyModel(
+		String classExternalReferenceCode, String className, long companyId,
+		long groupId, int status, Supplier<Integer> updatedModelStatusSupplier);
 
 }

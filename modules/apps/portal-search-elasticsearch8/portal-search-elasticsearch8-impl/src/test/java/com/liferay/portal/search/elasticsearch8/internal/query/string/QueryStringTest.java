@@ -11,9 +11,7 @@ import com.liferay.portal.search.test.util.query.string.BaseQueryStringTestCase;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
 
 /**
  * @author Wade Cao
@@ -25,18 +23,6 @@ public class QueryStringTest extends BaseQueryStringTestCase {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Ignore
-	@Override
-	@Test
-	public void testPresentAfterSearch() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testPresentAfterSearchCount() throws Exception {
-	}
-
 	@Override
 	protected IndexingFixture createIndexingFixture() throws Exception {
 		return ElasticsearchIndexingFixtureFactory.getInstance();
@@ -44,7 +30,7 @@ public class QueryStringTest extends BaseQueryStringTestCase {
 
 	@Override
 	protected String getExpectedPartOfResponseString() {
-		return "\"hits\":{\"total\":{\"value\":1,";
+		return "\"hits\":{\"total\":{\"relation\":\"eq\",\"value\":1";
 	}
 
 }

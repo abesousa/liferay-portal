@@ -165,6 +165,7 @@ export interface IItemsActions {
 		| 'link'
 		| 'modal'
 		| 'modal-permissions'
+		| 'modal-workflow-transition'
 		| 'sidePanel'
 		| 'event';
 	type?: EItemActionsType | `${EItemActionsType}`;
@@ -272,10 +273,12 @@ export interface IView {
 	contentRendererClientExtension?: boolean;
 	contentRendererModuleURL?: string;
 	default?: boolean;
+	initialPaginationDelta?: number;
 	label?: string;
 	name?: string;
 	schema?: ISchema;
 	setItemComponentProps?: ({item, props}: {item: any; props: any}) => any;
+	showPagination?: boolean;
 	thumbnail?: string;
 	views?: Array<any>;
 }
@@ -305,7 +308,6 @@ export interface IFrontendDataSetProps {
 	customDataRenderers?: any;
 	customRenderers?: {
 		tableCell?: Array<TRenderer>;
-		views?: Array<TRenderer>;
 	};
 	defaultSelectedItems?: any[];
 	emptyState?: IEmptyStateConfiguration;

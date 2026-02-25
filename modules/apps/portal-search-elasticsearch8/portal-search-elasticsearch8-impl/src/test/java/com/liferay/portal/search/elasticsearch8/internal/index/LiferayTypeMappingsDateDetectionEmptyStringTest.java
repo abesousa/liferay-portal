@@ -14,9 +14,9 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import java.util.Date;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -41,7 +41,11 @@ public class LiferayTypeMappingsDateDetectionEmptyStringTest {
 		_liferayIndexFixture.setUp();
 	}
 
-	@Ignore
+	@After
+	public void tearDown() throws Exception {
+		_liferayIndexFixture.tearDown();
+	}
+
 	@Test
 	public void testEmptyStringInSecondDocument() throws Exception {
 		String field1 = _randomField();
@@ -102,7 +106,7 @@ public class LiferayTypeMappingsDateDetectionEmptyStringTest {
 			).put(
 				field2, RandomTestUtil.randomString()
 			).put(
-				field3, RandomTestUtil.randomString()
+				field3, String.valueOf(RandomTestUtil.randomLong())
 			).put(
 				field4, RandomTestUtil.randomString()
 			).put(
@@ -119,7 +123,7 @@ public class LiferayTypeMappingsDateDetectionEmptyStringTest {
 
 		assertType(field1, "text");
 		assertType(field2, "text");
-		assertType(field3, "text");
+		assertType(field3, "long");
 		assertType(field4, "text");
 		assertType(field5, "long");
 		assertType(field6, "text");

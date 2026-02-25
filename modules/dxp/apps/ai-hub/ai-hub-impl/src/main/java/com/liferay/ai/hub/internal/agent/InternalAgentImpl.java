@@ -97,21 +97,25 @@ public class InternalAgentImpl implements InternalAgent, InvocationHandler {
 				).build();
 
 			for (AgentArgument agentArgument : arguments()) {
+				String name = agentArgument.name();
+
+				if (workflowContext.containsKey(name)) {
+					continue;
+				}
+
 				workflowContext.put(
-					agentArgument.name(),
-					MapUtil.getString(
-						(Map<String, Object>)arguments[0],
-						agentArgument.name()));
+					name,
+					MapUtil.getString((Map<String, Object>)arguments[0], name));
 			}
 
 			WorkflowDefinition workflowDefinition =
 				_workflowDefinitionManager.liberalGetLatestWorkflowDefinition(
-					_agentContext.getCompanyId(), name());
+					_agentContext.getCompanyId(), _workflowDefinitionName);
 
 			return AgentUtil.getOutput(
 				_workflowInstanceManager.startWorkflowInstance(
 					_agentContext.getCompanyId(), _agentContext.getGroupId(),
-					_agentContext.getUserId(), name(),
+					_agentContext.getUserId(), _workflowDefinitionName,
 					workflowDefinition.getVersion(), null, workflowContext));
 		}
 		catch (Exception exception) {
@@ -160,6 +164,10 @@ public class InternalAgentImpl implements InternalAgent, InvocationHandler {
 		_agentInstance = agentInstance;
 	}
 
+	public void setWorkflowDefinitionName(String workflowDefinitionName) {
+		_workflowDefinitionName = workflowDefinitionName;
+	}
+
 	@Override
 	public List<AgentInstance> subagents() {
 		return List.of();
@@ -182,6 +190,7 @@ public class InternalAgentImpl implements InternalAgent, InvocationHandler {
 	private String _name;
 	private String _outputKey;
 	private final WorkflowDefinitionManager _workflowDefinitionManager;
+	private String _workflowDefinitionName;
 	private final WorkflowInstanceManager _workflowInstanceManager;
 
 }

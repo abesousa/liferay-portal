@@ -30,7 +30,7 @@ public class RESTBuilderModulesBatchTestClassGroup
 			return 0;
 		}
 
-		if ((_buildType == BuildType.FULL) || !containsTestClasses()) {
+		if (!containsTestClasses() && (_buildType == BuildType.CORE)) {
 			return 1;
 		}
 
@@ -56,7 +56,7 @@ public class RESTBuilderModulesBatchTestClassGroup
 
 	public static enum BuildType {
 
-		FULL
+		CORE, FULL
 
 	}
 
@@ -101,9 +101,7 @@ public class RESTBuilderModulesBatchTestClassGroup
 			getExcludesJobProperties());
 		List<PathMatcher> includesPathMatchers = getIncludesPathMatchers();
 
-		if (testRelevantChanges &&
-			!(includeStableTestSuite && isStableTestSuiteBatch())) {
-
+		if (testRelevantChanges) {
 			List<File> modifiedFiles =
 				portalGitWorkingDirectory.getModifiedFilesList();
 

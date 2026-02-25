@@ -46,7 +46,6 @@ export const test = mergeTests(
 	featureFlagsTest({
 		'LPD-35013': {enabled: true},
 		'LPD-35443': {enabled: true},
-		'LPD-35914': {enabled: true},
 	}),
 	isolatedSiteTest,
 	loginTest(),
@@ -222,7 +221,7 @@ test('Can import account restricted entry when account does and does not exist i
 		).toEqual({status: 'NOT_FOUND'});
 	});
 
-	await test.step('assert entry is imported wiht account relationship properties when it does not exist', async () => {
+	await test.step('assert entry is imported with account relationship properties when it does not exist', async () => {
 		await apiHelpers.headlessAdminUser.deleteAccount(account.id);
 
 		expect(
@@ -231,6 +230,7 @@ test('Can import account restricted entry when account does and does not exist i
 
 		await companyExportImportPage.import({
 			filePath: exportFilePath,
+			taskStatus: 'completedWithErrors',
 		});
 
 		const newImportedObjectEntry = await apiHelpers.get(

@@ -8,8 +8,6 @@ package com.liferay.portal.search.solr8.internal.search.engine.adapter;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.solr8.internal.connection.SolrClientManager;
-import com.liferay.portal.search.solr8.internal.search.engine.adapter.document.DocumentRequestExecutorFixture;
-import com.liferay.portal.search.solr8.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
 
 import java.util.Map;
 
@@ -38,23 +36,6 @@ public class SolrSearchEngineAdapterFixture {
 	protected SearchEngineAdapter createSearchEngineAdapter(
 		SolrClientManager solrClientManager, Map<String, Object> properties) {
 
-		DocumentRequestExecutorFixture documentRequestExecutorFixture =
-			new DocumentRequestExecutorFixture() {
-				{
-					setProperties(properties);
-					setSolrClientManager(solrClientManager);
-				}
-			};
-
-		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
-			{
-				setSolrClientManager(solrClientManager);
-			}
-		};
-
-		documentRequestExecutorFixture.setUp();
-		_searchRequestExecutorFixture.setUp();
-
 		SolrSearchEngineAdapterImpl solrSearchEngineAdapterImpl =
 			new SolrSearchEngineAdapterImpl() {
 				{
@@ -66,21 +47,13 @@ public class SolrSearchEngineAdapterFixture {
 			solrSearchEngineAdapterImpl, "_solrClientManager",
 			solrClientManager);
 
-		ReflectionTestUtil.setFieldValue(
-			solrSearchEngineAdapterImpl, "_documentRequestExecutor",
-			documentRequestExecutorFixture.getDocumentRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			solrSearchEngineAdapterImpl, "_searchRequestExecutor",
-			_searchRequestExecutorFixture.getSearchRequestExecutor());
-
-		solrSearchEngineAdapterImpl.activate();
+		solrSearchEngineAdapterImpl.activate(properties);
 
 		return solrSearchEngineAdapterImpl;
 	}
 
 	private Map<String, Object> _properties;
 	private SearchEngineAdapter _searchEngineAdapter;
-	private SearchRequestExecutorFixture _searchRequestExecutorFixture;
 	private SolrClientManager _solrClientManager;
 
 }

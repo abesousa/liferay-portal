@@ -11,16 +11,12 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
 import com.liferay.portal.db.DBResourceUtil;
-import com.liferay.portal.kernel.annotation.ImplementationClassName;
-import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
-import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.upgrade.data.cleanup.DataCleanupPreupgradeProcess;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 
@@ -28,10 +24,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,20 +37,12 @@ public class CounterDataCleanupPreupgradeProcess
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		_liferayTableNames.addAll(
-			DBResourceUtil.getServiceComponentModuleTableNames(connection));
-		_liferayTableNames.addAll(
-			DBResourceUtil.getServiceComponentPortalTableNames(connection));
-		_liferayTableNames.addAll(
-			DBResourceUtil.getModuleTableNames(connection));
-		_liferayTableNames.addAll(
-			DBResourceUtil.getPortalTableNames(connection));
+		_liferayTableNames = DBResourceUtil.getLiferayTableNames(connection);
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select name, currentId from Counter");
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
-			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
 			DBInspector dbInspector = new DBInspector(connection);
 			List<String> excludedTableNames = new ArrayList<>();
 			String kernelCounterName = "";
@@ -100,38 +86,32 @@ public class CounterDataCleanupPreupgradeProcess
 					continue;
 				}
 
-				String tableName;
+				String tableName =
+					DataCleanupPreupgradeProcessUtil.getTableName(
+						connection, dbInspector, counterName);
 
-				try {
-					Class<?> clazz = classLoader.loadClass(counterName);
-
-					ImplementationClassName implementationClassName =
-						clazz.getAnnotation(ImplementationClassName.class);
-
-					if (implementationClassName == null) {
-						tableName = StringUtil.extractLast(counterName, '.');
-					}
-					else {
-						clazz = classLoader.loadClass(
-							implementationClassName.value());
-
-						tableName = (String)clazz.getField(
-							"TABLE_NAME"
-						).get(
-							null
-						);
-					}
-				}
-				catch (ClassNotFoundException classNotFoundException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(classNotFoundException);
-					}
-
+				if (tableName == null) {
 					tableName = StringUtil.extractLast(counterName, '.');
 				}
 
-				if (!dbInspector.hasTable(tableName) ||
-					!_isLiferayTable(dbInspector, tableName)) {
+				if (!dbInspector.isObjectTable(tableName) &&
+					!_liferayTableNames.contains(tableName)) {
+
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							StringBundler.concat(
+								"Skipping counter ", counterName,
+								" because its associated table does not ",
+								"belong to Liferay"));
+					}
+
+					continue;
+				}
+
+				if (!dbInspector.hasTable(tableName)) {
+					if (_log.isWarnEnabled()) {
+						_log.warn("Table " + tableName + " does not exist");
+					}
 
 					continue;
 				}
@@ -166,13 +146,14 @@ public class CounterDataCleanupPreupgradeProcess
 
 		for (String tableName : tableNames) {
 			if (!dbInspector.isObjectTable(tableName) &&
-				!_isLiferayTable(dbInspector, tableName)) {
+				!_liferayTableNames.contains(tableName)) {
 
 				continue;
 			}
 
-			String columnName = _getPrimaryKeyColumnName(
-				dbInspector, tableName);
+			String columnName =
+				DataCleanupPreupgradeProcessUtil.getPrimaryKeyColumnName(
+					connection, dbInspector, tableName);
 
 			if ((columnName == null) ||
 				!dbInspector.isNumeric(tableName, columnName)) {
@@ -262,7 +243,9 @@ public class CounterDataCleanupPreupgradeProcess
 			String tableName)
 		throws Exception {
 
-		String columnName = _getPrimaryKeyColumnName(dbInspector, tableName);
+		String columnName =
+			DataCleanupPreupgradeProcessUtil.getPrimaryKeyColumnName(
+				connection, dbInspector, tableName);
 
 		if (counterName.equals(DLFileEntry.class.getName())) {
 			columnName = "name";
@@ -355,44 +338,12 @@ public class CounterDataCleanupPreupgradeProcess
 		return 0L;
 	}
 
-	private String _getPrimaryKeyColumnName(
-			DBInspector dbInspector, String tableName)
-		throws Exception {
-
-		DB db = DBManagerUtil.getDB();
-
-		List<String> primaryKeyColumnNames = new ArrayList<>(
-			Arrays.asList(db.getPrimaryKeyColumnNames(connection, tableName)));
-
-		primaryKeyColumnNames.remove(
-			dbInspector.normalizeName("ctCollectionId"));
-
-		if (primaryKeyColumnNames.size() != 1) {
-			return null;
-		}
-
-		return primaryKeyColumnNames.get(0);
-	}
-
-	private boolean _isLiferayTable(DBInspector dbInspector, String tableName)
-		throws Exception {
-
-		if (dbInspector.isObjectTable(tableName) ||
-			_liferayTableNames.contains(tableName)) {
-
-			return true;
-		}
-
-		return false;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		CounterDataCleanupPreupgradeProcess.class);
 
 	private static final Pattern _layoutSpecificCounterNamePattern =
 		Pattern.compile("^([a-zA-Z0-9_.]+)#(\\d+)#(true|false)$");
 
-	private final Set<String> _liferayTableNames = new TreeSet<>(
-		String.CASE_INSENSITIVE_ORDER);
+	private Set<String> _liferayTableNames;
 
 }

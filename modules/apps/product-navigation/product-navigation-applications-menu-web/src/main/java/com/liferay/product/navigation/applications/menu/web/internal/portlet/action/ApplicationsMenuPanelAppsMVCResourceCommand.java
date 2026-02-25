@@ -51,7 +51,6 @@ import com.liferay.portal.kernel.webserver.WebServerServletToken;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.product.navigation.applications.menu.web.internal.constants.ProductNavigationApplicationsMenuPortletKeys;
-import com.liferay.product.navigation.applications.menu.web.internal.util.ApplicationsMenuUtil;
 import com.liferay.site.item.selector.SiteItemSelectorCriterion;
 import com.liferay.site.manager.RecentGroupManager;
 import com.liferay.site.provider.GroupURLProvider;
@@ -110,6 +109,8 @@ public class ApplicationsMenuPanelAppsMVCResourceCommand
 
 		return JSONUtil.put(
 			"cms", _getCMSJSONObject(httpServletRequest, themeDisplay)
+		).put(
+			"dsr", _getDSRJSONObject(themeDisplay)
 		).put(
 			"items",
 			_getPanelCategoriesJSONArray(
@@ -363,6 +364,16 @@ public class ApplicationsMenuPanelAppsMVCResourceCommand
 		return 0;
 	}
 
+	private JSONObject _getDSRJSONObject(ThemeDisplay themeDisplay)
+		throws Exception {
+
+		return JSONUtil.put(
+			"url",
+			StringBundler.concat(
+				themeDisplay.getPathFriendlyURLPublic(), "/",
+				StringUtil.toLowerCase(GroupConstants.DSR), "/rooms"));
+	}
+
 	private String _getNewSpaceCreationURL(
 			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay)
 		throws Exception {
@@ -481,8 +492,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommand
 
 		JSONArray recentSitesJSONArray = _jsonFactory.createJSONArray();
 
-		boolean applicationMenuApp = _isApplicationMenuApp(
-			resourceRequest, themeDisplay);
+		boolean applicationMenuApp = _isApplicationMenuApp(resourceRequest);
 
 		for (Group group : groups) {
 			recentSitesJSONArray.put(
@@ -560,10 +570,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommand
 			}
 		}
 
-		if (FeatureFlagManagerUtil.isEnabled(
-				themeDisplay.getCompanyId(), "LPD-36105") ||
-			(max < 0)) {
-
+		if (max < 0) {
 			sitesJSONObject.put(
 				"viewAllURL",
 				_getViewAllURL(resourceRequest, resourceResponse));
@@ -588,15 +595,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommand
 				siteItemSelectorCriterion));
 	}
 
-	private boolean _isApplicationMenuApp(
-		ResourceRequest resourceRequest, ThemeDisplay themeDisplay) {
-
-		if (!ApplicationsMenuUtil.isEnableApplicationsMenu(
-				themeDisplay.getCompanyId(), _configurationProvider)) {
-
-			return false;
-		}
-
+	private boolean _isApplicationMenuApp(ResourceRequest resourceRequest) {
 		String selectedPortletId = ParamUtil.getString(
 			resourceRequest, "selectedPortletId");
 
@@ -636,6 +635,10 @@ public class ApplicationsMenuPanelAppsMVCResourceCommand
 			PanelApp panelApp = _panelAppRegistry.getFirstAvailablePanelApp(
 				panelCategory.getKey(), themeDisplay.getPermissionChecker(),
 				themeDisplay.getScopeGroup());
+
+			if (panelApp == null) {
+				continue;
+			}
 
 			panelCategoriesJSONArray.put(
 				JSONUtil.put(

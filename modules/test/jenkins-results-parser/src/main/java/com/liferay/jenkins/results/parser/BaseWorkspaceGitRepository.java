@@ -1023,16 +1023,10 @@ public abstract class BaseWorkspaceGitRepository
 				jobName.equals("forward-pullrequest") ||
 				jobName.equals("publish-testray-report") ||
 				jobName.equals("test-portal-source-format") ||
-				jobName.contains("validation")) {
-
-				return true;
-			}
-
-			if (jobName.contains("master") &&
-				!JenkinsResultsParserUtil.isNullOrEmpty(jobVariant) &&
-				(jobVariant.contains("modules-unit") ||
-				 jobVariant.contains("rest-builder") ||
-				 jobVariant.contains("service-builder"))) {
+				jobName.contains("validation") ||
+				jobVariant.contains("modules-unit") ||
+				jobVariant.contains("rest-builder") ||
+				jobVariant.contains("service-builder")) {
 
 				return true;
 			}
@@ -1106,17 +1100,6 @@ public abstract class BaseWorkspaceGitRepository
 						JenkinsResultsParserUtil.combine(
 							"Unable to reset Git directory: " + directory,
 							executionResult.getStandardError()));
-				}
-
-				String jobVariant = System.getenv("JOB_VARIANT");
-
-				if (!JenkinsResultsParserUtil.isNullOrEmpty(jobVariant) &&
-					jobVariant.contains("service-builder")) {
-
-					GitWorkingDirectory gitWorkingDirectory =
-						getGitWorkingDirectory();
-
-					gitWorkingDirectory.clean();
 				}
 			}
 

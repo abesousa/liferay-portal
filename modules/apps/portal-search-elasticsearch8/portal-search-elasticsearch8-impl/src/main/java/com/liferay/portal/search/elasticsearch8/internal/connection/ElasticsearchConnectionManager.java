@@ -24,7 +24,6 @@ import com.liferay.portal.search.ccr.CrossClusterReplicationConfigurationHelper;
 import com.liferay.portal.search.elasticsearch8.internal.configuration.ElasticsearchConfigurationObserver;
 import com.liferay.portal.search.elasticsearch8.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch8.internal.connection.constants.ConnectionConstants;
-import com.liferay.portal.search.elasticsearch8.internal.helper.SearchLogHelperUtil;
 
 import java.lang.reflect.Field;
 
@@ -354,10 +353,7 @@ public class ElasticsearchConnectionManager
 	}
 
 	protected void applyConfigurations() {
-		SearchLogHelperUtil.setRESTClientLoggerLevel(
-			elasticsearchConfigurationWrapper.restClientLoggerLevel());
-
-		if (elasticsearchConfigurationWrapper.isProductionModeEnabled()) {
+		if (elasticsearchConfigurationWrapper.productionModeEnabled()) {
 			if (Validator.isBlank(
 					elasticsearchConfigurationWrapper.
 						remoteClusterConnectionId())) {
@@ -418,7 +414,7 @@ public class ElasticsearchConnectionManager
 			return getElasticsearchConnection(connectionId);
 		}
 
-		if (elasticsearchConfigurationWrapper.isDevelopmentModeEnabled()) {
+		if (!elasticsearchConfigurationWrapper.productionModeEnabled()) {
 			if (_log.isInfoEnabled()) {
 				_log.info(
 					"Getting " + ConnectionConstants.SIDECAR_CONNECTION_ID +
@@ -507,7 +503,7 @@ public class ElasticsearchConnectionManager
 
 		return StringBundler.concat(
 			message, " Production Mode Enabled: ",
-			elasticsearchConfigurationWrapper.isProductionModeEnabled(),
+			elasticsearchConfigurationWrapper.productionModeEnabled(),
 			", Connection ID: ", connectionId, ", Prefer Local Cluster: ",
 			preferLocalCluster, ", Cross-Cluster Replication Enabled: ",
 			isCrossClusterReplicationEnabled(), ". Enable INFO logs on ",

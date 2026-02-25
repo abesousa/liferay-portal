@@ -5,6 +5,7 @@
 
 package com.liferay.batch.engine.internal;
 
+import com.liferay.batch.engine.BatchEngineContentProcessor;
 import com.liferay.batch.engine.BatchEngineImportTaskExecutor;
 import com.liferay.batch.engine.BatchEngineTaskContentType;
 import com.liferay.batch.engine.BatchEngineTaskExecuteStatus;
@@ -27,16 +28,19 @@ import com.liferay.batch.engine.internal.task.progress.BatchEngineTaskProgress;
 import com.liferay.batch.engine.internal.task.progress.BatchEngineTaskProgressFactory;
 import com.liferay.batch.engine.internal.util.ErrorMessageUtil;
 import com.liferay.batch.engine.internal.util.ItemIndexThreadLocal;
+import com.liferay.batch.engine.internal.util.ZipInputStreamUtil;
 import com.liferay.batch.engine.model.BatchEngineImportTask;
 import com.liferay.batch.engine.service.BatchEngineImportTaskErrorLocalService;
 import com.liferay.batch.engine.service.BatchEngineImportTaskErrorLocalServiceUtil;
 import com.liferay.batch.engine.service.BatchEngineImportTaskLocalService;
 import com.liferay.batch.engine.thread.local.BatchEngineThreadLocal;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatusMessageSender;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
@@ -54,6 +58,7 @@ import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -201,6 +206,8 @@ public class BatchEngineImportTaskExecutorImpl
 	protected void activate(
 		BundleContext bundleContext, Map<String, Object> properties) {
 
+		_batchEngineContentProcessors = ServiceTrackerListFactory.open(
+			bundleContext, BatchEngineContentProcessor.class);
 		_batchEngineImportTaskExceptionHandlers =
 			ServiceTrackerListFactory.open(
 				bundleContext, BatchEngineImportTaskExceptionHandler.class);
@@ -221,20 +228,22 @@ public class BatchEngineImportTaskExecutorImpl
 			TransactionInvokerUtil.invoke(
 				_transactionConfig,
 				() -> {
+					String errorMessage = ErrorMessageUtil.getErrorMessage(
+						exception, batchEngineImportTask.getUserId());
+
 					BatchEngineImportTaskErrorLocalServiceUtil.
 						addBatchEngineImportTaskError(
 							batchEngineImportTask.getCompanyId(),
 							batchEngineImportTask.getUserId(),
 							batchEngineImportTask.getBatchEngineImportTaskId(),
-							item.toString(), itemIndex,
-							ErrorMessageUtil.getErrorMessage(
-								exception, batchEngineImportTask.getUserId()));
+							item.toString(), itemIndex, errorMessage);
 
 					_batchEngineImportTaskExceptionHandlers.forEach(
 						batchEngineImportTaskExceptionHandler ->
 							batchEngineImportTaskExceptionHandler.handle(
 								batchEngineImportTask,
-								batchEngineTaskItemDelegate, exception, item));
+								batchEngineTaskItemDelegate, exception, item,
+								errorMessage));
 
 					return null;
 				});
@@ -246,6 +255,7 @@ public class BatchEngineImportTaskExecutorImpl
 
 	@Deactivate
 	protected void deactivate() {
+		_batchEngineContentProcessors.close();
 		_batchEngineImportTaskExceptionHandlers.close();
 		_importTaskPostActions.close();
 		_importTaskPreActions.close();
@@ -295,16 +305,19 @@ public class BatchEngineImportTaskExecutorImpl
 			fieldNameMapping = Collections.emptyMap();
 		}
 
+		BatchEngineTaskContentType batchEngineTaskContentType =
+			BatchEngineTaskContentType.valueOf(
+				batchEngineImportTask.getContentType());
+
 		return batchEngineImportTaskItemReaderBuilder.
 			batchEngineTaskContentType(
-				BatchEngineTaskContentType.valueOf(
-					batchEngineImportTask.getContentType())
+				batchEngineTaskContentType
 			).csvFileColumnDelimiter(
 				_getCSVFileColumnDelimiter(batchEngineImportTask.getCompanyId())
 			).fieldNames(
 				ListUtil.fromCollection(fieldNameMapping.keySet())
 			).inputStream(
-				inputStream
+				_processInputStream(batchEngineTaskContentType, inputStream)
 			).parameters(
 				parameters
 			).build();
@@ -386,7 +399,9 @@ public class BatchEngineImportTaskExecutorImpl
 				batchEngineImportTaskExceptionHandler ->
 					batchEngineImportTaskExceptionHandler.handle(
 						batchEngineImportTask, batchEngineTaskItemDelegate,
-						exception2, item));
+						exception2, item,
+						ErrorMessageUtil.getErrorMessage(
+							exception2, batchEngineImportTask.getUserId())));
 		}
 
 		_batchEngineImportTaskErrorLocalService.addBatchEngineImportTaskError(
@@ -541,6 +556,32 @@ public class BatchEngineImportTaskExecutorImpl
 		}
 	}
 
+	private InputStream _processInputStream(
+			BatchEngineTaskContentType batchEngineTaskContentType,
+			InputStream zipInputStream)
+		throws Exception {
+
+		InputStream inputStream = ZipInputStreamUtil.asZipInputStream(
+			zipInputStream);
+
+		if (_batchEngineContentProcessors.isEmpty() ||
+			(batchEngineTaskContentType != BatchEngineTaskContentType.JSON) ||
+			!ExportImportThreadLocal.isImportInProcess()) {
+
+			return inputStream;
+		}
+
+		String content = StringUtil.read(inputStream);
+
+		for (BatchEngineContentProcessor batchEngineContentProcessor :
+				_batchEngineContentProcessors) {
+
+			content = batchEngineContentProcessor.process(content);
+		}
+
+		return new ByteArrayInputStream(content.getBytes());
+	}
+
 	private <T> T _readItem(
 			BatchEngineImportTask batchEngineImportTask,
 			BatchEngineImportTaskItemReader batchEngineImportTaskItemReader,
@@ -605,6 +646,9 @@ public class BatchEngineImportTaskExecutorImpl
 	@Reference
 	private BackgroundTaskStatusMessageSender
 		_backgroundTaskStatusMessageSender;
+
+	private ServiceTrackerList<BatchEngineContentProcessor>
+		_batchEngineContentProcessors;
 
 	@Reference
 	private BatchEngineImportTaskErrorLocalService

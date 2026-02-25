@@ -17,7 +17,6 @@ const test = mergeTests(
 	apiHelpersTest,
 	fdsSamplePageTest,
 	featureFlagsTest({
-		'LPD-68829': {enabled: true},
 		'LPS-178052': {enabled: true},
 	}),
 	isolatedSiteTest,
@@ -177,6 +176,7 @@ test(
 				await expect(group3.getByRole('menuitem')).toHaveText([
 					'Status',
 					'Title',
+					'Creator',
 				]);
 			});
 

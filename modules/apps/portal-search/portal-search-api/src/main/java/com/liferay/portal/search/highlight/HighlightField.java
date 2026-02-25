@@ -5,18 +5,28 @@
 
 package com.liferay.portal.search.highlight;
 
+import java.util.Collections;
 import java.util.List;
-
-import org.osgi.annotation.versioning.ProviderType;
 
 /**
  * @author Michael C. Han
  */
-@ProviderType
-public interface HighlightField {
+public class HighlightField {
 
-	public List<String> getFragments();
+	public List<String> getFragments() {
+		return _fragments;
+	}
 
-	public String getName();
+	public String getName() {
+		return _name;
+	}
+
+	protected HighlightField(List<String> fragments, String name) {
+		_fragments = Collections.unmodifiableList(fragments);
+		_name = name;
+	}
+
+	private final List<String> _fragments;
+	private final String _name;
 
 }

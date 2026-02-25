@@ -104,8 +104,6 @@ import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.test.rule.FeatureFlag;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.vulcan.permission.PermissionUtil;
 
@@ -536,9 +534,6 @@ public class AccountResourceTest extends BaseAccountResourceTestCase {
 					organization2.getOrganizationId()));
 	}
 
-	@FeatureFlags(
-		featureFlags = {@FeatureFlag("LPD-35443"), @FeatureFlag("LPD-35914")}
-	)
 	@LazyReferencing
 	@Override
 	@Test
@@ -1901,26 +1896,50 @@ public class AccountResourceTest extends BaseAccountResourceTestCase {
 	private void _testPatchAccountWithPostalAddressPhoneNumber()
 		throws Exception {
 
-		Account postAccount = testPatchAccount_addAccount();
-
-		Account randomPatchAccount = randomPatchAccount();
+		Account postAccount = randomAccount();
 
 		PostalAddress postalAddress = _randomPostalAddress();
 
+		postalAddress.setAddressType(
+			AccountListTypeConstants.
+				ACCOUNT_ENTRY_ADDRESS_TYPE_BILLING_AND_SHIPPING);
 		postalAddress.setPhoneNumber(RandomTestUtil.randomString());
 
-		randomPatchAccount.setPostalAddresses(
-			new PostalAddress[] {postalAddress});
+		postAccount.setPostalAddresses(new PostalAddress[] {postalAddress});
 
-		Account patchAccount = accountResource.patchAccount(
-			postAccount.getId(), randomPatchAccount);
+		postAccount = testPostAccount_addAccount(postAccount);
 
 		List<Address> addresses = _addressLocalService.getAddresses(
 			TestPropsValues.getCompanyId(), AccountEntry.class.getName(),
-			patchAccount.getId());
+			postAccount.getId());
 
 		Address address = addresses.get(0);
 
+		Assert.assertEquals(
+			postalAddress.getPhoneNumber(), address.getPhoneNumber());
+
+		postalAddress.setExternalReferenceCode(
+			address.getExternalReferenceCode());
+
+		postalAddress.setPhoneNumber(RandomTestUtil.randomString() + "1");
+
+		postAccount.setPostalAddresses(new PostalAddress[] {postalAddress});
+
+		Account patchAccount = accountResource.patchAccount(
+			postAccount.getId(), postAccount);
+
+		addresses = _addressLocalService.getAddresses(
+			TestPropsValues.getCompanyId(), AccountEntry.class.getName(),
+			patchAccount.getId());
+
+		address = addresses.get(0);
+
+		Assert.assertEquals(
+			postAccount.getExternalReferenceCode(),
+			patchAccount.getExternalReferenceCode());
+		Assert.assertEquals(
+			postalAddress.getExternalReferenceCode(),
+			address.getExternalReferenceCode());
 		Assert.assertEquals(
 			postalAddress.getPhoneNumber(), address.getPhoneNumber());
 	}

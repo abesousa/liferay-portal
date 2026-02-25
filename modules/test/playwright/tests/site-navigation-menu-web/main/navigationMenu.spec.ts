@@ -21,6 +21,7 @@ import {clickAndExpectToBeVisible} from '../../../utils/clickAndExpectToBeVisibl
 import getRandomString from '../../../utils/getRandomString';
 import performLoginViaApi, {performLogout} from '../../../utils/performLogin';
 import {PORTLET_URLS} from '../../../utils/portletUrls';
+import {closeProductMenu} from '../../../utils/productMenu';
 import getBasicWebContentStructureId from '../../../utils/structured-content/getBasicWebContentStructureId';
 import {journalPagesTest} from '../../journal-web/main/fixtures/journalPagesTest';
 import {pagesPagesTest} from '../../layout-admin-web/main/fixtures/pagesPagesTest';
@@ -768,6 +769,64 @@ test(
 	}
 );
 
+test('Navigation Menu widget defaults to public pages when menu is deleted', async ({
+	apiHelpers,
+	navigationMenuWidgetPage,
+	navigationMenusPage,
+	page,
+	site,
+	widgetPagePage,
+}) => {
+	const layoutName = getRandomString();
+
+	const layout = await apiHelpers.jsonWebServicesLayout.addLayout({
+		groupId: site.id,
+		title: layoutName,
+	});
+
+	await navigationMenusPage.goto(site.friendlyUrlPath);
+
+	const navigationMenuName = getRandomString();
+
+	await navigationMenusPage.createNavigationMenu(navigationMenuName);
+
+	const urlItemName = getRandomString();
+
+	await navigationMenusPage.addURLItem(urlItemName);
+
+	await widgetPagePage.goto(layout, site.friendlyUrlPath);
+
+	await navigationMenuWidgetPage.openConfigurationModal(layoutName);
+
+	await navigationMenuWidgetPage.selectCustomNavigationMenu(
+		navigationMenuName
+	);
+
+	await navigationMenuWidgetPage.saveAndCloseConfigurationModal();
+
+	await expect(page.getByRole('menuitem', {name: urlItemName})).toBeVisible();
+
+	await navigationMenusPage.goto(site.friendlyUrlPath);
+
+	await clickAndExpectToBeVisible({
+		autoClick: true,
+		target: page.getByRole('menuitem', {
+			exact: true,
+			name: 'Delete',
+		}),
+		trigger: page.getByRole('button', {name: 'Show Actions'}),
+	});
+
+	await page
+		.getByLabel('Delete Navigation Menu')
+		.getByRole('button', {name: 'Delete'})
+		.click();
+
+	await widgetPagePage.goto(layout, site.friendlyUrlPath);
+
+	await expect(page.getByRole('menuitem', {name: layoutName})).toBeVisible();
+});
+
 test(
 	'Select global Navigation Menu in normal site',
 	{
@@ -995,6 +1054,8 @@ test(
 		});
 
 		await widgetPagePage.goto(parentLayout, site.friendlyUrlPath);
+
+		await closeProductMenu(page);
 
 		await widgetPagePage.clickOnAction('Menu Display', 'Configuration');
 
@@ -1552,9 +1613,7 @@ test(
 		await apiHelpers.jsonWebServicesLayoutPageTemplateEntry.addDisplayPageLayoutPageTemplateEntry(
 			{
 				classNameId: className.classNameId,
-				classTypeId: String(
-					await getBasicWebContentStructureId(apiHelpers)
-				),
+				classTypeKey: 'BASIC-WEB-CONTENT',
 				groupId: site.id,
 				name: displayPageTemplateName,
 			}

@@ -136,6 +136,8 @@ public class LayoutPageTemplateStructureUpgradeProcessTest {
 				layoutPageTemplateEntry2.getPlid());
 
 		_insertLayoutPageTemplateStructure(
+			layoutPageTemplateEntryClassNameId, RandomTestUtil.randomLong());
+		_insertLayoutPageTemplateStructure(
 			layoutPageTemplateEntryClassNameId,
 			layoutPageTemplateEntry2.getLayoutPageTemplateEntryId());
 

@@ -9,6 +9,8 @@ import com.liferay.batch.engine.BatchEngineExportTaskExecutor;
 import com.liferay.batch.engine.BatchEngineImportTaskExecutor;
 import com.liferay.batch.engine.service.BatchEngineExportTaskLocalService;
 import com.liferay.batch.engine.service.BatchEngineImportTaskService;
+import com.liferay.changeset.service.ChangesetEntryLocalService;
+import com.liferay.exportimport.kernel.lar.ExportImportHelper;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate;
 import com.liferay.osgi.service.tracker.collections.EagerServiceTrackerCustomizer;
@@ -17,15 +19,14 @@ import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFacto
 import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener;
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagListener;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
 import com.liferay.staging.StagingGroupHelper;
 
@@ -59,12 +60,8 @@ public class BatchEnginePortletDataHandlerRegistrar {
 
 					@Override
 					public void portalInstanceRegistered(Company company) {
-						if (FeatureFlagManagerUtil.isEnabled(
-								company.getCompanyId(), "LPD-35914")) {
-
-							_registerCompany(
-								bundleContext, company.getCompanyId(), true);
-						}
+						_registerCompany(
+							bundleContext, company.getCompanyId(), true);
 					}
 
 					@Override
@@ -75,18 +72,11 @@ public class BatchEnginePortletDataHandlerRegistrar {
 
 				},
 				null);
-		_serviceRegistration = bundleContext.registerService(
-			FeatureFlagListener.class,
-			(companyId, featureFlagKey, enabled) -> _registerCompany(
-				bundleContext, companyId, enabled),
-			MapUtil.singletonDictionary("feature.flag.key", "LPD-35914"));
 	}
 
 	@Deactivate
 	protected void deactivate() {
 		_portalInstanceLifecycleListenerServiceRegistration.unregister();
-
-		_serviceRegistration.unregister();
 
 		_serviceTrackerListDCLSingleton.destroy(ServiceTrackerList::close);
 	}
@@ -177,15 +167,25 @@ public class BatchEnginePortletDataHandlerRegistrar {
 	@Reference
 	private BatchEngineImportTaskService _batchEngineImportTaskService;
 
+	@Reference
+	private ChangesetEntryLocalService _changesetEntryLocalService;
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
 	private final Set<Long> _enabledCompanyIds = new CopyOnWriteArraySet<>();
+
+	@Reference
+	private ExportImportHelper _exportImportHelper;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
 
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
 	private ServiceRegistration<PortalInstanceLifecycleListener>
 		_portalInstanceLifecycleListenerServiceRegistration;
-	private volatile ServiceRegistration<FeatureFlagListener>
-		_serviceRegistration;
 	private final Map<String, ServiceRegistration<PortletDataHandler>>
 		_serviceRegistrations = new HashMap<>();
 	private final DCLSingleton
@@ -238,8 +238,10 @@ public class BatchEnginePortletDataHandlerRegistrar {
 						_batchEngineExportTaskExecutor,
 						_batchEngineExportTaskLocalService,
 						_batchEngineImportTaskExecutor,
-						_batchEngineImportTaskService, _groupLocalService,
-						_stagingGroupHelper);
+						_batchEngineImportTaskService,
+						_changesetEntryLocalService, _classNameLocalService,
+						_exportImportHelper, _groupLocalService,
+						_layoutLocalService, _stagingGroupHelper);
 
 				batchEnginePortletDataHandler.setPortletId(
 					exportImportDescriptor.getPortletId());

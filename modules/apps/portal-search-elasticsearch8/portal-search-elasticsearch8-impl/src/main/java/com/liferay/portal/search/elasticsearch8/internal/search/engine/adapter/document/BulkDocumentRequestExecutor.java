@@ -112,34 +112,30 @@ public class BulkDocumentRequestExecutor {
 		for (BulkableDocumentRequest<?> bulkableDocumentRequest :
 				bulkDocumentRequest.getBulkableDocumentRequests()) {
 
-			bulkableDocumentRequest.accept(
-				request -> {
-					if (request instanceof DeleteDocumentRequest) {
-						DeleteOperation deleteOperation =
-							ElasticsearchBulkableDocumentRequestTranslatorUtil.
-								translate((DeleteDocumentRequest)request);
+			if (bulkableDocumentRequest instanceof DeleteDocumentRequest) {
+				DeleteOperation deleteOperation =
+					ElasticsearchBulkableDocumentRequestTranslatorUtil.
+						translate(
+							(DeleteDocumentRequest)bulkableDocumentRequest);
 
-						builder.operations(new BulkOperation(deleteOperation));
-					}
-					else if (request instanceof IndexDocumentRequest) {
-						IndexOperation<JsonData> indexOperation =
-							ElasticsearchBulkableDocumentRequestTranslatorUtil.
-								translate((IndexDocumentRequest)request);
+				builder.operations(new BulkOperation(deleteOperation));
+			}
+			else if (bulkableDocumentRequest instanceof IndexDocumentRequest) {
+				IndexOperation<JsonData> indexOperation =
+					ElasticsearchBulkableDocumentRequestTranslatorUtil.
+						translate(
+							(IndexDocumentRequest)bulkableDocumentRequest);
 
-						builder.operations(new BulkOperation(indexOperation));
-					}
-					else if (request instanceof UpdateDocumentRequest) {
-						UpdateOperation<JsonData, JsonData> updateOperation =
-							ElasticsearchBulkableDocumentRequestTranslatorUtil.
-								translate((UpdateDocumentRequest)request);
+				builder.operations(new BulkOperation(indexOperation));
+			}
+			else if (bulkableDocumentRequest instanceof UpdateDocumentRequest) {
+				UpdateOperation<JsonData, JsonData> updateOperation =
+					ElasticsearchBulkableDocumentRequestTranslatorUtil.
+						translate(
+							(UpdateDocumentRequest)bulkableDocumentRequest);
 
-						builder.operations(new BulkOperation(updateOperation));
-					}
-					else {
-						throw new IllegalArgumentException(
-							"No translator available for: " + request);
-					}
-				});
+				builder.operations(new BulkOperation(updateOperation));
+			}
 		}
 
 		return builder.build();
@@ -179,8 +175,8 @@ public class BulkDocumentRequestExecutor {
 					StringBundler.concat(
 						"There was an exception while getting a response from ",
 						"the search engine, will retry in ", _waitInSeconds,
-						" seconds (", i, "/", _numberOfTries, "). ",
-						exception));
+						" seconds (", i, "/", _numberOfTries, "). ", exception),
+					exception);
 
 				try {
 					Thread.sleep(_waitInSeconds * Time.SECOND);

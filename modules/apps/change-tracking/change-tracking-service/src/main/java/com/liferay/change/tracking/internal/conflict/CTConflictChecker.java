@@ -192,7 +192,8 @@ public class CTConflictChecker<T extends CTModel<T>> {
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
 					conflictInfos.add(
-						new AdditionConflictInfo(resultSet.getLong(1)));
+						new AdditionConflictInfo(
+							resultSet.getLong(primaryKeyName)));
 				}
 			}
 		}
@@ -380,7 +381,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 					while (resultSet.next()) {
 						conflictInfos.add(
 							new ModificationDeletionConflictInfo(
-								resultSet.getLong(1), false));
+								resultSet.getLong(primaryKeyName), false));
 					}
 				}
 			}
@@ -421,7 +422,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 				while (resultSet.next()) {
 					conflictInfos.add(
 						new ModificationDeletionConflictInfo(
-							resultSet.getLong(1), true));
+							resultSet.getLong("modelClassPK"), true));
 				}
 			}
 		}
@@ -759,7 +760,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
-					primaryKeys.add(resultSet.getLong(1));
+					primaryKeys.add(resultSet.getLong("modelClassPK"));
 				}
 			}
 

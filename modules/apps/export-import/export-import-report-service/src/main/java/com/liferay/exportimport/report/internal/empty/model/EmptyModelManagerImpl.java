@@ -11,14 +11,19 @@ import com.liferay.exportimport.report.service.ExportImportReportEntryLocalServi
 import com.liferay.petra.function.UnsafeBiFunction;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,14 +60,16 @@ public class EmptyModelManagerImpl implements EmptyModelManager {
 		try (SafeCloseable safeCloseable =
 				EmptyModelThreadLocal.setEmptyModelWithSafeCloseable(true)) {
 
-			_exportImportReportEntryLocalService.
-				addEmptyExportImportReportEntry(
-					0L, companyId, externalReferenceCode,
-					_classNameLocalService.getClassNameId(clazz.getName()),
-					GetterUtil.getLong(
-						ExportImportThreadLocal.
-							getExportImportConfigurationId()),
-					modelNameLanguageKey);
+			if (ExportImportThreadLocal.isImportInProcess()) {
+				_exportImportReportEntryLocalService.
+					getOrAddEmptyExportImportReportEntry(
+						0L, companyId, externalReferenceCode,
+						_classNameLocalService.getClassNameId(clazz.getName()),
+						GetterUtil.getLong(
+							ExportImportThreadLocal.
+								getExportImportConfigurationId()),
+						modelNameLanguageKey);
+			}
 
 			return emptyModelUnsafeSupplier.get();
 		}
@@ -91,23 +98,25 @@ public class EmptyModelManagerImpl implements EmptyModelManager {
 			return model;
 		}
 
-		Group group = _groupLocalService.fetchGroup(groupId);
-
-		if (group != null) {
-			companyId = group.getCompanyId();
-		}
-
 		try (SafeCloseable safeCloseable =
 				EmptyModelThreadLocal.setEmptyModelWithSafeCloseable(true)) {
 
-			_exportImportReportEntryLocalService.
-				addEmptyExportImportReportEntry(
-					groupId, companyId, externalReferenceCode,
-					_classNameLocalService.getClassNameId(className),
-					GetterUtil.getLong(
-						ExportImportThreadLocal.
-							getExportImportConfigurationId()),
-					modelNameLanguageKey);
+			if (ExportImportThreadLocal.isImportInProcess()) {
+				Group group = _groupLocalService.fetchGroup(groupId);
+
+				if (group != null) {
+					companyId = group.getCompanyId();
+				}
+
+				_exportImportReportEntryLocalService.
+					getOrAddEmptyExportImportReportEntry(
+						groupId, companyId, externalReferenceCode,
+						_classNameLocalService.getClassNameId(className),
+						GetterUtil.getLong(
+							ExportImportThreadLocal.
+								getExportImportConfigurationId()),
+						modelNameLanguageKey);
+			}
 
 			return emptyModelUnsafeSupplier.get();
 		}
@@ -117,6 +126,38 @@ public class EmptyModelManagerImpl implements EmptyModelManager {
 	public boolean isEmptyModel() {
 		return EmptyModelThreadLocal.isEmptyModel();
 	}
+
+	@Override
+	public int solveEmptyModel(
+		String classExternalReferenceCode, String className, long companyId,
+		long groupId, int status,
+		Supplier<Integer> updatedModelStatusSupplier) {
+
+		if (status != WorkflowConstants.STATUS_EMPTY) {
+			return status;
+		}
+
+		try {
+			_exportImportReportEntryLocalService.
+				resolveEmptyExportImportReportEntries(
+					groupId, companyId, classExternalReferenceCode,
+					_classNameLocalService.getClassNameId(className));
+		}
+		catch (Exception exception) {
+			_log.error(
+				StringBundler.concat(
+					"Unable to resolve the export/import report entries for \"",
+					"the class external reference code ",
+					classExternalReferenceCode, "\" and class name \"",
+					className, "\""),
+				exception);
+		}
+
+		return updatedModelStatusSupplier.get();
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		EmptyModelManagerImpl.class);
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;

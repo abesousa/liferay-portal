@@ -42,8 +42,6 @@ public class WikiPageModelDocumentContributor
 
 	@Override
 	public void contribute(Document document, WikiPage wikiPage) {
-		uidFactory.setUID(wikiPage, document);
-
 		String content = null;
 
 		try {
@@ -69,6 +67,8 @@ public class WikiPageModelDocumentContributor
 		}
 
 		document.addText(Field.TITLE, title);
+
+		document.addKeyword(Field.UID, uidFactory.getUID(wikiPage));
 
 		for (Locale locale :
 				_language.getAvailableLocales(wikiPage.getGroupId())) {

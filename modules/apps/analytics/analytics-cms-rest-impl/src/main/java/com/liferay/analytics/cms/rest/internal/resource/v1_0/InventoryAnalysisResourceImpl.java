@@ -30,6 +30,7 @@ import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.sql.dsl.query.FromStep;
 import com.liferay.petra.sql.dsl.query.GroupByStep;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.license.util.LicenseManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -71,6 +72,8 @@ public class InventoryAnalysisResourceImpl
 		throws Exception {
 
 		InventoryAnalysis inventoryAnalysis = new InventoryAnalysis();
+
+		LicenseManagerUtil.checkFreeTier();
 
 		Long[] groupIds = DepotEntryUtil.getGroupIds(
 			DepotEntryUtil.getDepotEntries(

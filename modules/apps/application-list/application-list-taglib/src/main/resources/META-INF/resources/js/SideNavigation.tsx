@@ -4,34 +4,41 @@
  */
 
 import {SidePanel} from '@clayui/core';
+import ClayEmptyState from '@clayui/empty-state';
 import ClayIcon from '@clayui/icon';
 import {ClayVerticalNav} from '@clayui/nav';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import ClaySticker from '@clayui/sticker';
+import {SearchResultsMessage} from '@liferay/layout-js-components-web';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
-interface SideNavigationItem {
-	href?: string;
-	id: string;
-	items?: Array<SideNavigationItem>;
-	label: string;
-	leadingIcon?: string;
-}
+import {sub} from '../../../../../../../../frontend-js/frontend-js-web/src/main/resources/META-INF/resources/main';
+import SideNavigationSearchInput from './SideNavigationSearchInput';
+import SideNavigationSiteSelector from './SideNavigationSiteSelector';
+import {SideNavigationItem} from './types/SideNavigation';
+import {useSideNavigationFilter} from './useSideNavigationFilter';
 
 interface Props {
+	categoryImageUrl: string;
 	expandedKeys: Array<React.Key>;
 	expandedKeysSessionKey: string;
 	items: Array<SideNavigationItem>;
 	label: string;
 	portletId: string;
+	siteAdministrationItemSelectedEventName: string;
+	siteAdministrationItemSelectorUrl: string;
 	visible: boolean;
 	visibleSessionKey: string;
 }
 
 function SideNavigation({
-	expandedKeys: initialExpandedKeys,
+	categoryImageUrl,
+	expandedKeys: externalExpandedKeys,
 	expandedKeysSessionKey,
-	items,
+	items: externalItems,
 	label,
 	portletId,
+	siteAdministrationItemSelectedEventName,
+	siteAdministrationItemSelectorUrl,
 	visible: initialVisible,
 	visibleSessionKey,
 }: Props) {
@@ -41,21 +48,32 @@ function SideNavigation({
 		)
 	);
 
-	const [visible, setVisible] = useState(initialVisible);
-	const [expandedKeys, setExpandedKeys] = useState<Set<React.Key>>(
-		() => new Set(initialExpandedKeys)
+	const [initialExpandedKeys] = useState<Set<React.Key>>(
+		() => new Set(externalExpandedKeys)
 	);
 
+	const [userExpandedKeys, setUserExpandedKeys] =
+		useState<Set<React.Key>>(initialExpandedKeys);
+
+	const [visible, setVisible] = useState(initialVisible);
+
+	const {expandedKeys, isFilterActive, items, setQuery} =
+		useSideNavigationFilter(externalItems);
+
 	const updateExpandedKeys = useCallback(
-		async (expandedKeys: Set<React.Key>) => {
+		async (updatedExpandedKeys: Set<React.Key>) => {
+			if (isFilterActive) {
+				return;
+			}
+
 			await Liferay.Util.Session.set(
 				expandedKeysSessionKey,
-				Array.from(expandedKeys).join(',')
+				Array.from(updatedExpandedKeys).join(',')
 			);
 
-			setExpandedKeys(expandedKeys);
+			setUserExpandedKeys(updatedExpandedKeys);
 		},
-		[expandedKeysSessionKey]
+		[expandedKeysSessionKey, isFilterActive]
 	);
 
 	const updateVisible = useCallback(
@@ -72,20 +90,32 @@ function SideNavigation({
 		[visibleSessionKey]
 	);
 
-	useEffect(() => {
-		async function handleStateRequest({visible}: {visible: boolean}) {
-			await updateVisible(visible);
-		}
+	useEffect(
+		function setupVisibilityRequestHandler() {
+			async function handleStateRequest({visible}: {visible: boolean}) {
+				await updateVisible(visible);
+			}
 
-		Liferay.on('sideNavigationStateRequested', handleStateRequest);
+			Liferay.on('sideNavigationStateRequested', handleStateRequest);
 
-		return () =>
-			Liferay.detach('sideNavigationStateRequested', handleStateRequest);
-	}, [updateVisible]);
+			return () =>
+				Liferay.detach(
+					'sideNavigationStateRequested',
+					handleStateRequest
+				);
+		},
+		[updateVisible]
+	);
+
+	const numberOfResults = useMemo(
+		() => items.reduce((acc, item) => acc + (item.items?.length || 0), 0),
+		[items]
+	);
 
 	return (
 		<SidePanel
-			as="section"
+			aria-label={sub(Liferay.Language.get('x-menu'), label)}
+			closeOnEscape={false}
 			containerRef={containerRef}
 			data-qa-id="sideNavigation"
 			defaultOpen={initialVisible}
@@ -96,50 +126,96 @@ function SideNavigation({
 			panelWidth={320}
 			position="fixed"
 		>
-			<SidePanel.Header data-qa-id="sideNavigationHeader">
-				<SidePanel.Title>
-					<ClayIcon symbol="grid" />
+			<SidePanel.Header
+				className="c-mt-2 c-mx-1 c-px-2"
+				data-qa-id="sideNavigationHeader"
+				messages={{
+					backAriaLabel: Liferay.Language.get('go-back'),
+					closeAriaLabel: Liferay.Language.get('close-product-menu'),
+				}}
+			>
+				<SidePanel.Title className="align-items-center c-my-0 d-flex">
+					<ClaySticker
+						borderless
+						className="c-mr-1"
+						displayType="outline"
+					>
+						<img
+							alt=""
+							className="c-mx-1"
+							data-qa-id="sideNavigationProductIcon"
+							src={categoryImageUrl}
+						/>
+					</ClaySticker>
 
-					<span className="c-px-2" data-qa-id="sideNavigationLabel">
+					<span
+						className="c-ml-2 text-5"
+						data-qa-id="sideNavigationLabel"
+					>
 						{label}
 					</span>
+
+					<SideNavigationSiteSelector
+						eventName={siteAdministrationItemSelectedEventName}
+						url={siteAdministrationItemSelectorUrl}
+					/>
 				</SidePanel.Title>
 			</SidePanel.Header>
 
-			<SidePanel.Body className="c-px-0">
-				<ClayVerticalNav
-					active={portletId}
-					displayType="primary"
-					expandedKeys={expandedKeys}
-					itemAriaCurrent={true}
-					items={items}
-					onExpandedChange={updateExpandedKeys}
-				>
-					{(item) => {
-						if (typeof item === 'string') {
-							return <span>{item}</span>;
-						}
+			<SidePanel.Body className="c-pt-2 c-px-0">
+				<SideNavigationSearchInput onChange={setQuery} />
 
-						return (
-							<ClayVerticalNav.Item
-								href={item.href}
-								items={item.items}
-								key={item.id}
-								textValue={item.label}
-							>
-								{item.leadingIcon && (
-									<ClayIcon
-										className="c-mr-2"
-										key={item.leadingIcon}
-										symbol={item.leadingIcon}
-									/>
-								)}
+				<SearchResultsMessage
+					numberOfResults={numberOfResults}
+					resultType={Liferay.Language.get('navigation-items')}
+				/>
 
-								{item.label}
-							</ClayVerticalNav.Item>
-						);
-					}}
-				</ClayVerticalNav>
+				{numberOfResults ? (
+					<ClayVerticalNav
+						active={portletId}
+						defaultExpandedKeys={initialExpandedKeys}
+						displayType="primary"
+						expandedKeys={expandedKeys ?? userExpandedKeys}
+						itemAriaCurrent={true}
+						items={items}
+						onExpandedChange={updateExpandedKeys}
+						stacked={true}
+					>
+						{(item) => {
+							if (typeof item === 'string') {
+								return <span>{item}</span>;
+							}
+
+							return (
+								<ClayVerticalNav.Item
+									href={item.href}
+									items={item.items}
+									key={item.id}
+									textValue={item.label}
+								>
+									{item.leadingIcon && (
+										<ClayIcon
+											className="c-mr-2"
+											key={item.leadingIcon}
+											symbol={item.leadingIcon}
+										/>
+									)}
+
+									{item.label}
+								</ClayVerticalNav.Item>
+							);
+						}}
+					</ClayVerticalNav>
+				) : (
+					<ClayEmptyState
+						className="c-mt-n2 c-px-4 text-center"
+						description={Liferay.Language.get(
+							'adjust-or-clear-the-search-to-view-all-navigation-items'
+						)}
+						small
+						title={Liferay.Language.get('no-matching-items')}
+					/>
+				)}
 			</SidePanel.Body>
 		</SidePanel>
 	);

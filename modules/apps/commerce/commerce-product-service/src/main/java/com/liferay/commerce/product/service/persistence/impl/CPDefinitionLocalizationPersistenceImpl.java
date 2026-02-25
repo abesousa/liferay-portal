@@ -1142,22 +1142,6 @@ public class CPDefinitionLocalizationPersistenceImpl
 			}
 
 			try {
-				cpDefinitionLocalization.setName(
-					SanitizerUtil.sanitize(
-						companyId, groupId, userId,
-						CPDefinitionLocalization.class.getName(),
-						cpDefinitionLocalizationId, ContentTypes.TEXT_PLAIN,
-						Sanitizer.MODE_ALL, cpDefinitionLocalization.getName(),
-						null));
-
-				cpDefinitionLocalization.setShortDescription(
-					SanitizerUtil.sanitize(
-						companyId, groupId, userId,
-						CPDefinitionLocalization.class.getName(),
-						cpDefinitionLocalizationId, ContentTypes.TEXT_HTML,
-						Sanitizer.MODE_ALL,
-						cpDefinitionLocalization.getShortDescription(), null));
-
 				cpDefinitionLocalization.setDescription(
 					SanitizerUtil.sanitize(
 						companyId, groupId, userId,
@@ -1165,14 +1149,6 @@ public class CPDefinitionLocalizationPersistenceImpl
 						cpDefinitionLocalizationId, ContentTypes.TEXT_HTML,
 						Sanitizer.MODE_ALL,
 						cpDefinitionLocalization.getDescription(), null));
-
-				cpDefinitionLocalization.setMetaTitle(
-					SanitizerUtil.sanitize(
-						companyId, groupId, userId,
-						CPDefinitionLocalization.class.getName(),
-						cpDefinitionLocalizationId, ContentTypes.TEXT_HTML,
-						Sanitizer.MODE_ALL,
-						cpDefinitionLocalization.getMetaTitle(), null));
 
 				cpDefinitionLocalization.setMetaDescription(
 					SanitizerUtil.sanitize(
@@ -1189,6 +1165,30 @@ public class CPDefinitionLocalizationPersistenceImpl
 						cpDefinitionLocalizationId, ContentTypes.TEXT_HTML,
 						Sanitizer.MODE_ALL,
 						cpDefinitionLocalization.getMetaKeywords(), null));
+
+				cpDefinitionLocalization.setMetaTitle(
+					SanitizerUtil.sanitize(
+						companyId, groupId, userId,
+						CPDefinitionLocalization.class.getName(),
+						cpDefinitionLocalizationId, ContentTypes.TEXT_HTML,
+						Sanitizer.MODE_ALL,
+						cpDefinitionLocalization.getMetaTitle(), null));
+
+				cpDefinitionLocalization.setName(
+					SanitizerUtil.sanitize(
+						companyId, groupId, userId,
+						CPDefinitionLocalization.class.getName(),
+						cpDefinitionLocalizationId, ContentTypes.TEXT_PLAIN,
+						Sanitizer.MODE_ALL, cpDefinitionLocalization.getName(),
+						null));
+
+				cpDefinitionLocalization.setShortDescription(
+					SanitizerUtil.sanitize(
+						companyId, groupId, userId,
+						CPDefinitionLocalization.class.getName(),
+						cpDefinitionLocalizationId, ContentTypes.TEXT_HTML,
+						Sanitizer.MODE_ALL,
+						cpDefinitionLocalization.getShortDescription(), null));
 			}
 			catch (SanitizerException sanitizerException) {
 				throw new SystemException(sanitizerException);
@@ -1726,12 +1726,12 @@ public class CPDefinitionLocalizationPersistenceImpl
 		ctMergeColumnNames.add("CPDefinitionId");
 		ctMergeColumnNames.add("languageId");
 		ctMergeColumnNames.add("CProductId");
-		ctMergeColumnNames.add("name");
-		ctMergeColumnNames.add("shortDescription");
 		ctMergeColumnNames.add("description");
-		ctMergeColumnNames.add("metaTitle");
 		ctMergeColumnNames.add("metaDescription");
 		ctMergeColumnNames.add("metaKeywords");
+		ctMergeColumnNames.add("metaTitle");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("shortDescription");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);

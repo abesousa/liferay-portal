@@ -8,10 +8,12 @@ import {
 	IBulkActionTaskType,
 } from '../../../common/types/BulkActionTask';
 import {
+	BULK_ACTION_ASSIGN_DEFAULT_WORKFLOW,
 	BULK_ACTION_ASSIGN_TO,
 	BULK_ACTION_CATEGORIES,
 	BULK_ACTION_DEFAULT_PERMISSIONS,
 	BULK_ACTION_DELETE,
+	BULK_ACTION_DELETE_ASSET_VERSION,
 	BULK_ACTION_DOWNLOAD,
 	BULK_ACTION_DUE_DATE,
 	BULK_ACTION_EXPIRE,
@@ -25,14 +27,27 @@ import {
 type BulkActionMessage = {
 	[actionType in keyof IBulkActionTaskType]: {
 		[messageType: string]: {
-			all: string;
-			plural: string;
-			singular: string;
+			all?: string;
+			plural?: string;
+			singular?: string;
 		};
 	};
 };
 
 const BULK_ACTION_MESSAGES: BulkActionMessage = {
+	[BULK_ACTION_ASSIGN_DEFAULT_WORKFLOW]: {
+		info: {
+			all: Liferay.Language.get(
+				'assign-default-workflow-action-started-for-all-assets'
+			),
+			plural: Liferay.Language.get(
+				'assign-default-workflow-action-started-for-x-assets'
+			),
+			singular: Liferay.Language.get(
+				'assign-default-workflow-action-started-for-one-asset'
+			),
+		},
+	},
 	[BULK_ACTION_ASSIGN_TO]: {
 		info: {
 			all: Liferay.Language.get(
@@ -78,6 +93,24 @@ const BULK_ACTION_MESSAGES: BulkActionMessage = {
 			plural: Liferay.Language.get('delete-action-started-for-x-assets'),
 			singular: Liferay.Language.get(
 				'delete-action-started-for-one-asset'
+			),
+		},
+	},
+	[BULK_ACTION_DELETE_ASSET_VERSION]: {
+		danger: {
+			singular: Liferay.Language.get(
+				'current-asset-version-cannot-be-deleted'
+			),
+		},
+		info: {
+			all: Liferay.Language.get(
+				'delete-asset-versions-action-started-for-all-versions'
+			),
+			plural: Liferay.Language.get(
+				'delete-asset-versions-action-started-for-x-versions'
+			),
+			singular: Liferay.Language.get(
+				'delete-asset-version-action-started-for-one-version'
 			),
 		},
 	},

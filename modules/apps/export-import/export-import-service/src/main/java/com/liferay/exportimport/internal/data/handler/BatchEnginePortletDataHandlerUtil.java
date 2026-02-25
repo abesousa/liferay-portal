@@ -7,14 +7,19 @@ package com.liferay.exportimport.internal.data.handler;
 
 import com.liferay.batch.engine.constants.BatchEngineImportTaskConstants;
 import com.liferay.batch.engine.constants.CreateStrategy;
+import com.liferay.changeset.model.ChangesetEntry;
+import com.liferay.changeset.service.ChangesetEntryLocalService;
+import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.exportimport.kernel.lar.UserIdStrategy;
 import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
@@ -22,6 +27,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.staging.StagingGroupHelper;
 
 import java.io.Serializable;
@@ -29,8 +35,11 @@ import java.io.Serializable;
 import java.text.Format;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Vendel Toreki
@@ -64,11 +73,16 @@ public class BatchEnginePortletDataHandlerUtil {
 	}
 
 	public static Map<String, Serializable> buildExportParameters(
+		ChangesetEntryLocalService changesetEntryLocalService,
+		ClassNameLocalService classNameLocalService,
 		ExportImportVulcanBatchEngineTaskItemDelegate.ExportImportDescriptor
 			exportImportDescriptor,
 		GroupLocalService groupLocalService,
 		PortletDataContext portletDataContext,
 		StagingGroupHelper stagingGroupHelper) {
+
+		Map<String, Serializable> exportImportDescriptorParameters =
+			exportImportDescriptor.getParameters(portletDataContext);
 
 		Map<String, Serializable> exportParameters =
 			HashMapBuilder.<String, Serializable>put(
@@ -109,31 +123,50 @@ public class BatchEnginePortletDataHandlerUtil {
 			).put(
 				"filter",
 				() -> {
-					if ((portletDataContext.getEndDate() == null) &&
-						(portletDataContext.getStartDate() == null)) {
+					List<String> filterStrings = new ArrayList<>();
 
-						return null;
-					}
+					if (ExportImportDateUtil.isRangeFromLastPublishDate(
+							portletDataContext)) {
 
-					StringBundler sb = new StringBundler(5);
+						String lastPublishDateFilterString =
+							_getLastPublishDateFilterString(
+								changesetEntryLocalService,
+								classNameLocalService,
+								exportImportDescriptor.getModelClassName(),
+								portletDataContext);
 
-					if (portletDataContext.getEndDate() != null) {
-						sb.append("dateModified le ");
-						sb.append(
-							_format.format(portletDataContext.getEndDate()));
-					}
-
-					if (portletDataContext.getStartDate() != null) {
-						if (sb.length() > 0) {
-							sb.append(" and ");
+						if (Validator.isNull(lastPublishDateFilterString)) {
+							return null;
 						}
 
-						sb.append("dateModified ge ");
-						sb.append(
-							_format.format(portletDataContext.getStartDate()));
+						filterStrings.add(lastPublishDateFilterString);
+					}
+					else {
+						String dateRangeFilterString =
+							_getDateRangeFilterString(portletDataContext);
+
+						if (Validator.isNull(dateRangeFilterString)) {
+							return null;
+						}
+
+						filterStrings.add(dateRangeFilterString);
 					}
 
-					return sb.toString();
+					if (exportImportDescriptorParameters != null) {
+						String exportImportDescriptorFilterString =
+							GetterUtil.getString(
+								exportImportDescriptorParameters.remove(
+									"filter"));
+
+						if (Validator.isNotNull(
+								exportImportDescriptorFilterString)) {
+
+							filterStrings.add(
+								"(" + exportImportDescriptorFilterString + ")");
+						}
+					}
+
+					return StringUtil.merge(filterStrings, " and ");
 				}
 			).put(
 				"modelClassName", exportImportDescriptor.getModelClassName()
@@ -141,7 +174,7 @@ public class BatchEnginePortletDataHandlerUtil {
 				"modelNameLanguageKey",
 				exportImportDescriptor.getLabelLanguageKey()
 			).putAll(
-				exportImportDescriptor.getParameters(portletDataContext)
+				exportImportDescriptorParameters
 			).build();
 
 		Group group = groupLocalService.fetchGroup(
@@ -235,6 +268,69 @@ public class BatchEnginePortletDataHandlerUtil {
 		}
 
 		return importParameters;
+	}
+
+	private static String _getDateRangeFilterString(
+		PortletDataContext portletDataContext) {
+
+		Date endDate = portletDataContext.getEndDate();
+		Date startDate = portletDataContext.getStartDate();
+
+		if ((endDate == null) && (startDate == null)) {
+			return null;
+		}
+
+		List<String> filterStrings = new ArrayList<>();
+
+		if (endDate != null) {
+			filterStrings.add("dateModified le " + _format.format(endDate));
+		}
+
+		if (startDate != null) {
+			filterStrings.add("dateModified ge " + _format.format(startDate));
+		}
+
+		return StringUtil.merge(filterStrings, " and ");
+	}
+
+	private static String _getLastPublishDateFilterString(
+		ChangesetEntryLocalService changesetEntryLocalService,
+		ClassNameLocalService classNameLocalService, String modelClassName,
+		PortletDataContext portletDataContext) {
+
+		long changesetCollectionId = MapUtil.getLong(
+			portletDataContext.getParameterMap(), "changesetCollectionId");
+
+		if (changesetCollectionId == 0) {
+			return null;
+		}
+
+		Set<String> externalReferenceCodes = new HashSet<>();
+
+		externalReferenceCodes.add("");
+
+		List<ChangesetEntry> changesetEntries =
+			changesetEntryLocalService.getChangesetEntries(
+				changesetCollectionId,
+				classNameLocalService.getClassNameId(modelClassName));
+
+		for (ChangesetEntry changesetEntry : changesetEntries) {
+			if (!Validator.isBlank(
+					changesetEntry.getClassExternalReferenceCode())) {
+
+				externalReferenceCodes.add(
+					changesetEntry.getClassExternalReferenceCode());
+			}
+		}
+
+		return StringBundler.concat(
+			"externalReferenceCode in (",
+			com.liferay.portal.kernel.util.StringUtil.merge(
+				TransformUtil.transform(
+					externalReferenceCodes,
+					layoutExternalReferenceCode ->
+						"'" + layoutExternalReferenceCode + "'")),
+			")");
 	}
 
 	private static boolean _isCompanyScoped(

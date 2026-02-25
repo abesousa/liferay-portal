@@ -25,7 +25,6 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchFixture;
-import com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.snapshot.SnapshotRequestExecutorTestUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.snapshot.CreateSnapshotRepositoryRequest;
 import com.liferay.portal.search.engine.adapter.snapshot.CreateSnapshotRepositoryResponse;
@@ -46,6 +45,7 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.IOException;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +58,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -108,8 +107,10 @@ public class ElasticsearchSearchEngineAdapterSnapshotRequestTest {
 
 	@Test
 	public void testCreateSnapshot() {
+		String snapshotName = "test_create_snapshot";
+
 		CreateSnapshotRequest createSnapshotRequest = new CreateSnapshotRequest(
-			_TEST_REPOSITORY_NAME, "test_create_snapshot");
+			_TEST_REPOSITORY_NAME, snapshotName);
 
 		createSnapshotRequest.setIndexNames(_INDEX_NAME);
 
@@ -122,14 +123,11 @@ public class ElasticsearchSearchEngineAdapterSnapshotRequestTest {
 		Assert.assertArrayEquals(
 			createSnapshotRequest.getIndexNames(),
 			snapshotDetails.getIndexNames());
-
 		Assert.assertEquals(
 			SnapshotState.SUCCESS, snapshotDetails.getSnapshotState());
-
 		Assert.assertTrue(snapshotDetails.getSuccessfulShards() > 0);
 
-		List<SnapshotInfo> snapshotInfos = _getSnapshotInfo(
-			"test_create_snapshot");
+		List<SnapshotInfo> snapshotInfos = _getSnapshotInfo(snapshotName);
 
 		Assert.assertEquals("Expected 1 SnapshotInfo", 1, snapshotInfos.size());
 
@@ -141,11 +139,9 @@ public class ElasticsearchSearchEngineAdapterSnapshotRequestTest {
 			createSnapshotRequest.getIndexNames(), indices.toArray());
 
 		Assert.assertEquals(
-			"test_create_snapshot", createSnapshotRequest.getSnapshotName());
-		Assert.assertEquals(
-			createSnapshotRequest.getRepositoryName(), _TEST_REPOSITORY_NAME);
+			snapshotName, createSnapshotRequest.getSnapshotName());
 
-		_deleteSnapshot(_TEST_REPOSITORY_NAME, "test_create_snapshot");
+		_deleteSnapshot(_TEST_REPOSITORY_NAME, snapshotName);
 	}
 
 	@Test
@@ -185,13 +181,8 @@ public class ElasticsearchSearchEngineAdapterSnapshotRequestTest {
 		_deleteRepository(repositoryName);
 	}
 
-	@Ignore
 	@Test
 	public void testDeleteSnapshot() throws Exception {
-		expectedException.expect(RuntimeException.class);
-		expectedException.expectMessage(
-			"Missing required property 'GetSnapshotResponse.total'");
-
 		String snapshotName = "test_delete_snapshot";
 
 		_createSnapshot(_TEST_REPOSITORY_NAME, snapshotName, true, _INDEX_NAME);
@@ -247,13 +238,8 @@ public class ElasticsearchSearchEngineAdapterSnapshotRequestTest {
 			snapshotRepositoryDetails.getType());
 	}
 
-	@Ignore
 	@Test
 	public void testGetSnapshots() {
-		expectedException.expect(RuntimeException.class);
-		expectedException.expectMessage(
-			"Missing required property 'GetSnapshotResponse.total'");
-
 		String snapshotName = "test_get_snapshots";
 
 		_createSnapshot(_TEST_REPOSITORY_NAME, snapshotName, true, _INDEX_NAME);
@@ -309,15 +295,17 @@ public class ElasticsearchSearchEngineAdapterSnapshotRequestTest {
 	protected static SearchEngineAdapter createSearchEngineAdapter(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
-		SearchEngineAdapter searchEngineAdapter =
-			new ElasticsearchSearchEngineAdapterImpl();
+		ElasticsearchSearchEngineAdapterImpl
+			elasticsearchSearchEngineAdapterImpl =
+				new ElasticsearchSearchEngineAdapterImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			searchEngineAdapter, "_snapshotRequestExecutor",
-			SnapshotRequestExecutorTestUtil.createSnapshotRequestExecutor(
-				elasticsearchClientResolver));
+			elasticsearchSearchEngineAdapterImpl,
+			"_elasticsearchClientResolver", elasticsearchClientResolver);
 
-		return searchEngineAdapter;
+		elasticsearchSearchEngineAdapterImpl.activate(Collections.emptyMap());
+
+		return elasticsearchSearchEngineAdapterImpl;
 	}
 
 	private void _createIndex() {

@@ -8,10 +8,10 @@ import {useEffect, useMemo, useState} from 'react';
 import {HashRouter, Route, Routes} from 'react-router-dom';
 import {useAppPropertiesContext} from '~/contexts/AppPropertiesContext';
 import getKebabCase from '~/utils/getKebabCase';
+import {useAppContext} from '~/features/project/context';
 import BusinessEventAdd from '~/features/project/pages/Project/BusinessEvents/pages/BusinessEventsAdd';
 import DeactivateKeysTable from '~/features/project/containers/DeactivateKeysTable';
 import GenerateNewKey from '~/features/project/containers/GenerateNewKey';
-import {useAppContext} from '~/features/project/context';
 import {actionTypes} from '~/features/project/context/reducer';
 import Layout from '~/features/project/layouts/BaseLayout';
 import {PRODUCT_TYPES} from '~/features/project/utils/constants';
@@ -42,7 +42,10 @@ import BusinessEventsItemEdit from '../BusinessEvents/pages/BusinessEventsItem/B
 const ProjectRoutes = () => {
 	const [hasComplimentaryKey, setHasComplimentaryKey] = useState(false);
 
-	const [{project, subscriptionGroups}, dispatch] = useAppContext();
+	const [
+		{hasExperienceSubscription, hasLegacySubscription, hasPlanSubscription, project, subscriptionGroups, subscriptions},
+		dispatch,
+	] = useAppContext();
 	const {featureFlags} = useAppPropertiesContext();
 
 	const {data: koroneikiData, loading: koroneikiAccountLoading} =
@@ -72,12 +75,22 @@ const ProjectRoutes = () => {
 		}
 	}
 
-	const {data: myUserAccountData} =
+	const {data: myUserAccountData, loading: loggedUserAccountLoading} =
 		useMyUserAccountByAccountExternalReferenceCode(
 			koroneikiAccount?.accountKey,
 			koroneikiAccountLoading
 		);
 	const loggedUserAccount = myUserAccountData?.myUserAccount;
+
+	const isLoading =
+		koroneikiAccountLoading ||
+		loggedUserAccountLoading ||
+		subscriptions === undefined;
+
+	const isProjectUsageEnabled =
+		((loggedUserAccount?.isLiferayStaff || loggedUserAccount?.isPartner) &&
+			(hasPlanSubscription || hasLegacySubscription)) ||
+		(featureFlags.includes('LRSD-12003') && hasExperienceSubscription);
 
 	const hasSaasSubscription = useMemo(
 		() => {
@@ -333,16 +346,20 @@ const ProjectRoutes = () => {
 						</Route>
 					)}
 
-					{((featureFlags.includes('LRSD-6322') && loggedUserAccount?.isLiferayStaff) ||
-						(featureFlags.includes('LRSD-7805') && loggedUserAccount?.isPartner)) &&
-							hasSaasSubscription && (
-								<Route
-									element={<ProjectUsage />}
-									path="project-usage"
-								/>
+					{isProjectUsageEnabled && (
+						<Route element={<ProjectUsage />} path="project-usage" />
 					)}
 
-					<Route element={<h3>Page not found</h3>} path="*" />
+					<Route
+						element={
+							isLoading ? (
+								<ClayLoadingIndicator />
+							) : (
+								<h3>Page not found</h3>
+							)
+						}
+						path="*"
+					/>
 				</Route>
 			</Routes>
 		</HashRouter>

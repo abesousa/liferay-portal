@@ -11,15 +11,18 @@ import com.liferay.exportimport.report.service.ExportImportReportEntryLocalServi
 import com.liferay.petra.function.UnsafeBiFunction;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
+import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
@@ -51,6 +54,8 @@ public class EmptyModelManagerImplTest {
 
 	@BeforeClass
 	public static void setUpClass() {
+		ReflectionTestUtil.setFieldValue(_emptyModelManager, "_log", _log);
+
 		_stagingGroupHelperUtilMockedStatic = Mockito.mockStatic(
 			StagingGroupHelperUtil.class);
 	}
@@ -78,7 +83,7 @@ public class EmptyModelManagerImplTest {
 	public void tearDown() {
 		Mockito.verifyNoMoreInteractions(
 			_classNameLocalService, _exportImportReportEntryLocalService,
-			_group, _groupLocalService, _user);
+			_group, _groupLocalService, _log, _user);
 	}
 
 	@Test
@@ -143,7 +148,10 @@ public class EmptyModelManagerImplTest {
 	public void testGetOrAddEmptyModelCompanyScopedWithEnabledLazyReferencingAndAddingEmptyItem()
 		throws Exception {
 
-		try (SafeCloseable safeCloseable =
+		try (MockedStatic<ExportImportThreadLocal>
+				exportImportThreadLocalMockedStatic = Mockito.mockStatic(
+					ExportImportThreadLocal.class);
+			SafeCloseable safeCloseable =
 				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
 
 			long classNameId = RandomTestUtil.randomLong();
@@ -154,10 +162,19 @@ public class EmptyModelManagerImplTest {
 				classNameId
 			);
 
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::isImportInProcess
+			).thenReturn(
+				true
+			);
+
 			long exportImportConfigurationId = RandomTestUtil.randomLong();
 
-			ExportImportThreadLocal.setExportImportConfigurationId(
-				exportImportConfigurationId);
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::getExportImportConfigurationId
+			).thenReturn(
+				exportImportConfigurationId
+			);
 
 			long companyId = RandomTestUtil.randomLong();
 			String externalReferenceCode = RandomTestUtil.randomString();
@@ -183,7 +200,7 @@ public class EmptyModelManagerImplTest {
 
 			Mockito.verify(
 				_exportImportReportEntryLocalService
-			).addEmptyExportImportReportEntry(
+			).getOrAddEmptyExportImportReportEntry(
 				0L, companyId, externalReferenceCode, classNameId,
 				exportImportConfigurationId, User.class.getName()
 			);
@@ -207,6 +224,37 @@ public class EmptyModelManagerImplTest {
 						return null;
 					},
 					RandomTestUtil.randomString(), _toBiFunction(() -> _user),
+					_toUnsafeBiFunction(
+						() -> {
+							Assert.fail();
+
+							return null;
+						}),
+					User.class.getName()));
+		}
+	}
+
+	@Test
+	public void testGetOrAddEmptyModelCompanyScopedWithEnabledLazyReferencingOutsideAnImportProcess()
+		throws Exception {
+
+		try (MockedStatic<ExportImportThreadLocal>
+				exportImportThreadLocalMockedStatic = Mockito.mockStatic(
+					ExportImportThreadLocal.class);
+			SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::isImportInProcess
+			).thenReturn(
+				false
+			);
+
+			Assert.assertSame(
+				_user,
+				_emptyModelManager.getOrAddEmptyModel(
+					User.class, RandomTestUtil.randomLong(), () -> _user,
+					RandomTestUtil.randomString(), _toBiFunction(() -> null),
 					_toUnsafeBiFunction(
 						() -> {
 							Assert.fail();
@@ -295,7 +343,10 @@ public class EmptyModelManagerImplTest {
 			stagingGroupHelper
 		);
 
-		try (SafeCloseable safeCloseable =
+		try (MockedStatic<ExportImportThreadLocal>
+				exportImportThreadLocalMockedStatic = Mockito.mockStatic(
+					ExportImportThreadLocal.class);
+			SafeCloseable safeCloseable =
 				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
 
 			long classNameId = RandomTestUtil.randomLong();
@@ -336,10 +387,19 @@ public class EmptyModelManagerImplTest {
 				_group
 			);
 
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::isImportInProcess
+			).thenReturn(
+				true
+			);
+
 			long exportImportConfigurationId = RandomTestUtil.randomLong();
 
-			ExportImportThreadLocal.setExportImportConfigurationId(
-				exportImportConfigurationId);
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::getExportImportConfigurationId
+			).thenReturn(
+				exportImportConfigurationId
+			);
 
 			String userExternalReferenceCode = RandomTestUtil.randomString();
 
@@ -374,7 +434,7 @@ public class EmptyModelManagerImplTest {
 
 			Mockito.verify(
 				_exportImportReportEntryLocalService
-			).addEmptyExportImportReportEntry(
+			).getOrAddEmptyExportImportReportEntry(
 				groupId, companyId, userExternalReferenceCode, classNameId,
 				exportImportConfigurationId, User.class.getName()
 			);
@@ -425,6 +485,53 @@ public class EmptyModelManagerImplTest {
 	}
 
 	@Test
+	public void testGetOrAddEmptyModelGroupScopedWithEnabledLazyReferencingOutsideAnImportProcess()
+		throws Exception {
+
+		StagingGroupHelper stagingGroupHelper = Mockito.mock(
+			StagingGroupHelper.class);
+
+		Mockito.when(
+			stagingGroupHelper.isCompanyGroup(_group)
+		).thenReturn(
+			false
+		);
+
+		_stagingGroupHelperUtilMockedStatic.when(
+			StagingGroupHelperUtil::getStagingGroupHelper
+		).thenReturn(
+			stagingGroupHelper
+		);
+
+		try (MockedStatic<ExportImportThreadLocal>
+				exportImportThreadLocalMockedStatic = Mockito.mockStatic(
+					ExportImportThreadLocal.class);
+			SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::isImportInProcess
+			).thenReturn(
+				false
+			);
+
+			Assert.assertSame(
+				_user,
+				_emptyModelManager.getOrAddEmptyModel(
+					User.class.getName(), RandomTestUtil.randomLong(),
+					() -> _user, RandomTestUtil.randomString(),
+					_toBiFunction(() -> null),
+					_toUnsafeBiFunction(
+						() -> {
+							Assert.fail();
+
+							return null;
+						}),
+					RandomTestUtil.randomLong(), User.class.getName()));
+		}
+	}
+
+	@Test
 	public void testIsEmptyModel() {
 		Assert.assertFalse(_emptyModelManager.isEmptyModel());
 	}
@@ -433,7 +540,10 @@ public class EmptyModelManagerImplTest {
 	public void testIsEmptyModelWhenAddingEmptyModel() throws Exception {
 		Assert.assertFalse(_emptyModelManager.isEmptyModel());
 
-		try (SafeCloseable safeCloseable =
+		try (MockedStatic<ExportImportThreadLocal>
+				exportImportThreadLocalMockedStatic = Mockito.mockStatic(
+					ExportImportThreadLocal.class);
+			SafeCloseable safeCloseable =
 				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
 
 			long classNameId = RandomTestUtil.randomLong();
@@ -444,10 +554,19 @@ public class EmptyModelManagerImplTest {
 				classNameId
 			);
 
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::isImportInProcess
+			).thenReturn(
+				true
+			);
+
 			long exportImportConfigurationId = RandomTestUtil.randomLong();
 
-			ExportImportThreadLocal.setExportImportConfigurationId(
-				exportImportConfigurationId);
+			exportImportThreadLocalMockedStatic.when(
+				ExportImportThreadLocal::getExportImportConfigurationId
+			).thenReturn(
+				exportImportConfigurationId
+			);
 
 			long companyId = RandomTestUtil.randomLong();
 			String externalReferenceCode = RandomTestUtil.randomString();
@@ -476,11 +595,120 @@ public class EmptyModelManagerImplTest {
 
 			Mockito.verify(
 				_exportImportReportEntryLocalService
-			).addEmptyExportImportReportEntry(
+			).getOrAddEmptyExportImportReportEntry(
 				0L, companyId, externalReferenceCode, classNameId,
 				exportImportConfigurationId, User.class.getName()
 			);
 		}
+	}
+
+	@Test
+	public void testSolveEmptyModel() throws Exception {
+		long classNameId = RandomTestUtil.randomLong();
+
+		Mockito.when(
+			_classNameLocalService.getClassNameId(User.class.getName())
+		).thenReturn(
+			classNameId
+		);
+
+		long companyId = RandomTestUtil.randomLong();
+		String externalReferenceCode = RandomTestUtil.randomString();
+		long groupId = RandomTestUtil.randomLong();
+		int status = RandomTestUtil.randomInt();
+
+		Assert.assertEquals(
+			status,
+			_emptyModelManager.solveEmptyModel(
+				externalReferenceCode, User.class.getName(), companyId, groupId,
+				WorkflowConstants.STATUS_EMPTY, () -> status));
+
+		Mockito.verify(
+			_classNameLocalService
+		).getClassNameId(
+			User.class.getName()
+		);
+
+		Mockito.verify(
+			_exportImportReportEntryLocalService
+		).resolveEmptyExportImportReportEntries(
+			groupId, companyId, externalReferenceCode, classNameId
+		);
+	}
+
+	@Test
+	public void testSolveEmptyModelWithException() throws Exception {
+		long classNameId = RandomTestUtil.randomLong();
+
+		Mockito.when(
+			_classNameLocalService.getClassNameId(User.class.getName())
+		).thenReturn(
+			classNameId
+		);
+
+		long companyId = RandomTestUtil.randomLong();
+		String errorMessage = RandomTestUtil.randomString();
+		String externalReferenceCode = RandomTestUtil.randomString();
+		long groupId = RandomTestUtil.randomLong();
+		PortalException portalException = new PortalException(errorMessage);
+		int status = RandomTestUtil.randomInt();
+
+		Mockito.doThrow(
+			portalException
+		).when(
+			_exportImportReportEntryLocalService
+		).resolveEmptyExportImportReportEntries(
+			groupId, companyId, externalReferenceCode, classNameId
+		);
+
+		Assert.assertEquals(
+			status,
+			_emptyModelManager.solveEmptyModel(
+				externalReferenceCode, User.class.getName(), companyId, groupId,
+				WorkflowConstants.STATUS_EMPTY, () -> status));
+
+		Mockito.verify(
+			_classNameLocalService
+		).getClassNameId(
+			User.class.getName()
+		);
+
+		Mockito.verify(
+			_exportImportReportEntryLocalService
+		).resolveEmptyExportImportReportEntries(
+			groupId, companyId, externalReferenceCode, classNameId
+		);
+
+		Mockito.verify(
+			_log
+		).error(
+			StringBundler.concat(
+				"Unable to resolve the export/import report entries for \"",
+				"the class external reference code ", externalReferenceCode,
+				"\" and class name \"com.liferay.portal.kernel.model.User\""),
+			portalException
+		);
+	}
+
+	@Test
+	public void testSolveEmptyModelWithNotEmptyStatus() {
+		long classNameId = RandomTestUtil.randomLong();
+
+		Mockito.when(
+			_classNameLocalService.getClassNameId(User.class.getName())
+		).thenReturn(
+			classNameId
+		);
+
+		long companyId = RandomTestUtil.randomLong();
+		String externalReferenceCode = RandomTestUtil.randomString();
+		long groupId = RandomTestUtil.randomLong();
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED,
+			_emptyModelManager.solveEmptyModel(
+				externalReferenceCode, User.class.getName(), companyId, groupId,
+				WorkflowConstants.STATUS_APPROVED, RandomTestUtil::randomInt));
 	}
 
 	private BiFunction<String, Long, User> _toBiFunction(
@@ -496,13 +724,15 @@ public class EmptyModelManagerImplTest {
 		return (externalReferenceCode, companyId) -> unsafeSupplier.get();
 	}
 
+	private static final Log _log = Mockito.mock(Log.class);
+
+	private static final EmptyModelManager _emptyModelManager =
+		new EmptyModelManagerImpl();
 	private static MockedStatic<StagingGroupHelperUtil>
 		_stagingGroupHelperUtilMockedStatic;
 
 	private final ClassNameLocalService _classNameLocalService = Mockito.mock(
 		ClassNameLocalService.class);
-	private final EmptyModelManager _emptyModelManager =
-		new EmptyModelManagerImpl();
 	private final ExportImportReportEntryLocalService
 		_exportImportReportEntryLocalService = Mockito.mock(
 			ExportImportReportEntryLocalService.class);

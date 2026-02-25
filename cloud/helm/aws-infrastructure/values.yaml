@@ -1,13 +1,28 @@
 backup:
     enabled: false
-    planName: liferay-backup-plan
     region: us-west-2
     rules:
         -   retentionDays: 30
             ruleName: daily-backups
             schedule: cron(0 5 * * ? *)
             startWindow: 60
-    selectionName: by-tags
-    serviceRoleName: liferay-backup-restore
-    vaultName: liferay-backup-vault
+database:
+    engineVersion: "16.11"
+    instanceClass: db.t3.medium
+    region: us-west-2
+    storageGB: 20
+    username: liferay_database_admin
 enabled: true
+search:
+    elasticsearch:
+        enabled: false
+        maxMapCount: 262144
+        nodeCount: 3
+        version: 8.12.0
+        volumeSize: 10Gi
+    opensearch:
+        engineVersino: OpenSearch_2.15
+        instanceCount: 2
+        instanceType: t3.small.search
+        region: us-west-2
+        username: liferay_search_admin

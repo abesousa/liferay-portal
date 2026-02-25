@@ -17,6 +17,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataHandlerControl;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.kernel.lar.UserIdStrategy;
+import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -67,6 +68,17 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 
 		Map<String, String[]> parameterMap = new LinkedHashMap<>(
 			portletRequest.getParameterMap());
+
+		// Add before parameter replacement
+
+		if (ArrayUtil.isNotEmpty(
+				GetterUtil.getLongValues(parameterMap.get("layoutIds")))) {
+
+			parameterMap.put(
+				PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE +
+					LayoutAdminPortletKeys.LAYOUT_SET_LAYOUTS,
+				new String[] {"true"});
+		}
 
 		if (ExportImportDateUtil.isRangeFromLastPublishDate(parameterMap)) {
 			_replaceParameterMap(parameterMap);

@@ -10,6 +10,7 @@ import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.TestClassReport;
 import com.liferay.jenkins.results.parser.TopLevelBuildReport;
 import com.liferay.jenkins.results.parser.testray.TestrayBuild;
+import com.liferay.jenkins.results.parser.testray.TestrayProject;
 import com.liferay.jenkins.results.parser.testray.TestrayRoutine;
 import com.liferay.jenkins.results.parser.testray.TestrayServer;
 
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.net.URL;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -47,6 +49,16 @@ public class TestrayJobHistory extends BaseJobHistory {
 		);
 
 		return jsonObject;
+	}
+
+	public TestrayProject getTestrayProject() {
+		if (_testrayRoutines.isEmpty()) {
+			return null;
+		}
+
+		TestrayRoutine testrayRoutine = _testrayRoutines.get(0);
+
+		return testrayRoutine.getTestrayProject();
 	}
 
 	@Override
@@ -84,6 +96,8 @@ public class TestrayJobHistory extends BaseJobHistory {
 		}
 
 		for (TestrayRoutine testrayRoutine : _testrayRoutines) {
+			TestrayBuild latestTestrayBuild = null;
+
 			List<TestrayBuild> testrayBuilds = testrayRoutine.getTestrayBuilds(
 				_maxBuildCount);
 
@@ -92,6 +106,12 @@ public class TestrayJobHistory extends BaseJobHistory {
 			}
 
 			for (TestrayBuild testrayBuild : testrayBuilds) {
+				if (!Objects.equals(testrayBuild.getImportStatus(), "DONE")) {
+					System.out.println("SKIPPED: " + testrayBuild.getURL());
+
+					continue;
+				}
+
 				TopLevelBuildReport topLevelBuildReport =
 					testrayBuild.getTopLevelBuildReport();
 
@@ -104,8 +124,8 @@ public class TestrayJobHistory extends BaseJobHistory {
 
 				boolean latestBuild = false;
 
-				if (_latestTestrayBuild == null) {
-					_latestTestrayBuild = testrayBuild;
+				if (latestTestrayBuild == null) {
+					latestTestrayBuild = testrayBuild;
 
 					latestBuild = true;
 				}
@@ -276,7 +296,6 @@ public class TestrayJobHistory extends BaseJobHistory {
 		return status;
 	}
 
-	private TestrayBuild _latestTestrayBuild;
 	private final int _maxBuildCount;
 	private boolean _populated;
 	private final List<TestrayRoutine> _testrayRoutines;

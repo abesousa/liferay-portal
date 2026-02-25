@@ -13,36 +13,8 @@ SideNavigationDisplayContext sideNavigationDisplayContext = new SideNavigationDi
 
 <div class="side-navigation-container c-slideout-container<%= sideNavigationDisplayContext.isVisible() ? " c-slideout-push-start" : "" %>" id="com_liferay_application_list_taglib_side_navigation_container">
 	<div class="c-slideout c-slideout-fixed c-slideout-push c-slideout-start<%= sideNavigationDisplayContext.isVisible() ? " c-slideout-shown" : "" %>">
-		<section aria-labelledby="com_liferay_application_list_taglib_side_navigation_label" class="sidebar sidebar-light<%= sideNavigationDisplayContext.isVisible() ? " c-slideout-show" : "" %>" data-qa-id="sideNavigation" id="com_liferay_application_list_taglib_side_navigation">
-			<div class="c-focus-trap">
-				<div class="sidebar-header">
-					<div class="autofit-row">
-						<div class="autofit-col autofit-col-expand">
-							<span class="component-title" id="com_liferay_application_list_taglib_side_navigation_label">
-								<%-- TODO: replace the icon below with the panel icon --%>
-								<clay:icon symbol="grid" /><span class="c-px-2" data-qa-id="sideNavigationLabel"><%= sideNavigationDisplayContext.getPanelCategoryLabel() %></span>
-							</span>
-						</div>
-
-						<div class="autofit-col">
-							<button aria-controls="com_liferay_application_list_taglib_side_navigation" class="close lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "close-product-menu") %>" type="button">
-								<clay:icon
-									symbol="times"
-								/>
-							</button>
-						</div>
-					</div>
-				</div>
-
-				<div class="c-px-0 sidebar-body">
-					<clay:vertical-nav
-						active="<%= sideNavigationDisplayContext.getPortletId() %>"
-						defaultExpandedKeys="<%= sideNavigationDisplayContext.getExpandedKeys() %>"
-						displayType="primary"
-						verticalNavItems="<%= sideNavigationDisplayContext.getVerticalNavItems() %>"
-					/>
-				</div>
-			</div>
+		<section class="skeleton sidebar sidebar-light<%= sideNavigationDisplayContext.isVisible() ? " c-slideout-show" : "" %>">
+			<img alt="" src="<%= String.format("%s/skeletons/homes_side_navigation.svg", themeDisplay.getPathThemeImages()) %>" />
 		</section>
 	</div>
 

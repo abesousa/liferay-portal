@@ -18,9 +18,13 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalService;
 import com.liferay.asset.kernel.exception.NoSuchCategoryException;
 import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetCategoryConstants;
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
@@ -92,6 +96,8 @@ import com.liferay.object.rest.dto.v1_0.FileEntry;
 import com.liferay.object.rest.dto.v1_0.Link;
 import com.liferay.object.rest.dto.v1_0.ListEntry;
 import com.liferay.object.rest.dto.v1_0.ObjectEntry;
+import com.liferay.object.rest.dto.v1_0.ParentTaxonomyCategory;
+import com.liferay.object.rest.dto.v1_0.ParentTaxonomyVocabulary;
 import com.liferay.object.rest.dto.v1_0.Status;
 import com.liferay.object.rest.dto.v1_0.SystemProperties;
 import com.liferay.object.rest.dto.v1_0.TaxonomyCategoryBrief;
@@ -1498,13 +1504,14 @@ public class DefaultObjectEntryManagerImplTest
 							"txt"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE,
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER),
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE,
 							"100"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.
-								NAME_SHOW_FILES_IN_DOCS_AND_MEDIA,
+								NAME_SHOW_FILES_IN_LIBRARY,
 							"true"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.
@@ -2393,15 +2400,15 @@ public class DefaultObjectEntryManagerImplTest
 			}
 		};
 
-		_assertPicklistOjectField(listEntry, listEntry);
+		_assertPicklistObjectField(listEntry, listEntry);
 
 		// Picklist by list type entry key
 
-		_assertPicklistOjectField(listEntry, listTypeEntry.getKey());
+		_assertPicklistObjectField(listEntry, listTypeEntry.getKey());
 
 		// Picklist by map
 
-		_assertPicklistOjectField(
+		_assertPicklistObjectField(
 			listEntry,
 			HashMapBuilder.put(
 				"key", listTypeEntry.getKey()
@@ -2463,7 +2470,8 @@ public class DefaultObjectEntryManagerImplTest
 					).name(
 						ObjectFieldSettingConstants.NAME_FILE_SOURCE
 					).value(
-						ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+						ObjectFieldSettingConstants.
+							VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 					).build(),
 					new ObjectFieldSettingBuilder(
 					).name(
@@ -2746,9 +2754,13 @@ public class DefaultObjectEntryManagerImplTest
 
 		// Lazy referencing disabled
 
+		String parentTaxonomyCategoryExternalReferenceCode =
+			RandomTestUtil.randomString();
 		String taxonomyCategoryExternalReferenceCode1 =
 			RandomTestUtil.randomString();
 		String taxonomyCategoryExternalReferenceCode2 =
+			RandomTestUtil.randomString();
+		String taxonomyVocabularyExternalReferenceCode =
 			RandomTestUtil.randomString();
 
 		ObjectEntry objectEntry = new ObjectEntry() {
@@ -2761,6 +2773,14 @@ public class DefaultObjectEntryManagerImplTest
 									_group, LocaleUtil.getDefault());
 								taxonomyCategoryExternalReferenceCode =
 									taxonomyCategoryExternalReferenceCode1;
+
+								setParentTaxonomyCategory(
+									new ParentTaxonomyCategory() {
+										{
+											setExternalReferenceCode(
+												parentTaxonomyCategoryExternalReferenceCode);
+										}
+									});
 							}
 						},
 						new TaxonomyCategoryBrief() {
@@ -2769,6 +2789,14 @@ public class DefaultObjectEntryManagerImplTest
 									_group, LocaleUtil.getDefault());
 								taxonomyCategoryExternalReferenceCode =
 									taxonomyCategoryExternalReferenceCode2;
+
+								setParentTaxonomyVocabulary(
+									new ParentTaxonomyVocabulary() {
+										{
+											setExternalReferenceCode(
+												taxonomyVocabularyExternalReferenceCode);
+										}
+									});
 							}
 						}
 					});
@@ -2806,7 +2834,23 @@ public class DefaultObjectEntryManagerImplTest
 						_group.getGroupId());
 
 			Assert.assertEquals(
+				AssetVocabularyConstants.EMPTY_VOCABULARY_ID,
+				assetCategory1.getVocabularyId());
+			Assert.assertEquals(
 				WorkflowConstants.STATUS_EMPTY, assetCategory1.getStatus());
+
+			AssetCategory parentAssetCategory =
+				_assetCategoryLocalService.
+					getAssetCategoryByExternalReferenceCode(
+						parentTaxonomyCategoryExternalReferenceCode,
+						_group.getGroupId());
+
+			Assert.assertEquals(
+				assetCategory1.getParentCategoryId(),
+				parentAssetCategory.getCategoryId());
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY,
+				parentAssetCategory.getStatus());
 
 			AssetCategory assetCategory2 =
 				_assetCategoryLocalService.
@@ -2815,7 +2859,22 @@ public class DefaultObjectEntryManagerImplTest
 						_group.getGroupId());
 
 			Assert.assertEquals(
+				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
+				assetCategory2.getParentCategoryId());
+			Assert.assertEquals(
 				WorkflowConstants.STATUS_EMPTY, assetCategory2.getStatus());
+
+			AssetVocabulary assetVocabulary =
+				_assetVocabularyLocalService.
+					fetchAssetVocabularyByExternalReferenceCode(
+						taxonomyVocabularyExternalReferenceCode,
+						_group.getGroupId());
+
+			Assert.assertEquals(
+				assetCategory2.getVocabularyId(),
+				assetVocabulary.getVocabularyId());
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY, assetVocabulary.getStatus());
 
 			AssetEntry assetEntry = _assetEntryLocalService.getEntry(
 				_objectDefinition1.getClassName(), objectEntry.getId());
@@ -3771,7 +3830,7 @@ public class DefaultObjectEntryManagerImplTest
 		PermissionThreadLocal.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(_user));
 
-		// Relationshp type prevent
+		// Relationship type prevent
 
 		objectRelationship =
 			_objectRelationshipLocalService.updateObjectRelationship(
@@ -7435,7 +7494,8 @@ public class DefaultObjectEntryManagerImplTest
 							"txt"),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE,
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER),
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA),
 						_createObjectFieldSetting(
 							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE,
 							"100"))
@@ -7502,7 +7562,8 @@ public class DefaultObjectEntryManagerImplTest
 						).name(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE
 						).value(
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 						).build(),
 						new ObjectFieldSettingBuilder(
 						).name(
@@ -7626,6 +7687,17 @@ public class DefaultObjectEntryManagerImplTest
 			() -> _dlAppLocalService.getFileEntry(fileEntry2.getId()));
 
 		objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
+	}
+
+	@Test
+	public void testPartialUpdateObjectEntryWithPortletImportInProcess()
+		throws Exception {
+
+		_testUpdateObjectEntryWithPortletImportInProcess(
+			(objectDefinition, objectEntryId, objectEntry) ->
+				_defaultObjectEntryManager.partialUpdateObjectEntry(
+					_simpleDTOConverterContext, objectDefinition, objectEntryId,
+					objectEntry));
 	}
 
 	@Test
@@ -9076,6 +9148,17 @@ public class DefaultObjectEntryManagerImplTest
 		PrincipalThreadLocal.setName(_originalName);
 	}
 
+	@Test
+	public void testUpdateObjectEntryWithPortletImportInProcess()
+		throws Exception {
+
+		_testUpdateObjectEntryWithPortletImportInProcess(
+			(objectDefinition, objectEntryId, objectEntry) ->
+				_defaultObjectEntryManager.updateObjectEntry(
+					_simpleDTOConverterContext, objectDefinition, objectEntryId,
+					objectEntry));
+	}
+
 	@FeatureFlag("LPD-17564")
 	@Test
 	public void testUpdateObjectEntryWithScheduleDates() throws Exception {
@@ -10194,7 +10277,7 @@ public class DefaultObjectEntryManagerImplTest
 		}
 	}
 
-	private void _assertPicklistOjectField(
+	private void _assertPicklistObjectField(
 			ListEntry expectedListEntry, Object picklistObjectFieldValue)
 		throws Exception {
 
@@ -11693,6 +11776,77 @@ public class DefaultObjectEntryManagerImplTest
 		}
 	}
 
+	private void _testUpdateObjectEntryWithPortletImportInProcess(
+			UnsafeTriFunction
+				<ObjectDefinition, Long, ObjectEntry, ObjectEntry, Exception>
+					unsafeTriFunction)
+		throws Exception {
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionTestUtil.publishObjectDefinition();
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			ExportImportThreadLocal.setExportImportConfigurationId(
+				RandomTestUtil.randomLong());
+			ExportImportThreadLocal.setPortletImportInProcess(true);
+
+			com.liferay.object.model.ObjectEntry serviceBuilderObjectEntry =
+				_objectEntryLocalService.getOrAddEmptyObjectEntry(
+					RandomTestUtil.randomString(), TestPropsValues.getGroupId(),
+					TestPropsValues.getUserId(),
+					objectDefinition.getObjectDefinitionId());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY,
+				serviceBuilderObjectEntry.getStatus());
+
+			_assertObjectEntryStatus(
+				WorkflowConstants.STATUS_EMPTY,
+				unsafeTriFunction.apply(
+					objectDefinition,
+					serviceBuilderObjectEntry.getObjectEntryId(),
+					new ObjectEntry()));
+			_assertObjectEntryStatus(
+				WorkflowConstants.STATUS_APPROVED,
+				unsafeTriFunction.apply(
+					objectDefinition,
+					serviceBuilderObjectEntry.getObjectEntryId(),
+					new ObjectEntry() {
+						{
+							setStatus(
+								new Status() {
+									{
+										setCode(
+											WorkflowConstants.STATUS_APPROVED);
+									}
+								});
+						}
+					}));
+			_assertObjectEntryStatus(
+				WorkflowConstants.STATUS_APPROVED,
+				unsafeTriFunction.apply(
+					objectDefinition,
+					serviceBuilderObjectEntry.getObjectEntryId(),
+					new ObjectEntry() {
+						{
+							setStatus(
+								new Status() {
+									{
+										setCode(
+											WorkflowConstants.STATUS_EXPIRED);
+									}
+								});
+						}
+					}));
+		}
+		finally {
+			ExportImportThreadLocal.setExportImportConfigurationId(0);
+			ExportImportThreadLocal.setPortletImportInProcess(false);
+		}
+	}
+
 	private void _testUpdateRelatedObjectEntry(
 			ObjectEntry objectEntryA, ObjectRelationship objectRelationshipA_AA,
 			ObjectField objectRelationshipA_AAObjectField2,
@@ -11907,6 +12061,9 @@ public class DefaultObjectEntryManagerImplTest
 
 	@Inject
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Inject
+	private AssetVocabularyLocalService _assetVocabularyLocalService;
 
 	private Role _buyerRole;
 

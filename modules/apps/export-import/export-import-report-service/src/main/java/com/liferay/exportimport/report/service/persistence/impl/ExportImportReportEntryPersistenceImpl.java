@@ -44,6 +44,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.sql.DataSource;
@@ -643,6 +644,302 @@ public class ExportImportReportEntryPersistenceImpl
 		_FINDER_COLUMN_C_E_EXPORTIMPORTCONFIGURATIONID_2 =
 			"exportImportReportEntry.exportImportConfigurationId = ?";
 
+	private FinderPath _finderPathFetchByG_C_C_C_E_T;
+
+	/**
+	 * Returns the export import report entry where groupId = &#63; and companyId = &#63; and classExternalReferenceCode = &#63; and classNameId = &#63; and exportImportConfigurationId = &#63; and type = &#63; or throws a <code>NoSuchExportImportReportEntryException</code> if it could not be found.
+	 *
+	 * @param groupId the group ID
+	 * @param companyId the company ID
+	 * @param classExternalReferenceCode the class external reference code
+	 * @param classNameId the class name ID
+	 * @param exportImportConfigurationId the export import configuration ID
+	 * @param type the type
+	 * @return the matching export import report entry
+	 * @throws NoSuchExportImportReportEntryException if a matching export import report entry could not be found
+	 */
+	@Override
+	public ExportImportReportEntry findByG_C_C_C_E_T(
+			long groupId, long companyId, String classExternalReferenceCode,
+			long classNameId, long exportImportConfigurationId, int type)
+		throws NoSuchExportImportReportEntryException {
+
+		ExportImportReportEntry exportImportReportEntry = fetchByG_C_C_C_E_T(
+			groupId, companyId, classExternalReferenceCode, classNameId,
+			exportImportConfigurationId, type);
+
+		if (exportImportReportEntry == null) {
+			StringBundler sb = new StringBundler(14);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("groupId=");
+			sb.append(groupId);
+
+			sb.append(", companyId=");
+			sb.append(companyId);
+
+			sb.append(", classExternalReferenceCode=");
+			sb.append(classExternalReferenceCode);
+
+			sb.append(", classNameId=");
+			sb.append(classNameId);
+
+			sb.append(", exportImportConfigurationId=");
+			sb.append(exportImportConfigurationId);
+
+			sb.append(", type=");
+			sb.append(type);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchExportImportReportEntryException(sb.toString());
+		}
+
+		return exportImportReportEntry;
+	}
+
+	/**
+	 * Returns the export import report entry where groupId = &#63; and companyId = &#63; and classExternalReferenceCode = &#63; and classNameId = &#63; and exportImportConfigurationId = &#63; and type = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param groupId the group ID
+	 * @param companyId the company ID
+	 * @param classExternalReferenceCode the class external reference code
+	 * @param classNameId the class name ID
+	 * @param exportImportConfigurationId the export import configuration ID
+	 * @param type the type
+	 * @return the matching export import report entry, or <code>null</code> if a matching export import report entry could not be found
+	 */
+	@Override
+	public ExportImportReportEntry fetchByG_C_C_C_E_T(
+		long groupId, long companyId, String classExternalReferenceCode,
+		long classNameId, long exportImportConfigurationId, int type) {
+
+		return fetchByG_C_C_C_E_T(
+			groupId, companyId, classExternalReferenceCode, classNameId,
+			exportImportConfigurationId, type, true);
+	}
+
+	/**
+	 * Returns the export import report entry where groupId = &#63; and companyId = &#63; and classExternalReferenceCode = &#63; and classNameId = &#63; and exportImportConfigurationId = &#63; and type = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param groupId the group ID
+	 * @param companyId the company ID
+	 * @param classExternalReferenceCode the class external reference code
+	 * @param classNameId the class name ID
+	 * @param exportImportConfigurationId the export import configuration ID
+	 * @param type the type
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching export import report entry, or <code>null</code> if a matching export import report entry could not be found
+	 */
+	@Override
+	public ExportImportReportEntry fetchByG_C_C_C_E_T(
+		long groupId, long companyId, String classExternalReferenceCode,
+		long classNameId, long exportImportConfigurationId, int type,
+		boolean useFinderCache) {
+
+		classExternalReferenceCode = Objects.toString(
+			classExternalReferenceCode, "");
+
+		Object[] finderArgs = null;
+
+		if (useFinderCache) {
+			finderArgs = new Object[] {
+				groupId, companyId, classExternalReferenceCode, classNameId,
+				exportImportConfigurationId, type
+			};
+		}
+
+		Object result = null;
+
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByG_C_C_C_E_T, finderArgs, this);
+		}
+
+		if (result instanceof ExportImportReportEntry) {
+			ExportImportReportEntry exportImportReportEntry =
+				(ExportImportReportEntry)result;
+
+			if ((groupId != exportImportReportEntry.getGroupId()) ||
+				(companyId != exportImportReportEntry.getCompanyId()) ||
+				!Objects.equals(
+					classExternalReferenceCode,
+					exportImportReportEntry.getClassExternalReferenceCode()) ||
+				(classNameId != exportImportReportEntry.getClassNameId()) ||
+				(exportImportConfigurationId !=
+					exportImportReportEntry.getExportImportConfigurationId()) ||
+				(type != exportImportReportEntry.getType())) {
+
+				result = null;
+			}
+		}
+
+		if (result == null) {
+			StringBundler sb = new StringBundler(8);
+
+			sb.append(_SQL_SELECT_EXPORTIMPORTREPORTENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_G_C_C_C_E_T_GROUPID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_C_C_E_T_COMPANYID_2);
+
+			boolean bindClassExternalReferenceCode = false;
+
+			if (classExternalReferenceCode.isEmpty()) {
+				sb.append(
+					_FINDER_COLUMN_G_C_C_C_E_T_CLASSEXTERNALREFERENCECODE_3);
+			}
+			else {
+				bindClassExternalReferenceCode = true;
+
+				sb.append(
+					_FINDER_COLUMN_G_C_C_C_E_T_CLASSEXTERNALREFERENCECODE_2);
+			}
+
+			sb.append(_FINDER_COLUMN_G_C_C_C_E_T_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_C_C_E_T_EXPORTIMPORTCONFIGURATIONID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_C_C_E_T_TYPE_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(groupId);
+
+				queryPos.add(companyId);
+
+				if (bindClassExternalReferenceCode) {
+					queryPos.add(classExternalReferenceCode);
+				}
+
+				queryPos.add(classNameId);
+
+				queryPos.add(exportImportConfigurationId);
+
+				queryPos.add(type);
+
+				List<ExportImportReportEntry> list = query.list();
+
+				if (list.isEmpty()) {
+					if (useFinderCache) {
+						finderCache.putResult(
+							_finderPathFetchByG_C_C_C_E_T, finderArgs, list);
+					}
+				}
+				else {
+					ExportImportReportEntry exportImportReportEntry = list.get(
+						0);
+
+					result = exportImportReportEntry;
+
+					cacheResult(exportImportReportEntry);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		if (result instanceof List<?>) {
+			return null;
+		}
+		else {
+			return (ExportImportReportEntry)result;
+		}
+	}
+
+	/**
+	 * Removes the export import report entry where groupId = &#63; and companyId = &#63; and classExternalReferenceCode = &#63; and classNameId = &#63; and exportImportConfigurationId = &#63; and type = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param companyId the company ID
+	 * @param classExternalReferenceCode the class external reference code
+	 * @param classNameId the class name ID
+	 * @param exportImportConfigurationId the export import configuration ID
+	 * @param type the type
+	 * @return the export import report entry that was removed
+	 */
+	@Override
+	public ExportImportReportEntry removeByG_C_C_C_E_T(
+			long groupId, long companyId, String classExternalReferenceCode,
+			long classNameId, long exportImportConfigurationId, int type)
+		throws NoSuchExportImportReportEntryException {
+
+		ExportImportReportEntry exportImportReportEntry = findByG_C_C_C_E_T(
+			groupId, companyId, classExternalReferenceCode, classNameId,
+			exportImportConfigurationId, type);
+
+		return remove(exportImportReportEntry);
+	}
+
+	/**
+	 * Returns the number of export import report entries where groupId = &#63; and companyId = &#63; and classExternalReferenceCode = &#63; and classNameId = &#63; and exportImportConfigurationId = &#63; and type = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param companyId the company ID
+	 * @param classExternalReferenceCode the class external reference code
+	 * @param classNameId the class name ID
+	 * @param exportImportConfigurationId the export import configuration ID
+	 * @param type the type
+	 * @return the number of matching export import report entries
+	 */
+	@Override
+	public int countByG_C_C_C_E_T(
+		long groupId, long companyId, String classExternalReferenceCode,
+		long classNameId, long exportImportConfigurationId, int type) {
+
+		ExportImportReportEntry exportImportReportEntry = fetchByG_C_C_C_E_T(
+			groupId, companyId, classExternalReferenceCode, classNameId,
+			exportImportConfigurationId, type);
+
+		if (exportImportReportEntry == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_G_C_C_C_E_T_GROUPID_2 =
+		"exportImportReportEntry.groupId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_C_C_C_E_T_COMPANYID_2 =
+		"exportImportReportEntry.companyId = ? AND ";
+
+	private static final String
+		_FINDER_COLUMN_G_C_C_C_E_T_CLASSEXTERNALREFERENCECODE_2 =
+			"exportImportReportEntry.classExternalReferenceCode = ? AND ";
+
+	private static final String
+		_FINDER_COLUMN_G_C_C_C_E_T_CLASSEXTERNALREFERENCECODE_3 =
+			"(exportImportReportEntry.classExternalReferenceCode IS NULL OR exportImportReportEntry.classExternalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_G_C_C_C_E_T_CLASSNAMEID_2 =
+		"exportImportReportEntry.classNameId = ? AND ";
+
+	private static final String
+		_FINDER_COLUMN_G_C_C_C_E_T_EXPORTIMPORTCONFIGURATIONID_2 =
+			"exportImportReportEntry.exportImportConfigurationId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_C_C_C_E_T_TYPE_2 =
+		"exportImportReportEntry.type = ?";
+
 	public ExportImportReportEntryPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -668,6 +965,18 @@ public class ExportImportReportEntryPersistenceImpl
 		entityCache.putResult(
 			ExportImportReportEntryImpl.class,
 			exportImportReportEntry.getPrimaryKey(), exportImportReportEntry);
+
+		finderCache.putResult(
+			_finderPathFetchByG_C_C_C_E_T,
+			new Object[] {
+				exportImportReportEntry.getGroupId(),
+				exportImportReportEntry.getCompanyId(),
+				exportImportReportEntry.getClassExternalReferenceCode(),
+				exportImportReportEntry.getClassNameId(),
+				exportImportReportEntry.getExportImportConfigurationId(),
+				exportImportReportEntry.getType()
+			},
+			exportImportReportEntry);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -748,6 +1057,23 @@ public class ExportImportReportEntryPersistenceImpl
 			entityCache.removeResult(
 				ExportImportReportEntryImpl.class, primaryKey);
 		}
+	}
+
+	protected void cacheUniqueFindersCache(
+		ExportImportReportEntryModelImpl exportImportReportEntryModelImpl) {
+
+		Object[] args = new Object[] {
+			exportImportReportEntryModelImpl.getGroupId(),
+			exportImportReportEntryModelImpl.getCompanyId(),
+			exportImportReportEntryModelImpl.getClassExternalReferenceCode(),
+			exportImportReportEntryModelImpl.getClassNameId(),
+			exportImportReportEntryModelImpl.getExportImportConfigurationId(),
+			exportImportReportEntryModelImpl.getType()
+		};
+
+		finderCache.putResult(
+			_finderPathFetchByG_C_C_C_E_T, args,
+			exportImportReportEntryModelImpl);
 	}
 
 	/**
@@ -935,6 +1261,8 @@ public class ExportImportReportEntryPersistenceImpl
 		entityCache.putResult(
 			ExportImportReportEntryImpl.class, exportImportReportEntryModelImpl,
 			false, true);
+
+		cacheUniqueFindersCache(exportImportReportEntryModelImpl);
 
 		if (isNew) {
 			exportImportReportEntry.setNew(false);
@@ -1245,6 +1573,19 @@ public class ExportImportReportEntryPersistenceImpl
 			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_E",
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"companyId", "exportImportConfigurationId"}, false);
+
+		_finderPathFetchByG_C_C_C_E_T = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByG_C_C_C_E_T",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				String.class.getName(), Long.class.getName(),
+				Long.class.getName(), Integer.class.getName()
+			},
+			new String[] {
+				"groupId", "companyId", "classExternalReferenceCode",
+				"classNameId", "exportImportConfigurationId", "type_"
+			},
+			true);
 
 		ExportImportReportEntryUtil.setPersistence(this);
 	}

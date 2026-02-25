@@ -11,7 +11,6 @@ import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.search.elasticsearch8.configuration.RESTClientLoggerLevel;
 import com.liferay.portal.search.elasticsearch8.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch8.internal.connection.constants.ConnectionConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -21,7 +20,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -90,7 +88,7 @@ public class ElasticsearchConnectionManagerTest {
 	@Test
 	public void testActivateRemoteModeEnabledWithConnectionId() {
 		Mockito.when(
-			_elasticsearchConfigurationWrapper.isProductionModeEnabled()
+			_elasticsearchConfigurationWrapper.productionModeEnabled()
 		).thenReturn(
 			true
 		);
@@ -123,7 +121,7 @@ public class ElasticsearchConnectionManagerTest {
 	@Test
 	public void testActivateRemoteModeEnabledWithoutConnectionId() {
 		Mockito.when(
-			_elasticsearchConfigurationWrapper.isProductionModeEnabled()
+			_elasticsearchConfigurationWrapper.productionModeEnabled()
 		).thenReturn(
 			true
 		);
@@ -413,7 +411,6 @@ public class ElasticsearchConnectionManagerTest {
 			_elasticsearchConnectionManager.getElasticsearchConnection());
 	}
 
-	@Ignore
 	@Test
 	public void testGetExplicitElasticsearchClientWhenRestClientNull() {
 		try {
@@ -429,7 +426,7 @@ public class ElasticsearchConnectionManagerTest {
 				elasticsearchConnectionNotInitializedException.getMessage();
 
 			Assert.assertTrue(
-				message.contains("REST high level client not found"));
+				message.contains("Elasticsearch client not found"));
 		}
 	}
 
@@ -670,15 +667,9 @@ public class ElasticsearchConnectionManagerTest {
 
 	private void _enableRemoteMode() {
 		Mockito.when(
-			_elasticsearchConfigurationWrapper.isProductionModeEnabled()
+			_elasticsearchConfigurationWrapper.productionModeEnabled()
 		).thenReturn(
 			true
-		);
-
-		Mockito.when(
-			_elasticsearchConfigurationWrapper.isDevelopmentModeEnabled()
-		).thenReturn(
-			false
 		);
 
 		_elasticsearchConnectionManager.addElasticsearchConnection(
@@ -693,7 +684,6 @@ public class ElasticsearchConnectionManagerTest {
 			_sidecarElasticsearchConnection);
 
 		_setUpDefaultConnection();
-		_setUpElasticsearchConfigurationWrapper();
 		_setUpOperationModeResolver();
 		_setUpRemoteConnection1();
 		_setUpRemoteConnection2();
@@ -729,25 +719,11 @@ public class ElasticsearchConnectionManagerTest {
 		);
 	}
 
-	private void _setUpElasticsearchConfigurationWrapper() {
-		Mockito.when(
-			_elasticsearchConfigurationWrapper.restClientLoggerLevel()
-		).thenReturn(
-			RESTClientLoggerLevel.ERROR
-		);
-	}
-
 	private void _setUpOperationModeResolver() {
 		Mockito.when(
-			_elasticsearchConfigurationWrapper.isProductionModeEnabled()
+			_elasticsearchConfigurationWrapper.productionModeEnabled()
 		).thenReturn(
 			false
-		);
-
-		Mockito.when(
-			_elasticsearchConfigurationWrapper.isDevelopmentModeEnabled()
-		).thenReturn(
-			true
 		);
 	}
 

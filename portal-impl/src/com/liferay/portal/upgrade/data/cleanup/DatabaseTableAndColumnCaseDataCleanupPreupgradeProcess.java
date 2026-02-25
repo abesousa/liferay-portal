@@ -5,7 +5,6 @@
 
 package com.liferay.portal.upgrade.data.cleanup;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.db.DBResourceUtil;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * @author Jorge Avalos
@@ -47,16 +45,8 @@ public class DatabaseTableAndColumnCaseDataCleanupPreupgradeProcess
 			return;
 		}
 
-		Set<String> expectedTableNames = new TreeSet<>();
-
-		expectedTableNames.addAll(
-			DBResourceUtil.getModuleTableNames(connection));
-		expectedTableNames.addAll(
-			DBResourceUtil.getPortalTableNames(connection));
-		expectedTableNames.addAll(
-			DBResourceUtil.getServiceComponentModuleTableNames(connection));
-		expectedTableNames.addAll(
-			DBResourceUtil.getServiceComponentPortalTableNames(connection));
+		Set<String> expectedTableNames = DBResourceUtil.getLiferayTableNames(
+			connection);
 
 		CompanyLocalServiceUtil.forEachCompanyId(
 			companyId -> {
@@ -88,9 +78,8 @@ public class DatabaseTableAndColumnCaseDataCleanupPreupgradeProcess
 				continue;
 			}
 
-			DataCleanupLoggingUtil.logAlter(
-				_log, expectedTableName,
-				"incorrect table name casing, was " + tableName);
+			DataCleanupLoggingUtil.logRename(
+				_log, tableName, expectedTableName, "it was incorrectly cased");
 
 			alterTableName(tableName, expectedTableName + "_temp");
 
@@ -170,11 +159,10 @@ public class DatabaseTableAndColumnCaseDataCleanupPreupgradeProcess
 				continue;
 			}
 
-			DataCleanupLoggingUtil.logAlter(
-				_log, tableName,
-				StringBundler.concat(
-					"incorrect column name casing, column: ", columnName,
-					" renamed to ", expectedColumnName));
+			DataCleanupLoggingUtil.logRename(
+				_log, tableName + StringPool.PERIOD + columnName,
+				tableName + StringPool.PERIOD + expectedColumnName,
+				" because it was incorrectly cased");
 
 			int index = columnDefinition.indexOf(StringPool.SPACE);
 

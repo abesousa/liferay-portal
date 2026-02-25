@@ -5,7 +5,6 @@
 
 import {expect, mergeTests} from '@playwright/test';
 
-import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
 import {loginTest} from '../../../fixtures/loginTest';
 import {productAnalyticsPagesTest} from '../../../fixtures/productAnalyticsPagesTest';
 import {systemSettingsPageTest} from '../../../fixtures/systemSettingsPageTest';
@@ -23,9 +22,6 @@ const cookieKeys = [
 ];
 
 export const test = mergeTests(
-	featureFlagsTest({
-		'LPD-51356': {enabled: true},
-	}),
 	loginTest(),
 	productAnalyticsPagesTest,
 	systemSettingsPageTest
@@ -282,6 +278,24 @@ test(
 );
 
 test(
+	'Verify Product Analytics Configuration can be saved with Enabled set to false',
+	{tag: '@LPD-79065'},
+	async ({page}) => {
+		await test.step('Disable Product Analytics and save configuration', async () => {
+			await page.getByLabel('Enabled').setChecked(false);
+
+			await page
+				.getByRole('button', {name: 'Update'})
+				.dispatchEvent('click');
+
+			await waitForAlert(page);
+
+			await expect(page.getByLabel('Enabled')).not.toBeChecked();
+		});
+	}
+);
+
+test(
 	'Verify updating Consent Renewal Period removes consent cookies',
 	{tag: '@LPD-68504'},
 	async ({page, productAnalyticsBannerPage}) => {
@@ -366,9 +380,7 @@ async function validateConsentRenewalPeriodValue(
 
 		page.reload();
 
-		await expect(
-			page.locator(productAnalyticsBannerPage.bannerLocator)
-		).toBeVisible();
+		await expect(productAnalyticsBannerPage.bannerLocator).toBeVisible();
 
 		await page.getByRole('button', {name: 'Accept All'}).click();
 	}

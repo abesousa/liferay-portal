@@ -12,6 +12,12 @@ import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
+import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationSettingsMapFactoryUtil;
+import com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants;
+import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
+import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
+import com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalService;
+import com.liferay.exportimport.kernel.service.ExportImportLocalService;
 import com.liferay.info.item.ERCInfoItemIdentifier;
 import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemIdentifier;
@@ -52,6 +58,7 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -63,6 +70,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+import com.liferay.site.navigation.admin.constants.SiteNavigationAdminPortletKeys;
 import com.liferay.site.navigation.constants.SiteNavigationConstants;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
@@ -72,6 +80,8 @@ import com.liferay.site.navigation.type.DefaultSiteNavigationMenuItemTypeContext
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeContext;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
+
+import java.io.File;
 
 import java.util.Collections;
 import java.util.List;
@@ -241,6 +251,118 @@ public class DisplayPageTypeSiteNavigationMenuItemTypeTest {
 	}
 
 	@Test
+	public void testGetDisplayPageTypeSiteNavigationMenuItemFromExportImport()
+		throws Exception {
+
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID, _serviceContext);
+
+		SiteNavigationMenu siteNavigationMenu =
+			_siteNavigationMenuLocalService.addSiteNavigationMenu(
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
+				SiteNavigationConstants.TYPE_DEFAULT, true, _serviceContext);
+
+		SiteNavigationMenuItem siteNavigationMenuItem =
+			_siteNavigationMenuItemLocalService.addSiteNavigationMenuItem(
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				siteNavigationMenu.getSiteNavigationMenuId(), 0,
+				JournalArticle.class.getName(),
+				UnicodePropertiesBuilder.put(
+					"className", JournalArticle.class.getName()
+				).put(
+					"externalReferenceCode",
+					journalArticle.getExternalReferenceCode()
+				).buildString(),
+				_serviceContext);
+
+		siteNavigationMenu =
+			_siteNavigationMenuLocalService.fetchSiteNavigationMenu(
+				siteNavigationMenuItem.getSiteNavigationMenuId());
+
+		File larFile = _exportImportLocalService.exportLayoutsAsFile(
+			_exportImportConfigurationLocalService.
+				addDraftExportImportConfiguration(
+					TestPropsValues.getUserId(),
+					ExportImportConfigurationConstants.TYPE_EXPORT_LAYOUT,
+					ExportImportConfigurationSettingsMapFactoryUtil.
+						buildExportLayoutSettingsMap(
+							TestPropsValues.getUser(), _group.getGroupId(),
+							false, new long[0],
+							HashMapBuilder.put(
+								PortletDataHandlerKeys.PORTLET_DATA,
+								new String[] {Boolean.TRUE.toString()}
+							).put(
+								PortletDataHandlerKeys.PORTLET_DATA + "_" +
+									SiteNavigationAdminPortletKeys.
+										SITE_NAVIGATION_ADMIN,
+								new String[] {Boolean.TRUE.toString()}
+							).build())));
+
+		_siteNavigationMenuLocalService.deleteSiteNavigationMenu(
+			siteNavigationMenu);
+
+		_journalArticleLocalService.deleteArticle(journalArticle);
+
+		ExportImportConfiguration exportImportConfiguration =
+			_exportImportConfigurationLocalService.
+				addDraftExportImportConfiguration(
+					TestPropsValues.getUserId(),
+					ExportImportConfigurationConstants.TYPE_IMPORT_LAYOUT,
+					ExportImportConfigurationSettingsMapFactoryUtil.
+						buildImportLayoutSettingsMap(
+							TestPropsValues.getUser(), _group.getGroupId(),
+							false, new long[0],
+							HashMapBuilder.put(
+								PortletDataHandlerKeys.PORTLET_DATA,
+								new String[] {Boolean.TRUE.toString()}
+							).put(
+								PortletDataHandlerKeys.PORTLET_DATA + "_" +
+									SiteNavigationAdminPortletKeys.
+										SITE_NAVIGATION_ADMIN,
+								new String[] {Boolean.TRUE.toString()}
+							).build()));
+
+		_exportImportLocalService.importLayouts(
+			exportImportConfiguration, larFile);
+
+		siteNavigationMenu =
+			_siteNavigationMenuLocalService.
+				fetchSiteNavigationMenuByExternalReferenceCode(
+					siteNavigationMenu.getExternalReferenceCode(),
+					_group.getGroupId());
+
+		List<SiteNavigationMenuItem> siteNavigationMenuItems =
+			_siteNavigationMenuItemLocalService.getSiteNavigationMenuItems(
+				siteNavigationMenu.getSiteNavigationMenuId());
+
+		siteNavigationMenuItem = siteNavigationMenuItems.get(0);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				siteNavigationMenuItem.getTypeSettings()
+			).build();
+
+		Assert.assertNotNull(
+			typeSettingsUnicodeProperties.get("externalReferenceCode"));
+
+		String updatedName = RandomTestUtil.randomString();
+
+		typeSettingsUnicodeProperties.setProperty("title", updatedName);
+
+		siteNavigationMenuItem =
+			_siteNavigationMenuItemLocalService.updateSiteNavigationMenuItem(
+				TestPropsValues.getUserId(),
+				siteNavigationMenuItem.getSiteNavigationMenuItemId(),
+				typeSettingsUnicodeProperties.toString(),
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
+
+		Assert.assertEquals(siteNavigationMenuItem.getName(), updatedName);
+	}
+
+	@Test
 	public void testGetLabel() throws Exception {
 		Locale locale = _portal.getSiteDefaultLocale(_group.getGroupId());
 
@@ -259,7 +381,7 @@ public class DisplayPageTypeSiteNavigationMenuItemTypeTest {
 	public void testHasAssetDisplayPage() throws Exception {
 		DisplayPageTemplateTestUtil.addDisplayPageTemplate(
 			_group.getGroupId(),
-			_portal.getClassNameId(AssetCategory.class.getName()), 0, true,
+			_portal.getClassNameId(AssetCategory.class.getName()), null, true,
 			WorkflowConstants.STATUS_APPROVED);
 
 		UnicodeProperties typeSettingsUnicodeProperties =
@@ -421,7 +543,7 @@ public class DisplayPageTypeSiteNavigationMenuItemTypeTest {
 	public void testSiteNavigationMenuItemDisplayPageURL() throws Exception {
 		DisplayPageTemplateTestUtil.addDisplayPageTemplate(
 			_group.getGroupId(),
-			_portal.getClassNameId(AssetCategory.class.getName()), 0, true,
+			_portal.getClassNameId(AssetCategory.class.getName()), null, true,
 			WorkflowConstants.STATUS_APPROVED);
 
 		SiteNavigationMenu siteNavigationMenu =
@@ -771,6 +893,13 @@ public class DisplayPageTypeSiteNavigationMenuItemTypeTest {
 
 	@Inject
 	private CompanyLocalService _companyLocalService;
+
+	@Inject
+	private ExportImportConfigurationLocalService
+		_exportImportConfigurationLocalService;
+
+	@Inject
+	private ExportImportLocalService _exportImportLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;

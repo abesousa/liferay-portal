@@ -13,6 +13,7 @@ import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
+import com.liferay.portal.kernel.security.RandomUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -24,6 +25,20 @@ import java.util.Map;
  * @author Alejandro Tardín
  */
 public class ObjectDefinitionUtil {
+
+	public static String generateRandomClassName() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(
+			ObjectDefinitionConstants.
+				CLASS_NAME_PREFIX_CUSTOM_OBJECT_DEFINITION);
+		sb.append(StringUtil.toUpperCase(StringUtil.randomId(1)));
+		sb.append(RandomUtil.nextInt(10));
+		sb.append(StringUtil.toUpperCase(StringUtil.randomId(1)));
+		sb.append(RandomUtil.nextInt(10));
+
+		return sb.toString();
+	}
 
 	public static String getModifiableSystemObjectDefinitionRESTContextPath(
 		String name) {
@@ -108,13 +123,12 @@ public class ObjectDefinitionUtil {
 
 	private static final String[] _ALLOWED_INVOKER_BUNDLE_SYMBOLIC_NAMES = {
 		"com.liferay.ai.hub.site.initializer", "com.liferay.commerce.service",
-		"com.liferay.cookies.impl", "com.liferay.digital.sales.room.impl",
-		"com.liferay.frontend.data.set.admin.web",
+		"com.liferay.cookies.impl", "com.liferay.frontend.data.set.admin.web",
 		"com.liferay.frontend.data.set.impl",
 		"com.liferay.headless.builder.impl", "com.liferay.list.type.service",
 		"com.liferay.mcp.server", "com.liferay.notification.service",
 		"com.liferay.object.service", "com.liferay.site.initializer.cmp",
-		"com.liferay.site.initializer.cms"
+		"com.liferay.site.initializer.cms", "com.liferay.site.initializer.dsr"
 	};
 
 	private static final Map<String, String>

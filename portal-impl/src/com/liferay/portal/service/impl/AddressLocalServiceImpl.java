@@ -320,10 +320,11 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 		address.setStreet3(street3);
 		address.setSubtype(subtype);
 		address.setZip(zip);
-
-		if (address.getStatus() == WorkflowConstants.STATUS_EMPTY) {
-			address.setStatus(WorkflowConstants.STATUS_APPROVED);
-		}
+		address.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, address.getModelClassName(),
+				address.getCompanyId(), 0, address.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		address = addressPersistence.update(address);
 

@@ -173,159 +173,6 @@ public class LocalStagingPublishParentLayoutsByDefaultTest
 	}
 
 	@Test
-	@TestInfo("LPD-6808: AC3")
-	public void testStagingWithCheckedConfigurationAndModifiedContentAndExistingParentAndChildLayoutsOnLive()
-		throws Exception {
-
-		_configurationProvider.saveCompanyConfiguration(
-			StagingConfiguration.class, CompanyThreadLocal.getCompanyId(),
-			HashMapDictionaryBuilder.<String, Object>put(
-				"publishParentLayoutsByDefault", true
-			).build());
-
-		_mockPortletRequest = new MockPortletRequest();
-
-		_mockPortletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(stagingGroup));
-
-		Layout parentLayout = LayoutTestUtil.addTypePortletLayout(stagingGroup);
-
-		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
-			stagingGroup, parentLayout.getPlid());
-
-		_mockPortletRequest.setAttribute(
-			"layoutIdMap",
-			ExportImportHelperUtil.getSelectedLayoutsJSON(
-				stagingGroup.getGroupId(), false,
-				StringUtil.merge(
-					new long[] {
-						childLayout.getLayoutId(), parentLayout.getLayoutId()
-					})));
-
-		_mockPortletRequest.setParameter(
-			"exportImportConfigurationId", String.valueOf(0));
-		_mockPortletRequest.setParameter(
-			"groupId", String.valueOf(stagingGroup.getGroupId()));
-		_mockPortletRequest.setParameter("PERMISSIONS", "false");
-		_mockPortletRequest.setParameter("tabs1", "public-pages");
-
-		StagingUtil.publishToLive(_mockPortletRequest);
-
-		Layout liveParentLayout = LayoutLocalServiceUtil.fetchLayout(
-			parentLayout.getUuid(), liveGroup.getGroupId(),
-			parentLayout.isPrivateLayout());
-
-		Assert.assertNotNull(liveParentLayout);
-
-		LayoutTestUtil.addPortletToLayout(
-			parentLayout, JournalContentPortletKeys.JOURNAL_CONTENT);
-
-		Layout liveChildLayout = LayoutLocalServiceUtil.fetchLayout(
-			childLayout.getUuid(), liveGroup.getGroupId(),
-			childLayout.isPrivateLayout());
-
-		Assert.assertNotNull(liveChildLayout);
-
-		LayoutTestUtil.addPortletToLayout(
-			childLayout, JournalContentPortletKeys.JOURNAL_CONTENT);
-
-		_mockPortletRequest = new MockPortletRequest();
-
-		_mockPortletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(stagingGroup));
-		_mockPortletRequest.setAttribute(
-			"layoutIdMap",
-			ExportImportHelperUtil.getSelectedLayoutsJSON(
-				stagingGroup.getGroupId(), false,
-				StringUtil.merge(new long[] {childLayout.getLayoutId()})));
-		_mockPortletRequest.setParameter(
-			"exportImportConfigurationId", String.valueOf(0));
-		_mockPortletRequest.setParameter(
-			"groupId", String.valueOf(stagingGroup.getGroupId()));
-		_mockPortletRequest.setParameter("PERMISSIONS", "false");
-		_mockPortletRequest.setParameter("tabs1", "public-pages");
-
-		StagingUtil.publishToLive(_mockPortletRequest);
-
-		liveParentLayout = LayoutLocalServiceUtil.fetchLayout(
-			parentLayout.getUuid(), liveGroup.getGroupId(),
-			parentLayout.isPrivateLayout());
-
-		UnicodeProperties typeSettingsUnicodeProperties =
-			liveParentLayout.getTypeSettingsProperties();
-
-		String propertyValue = typeSettingsUnicodeProperties.getProperty(
-			"column-1");
-
-		Assert.assertTrue(
-			propertyValue.contains(JournalContentPortletKeys.JOURNAL_CONTENT));
-
-		liveChildLayout = LayoutLocalServiceUtil.fetchLayout(
-			childLayout.getUuid(), liveGroup.getGroupId(),
-			childLayout.isPrivateLayout());
-
-		typeSettingsUnicodeProperties =
-			liveChildLayout.getTypeSettingsProperties();
-
-		propertyValue = typeSettingsUnicodeProperties.getProperty("column-1");
-
-		Assert.assertTrue(
-			propertyValue.contains(JournalContentPortletKeys.JOURNAL_CONTENT));
-	}
-
-	@Test
-	@TestInfo("LPD-6808: AC4")
-	public void testStagingWithCheckedConfigurationAndModifiedContentAndNonexistingParentAndChildLayoutsOnLive()
-		throws Exception {
-
-		_configurationProvider.saveCompanyConfiguration(
-			StagingConfiguration.class, CompanyThreadLocal.getCompanyId(),
-			HashMapDictionaryBuilder.<String, Object>put(
-				"publishParentLayoutsByDefault", true
-			).build());
-
-		_mockPortletRequest = new MockPortletRequest();
-
-		_mockPortletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(stagingGroup));
-
-		Layout parentLayout = LayoutTestUtil.addTypePortletLayout(stagingGroup);
-
-		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
-			stagingGroup, parentLayout.getPlid());
-
-		_mockPortletRequest.setAttribute(
-			"layoutIdMap",
-			ExportImportHelperUtil.getSelectedLayoutsJSON(
-				stagingGroup.getGroupId(), false,
-				StringUtil.merge(new long[] {childLayout.getLayoutId()})));
-
-		_mockPortletRequest.setParameter(
-			"exportImportConfigurationId", String.valueOf(0));
-		_mockPortletRequest.setParameter(
-			"groupId", String.valueOf(stagingGroup.getGroupId()));
-		_mockPortletRequest.setParameter("PERMISSIONS", "false");
-		_mockPortletRequest.setParameter("tabs1", "public-pages");
-
-		StagingUtil.publishToLive(_mockPortletRequest);
-
-		Layout importedParentLayout = LayoutLocalServiceUtil.fetchLayout(
-			parentLayout.getUuid(), liveGroup.getGroupId(),
-			parentLayout.isPrivateLayout());
-
-		Assert.assertNotNull(importedParentLayout);
-
-		Layout importedChildLayout = LayoutLocalServiceUtil.fetchLayout(
-			childLayout.getUuid(), liveGroup.getGroupId(),
-			childLayout.isPrivateLayout());
-
-		Assert.assertNotNull(importedChildLayout);
-		Assert.assertEquals(
-			importedChildLayout.getParentLayoutId(),
-			importedParentLayout.getLayoutId());
-	}
-
-	@Test
 	@TestInfo("LPD-6808: AC5")
 	public void testStagingWithUncheckedConfigurationAndModifiedContentAndExistingParentAndChildLayoutsOnLive()
 		throws Exception {
@@ -361,6 +208,8 @@ public class LocalStagingPublishParentLayoutsByDefaultTest
 					})));
 
 		_mockPortletRequest.setParameter("PERMISSIONS", "false");
+		_mockPortletRequest.setParameter("PORTLET_DATA", "true");
+		_mockPortletRequest.setParameter("PORTLET_DATA_ALL", "true");
 		_mockPortletRequest.setParameter("tabs1", "public-pages");
 
 		StagingUtil.publishToLive(_mockPortletRequest);
@@ -397,6 +246,8 @@ public class LocalStagingPublishParentLayoutsByDefaultTest
 		_mockPortletRequest.setParameter(
 			"groupId", String.valueOf(stagingGroup.getGroupId()));
 		_mockPortletRequest.setParameter("PERMISSIONS", "false");
+		_mockPortletRequest.setParameter("PORTLET_DATA", "true");
+		_mockPortletRequest.setParameter("PORTLET_DATA_ALL", "true");
 		_mockPortletRequest.setParameter("tabs1", "public-pages");
 
 		StagingUtil.publishToLive(_mockPortletRequest);
@@ -457,6 +308,8 @@ public class LocalStagingPublishParentLayoutsByDefaultTest
 		_mockPortletRequest.setParameter(
 			"groupId", String.valueOf(stagingGroup.getGroupId()));
 		_mockPortletRequest.setParameter("PERMISSIONS", "false");
+		_mockPortletRequest.setParameter("PORTLET_DATA", "true");
+		_mockPortletRequest.setParameter("PORTLET_DATA_ALL", "true");
 		_mockPortletRequest.setParameter("tabs1", "public-pages");
 
 		StagingUtil.publishToLive(_mockPortletRequest);

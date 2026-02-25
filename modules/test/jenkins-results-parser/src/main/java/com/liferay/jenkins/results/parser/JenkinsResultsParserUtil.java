@@ -2746,6 +2746,11 @@ public class JenkinsResultsParserUtil {
 	public static int getJobTimeoutMinutes(
 		JenkinsMaster jenkinsMaster, String jobName) {
 
+		if (jenkinsMaster.isBlackListed()) {
+			jenkinsMaster = JenkinsMaster.getInstance(
+				System.getenv("MASTER_HOSTNAME"));
+		}
+
 		String key = jenkinsMaster.getName() + "_" + jobName;
 
 		synchronized (_jobTimeoutMinutes) {
@@ -3781,13 +3786,7 @@ public class JenkinsResultsParserUtil {
 
 		StringBuilder sb = new StringBuilder();
 
-		if (isCloudCINode()) {
-			sb.append(jenkinsMaster.getRemoteURL());
-		}
-		else {
-			sb.append(jenkinsMaster.getURL());
-		}
-
+		sb.append(jenkinsMaster.getRemoteURL());
 		sb.append("job/");
 		sb.append(jenkinsJobName);
 		sb.append("/buildWithParameters?");

@@ -7,10 +7,9 @@ package com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter;
 
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchClientResolver;
-import com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.document.DocumentRequestExecutorFixture;
-import com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
-import com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.snapshot.SnapshotRequestExecutorTestUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
+
+import java.util.Collections;
 
 /**
  * @author Michael C. Han
@@ -29,22 +28,6 @@ public class ElasticsearchEngineAdapterFixture {
 	protected static SearchEngineAdapter createSearchEngineAdapter(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
-		DocumentRequestExecutorFixture documentRequestExecutorFixture =
-			new DocumentRequestExecutorFixture() {
-				{
-					setElasticsearchClientResolver(elasticsearchClientResolver);
-				}
-			};
-
-		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
-			{
-				setElasticsearchClientResolver(elasticsearchClientResolver);
-			}
-		};
-
-		documentRequestExecutorFixture.setUp();
-		_searchRequestExecutorFixture.setUp();
-
 		ElasticsearchSearchEngineAdapterImpl
 			elasticsearchSearchEngineAdapterImpl =
 				new ElasticsearchSearchEngineAdapterImpl() {
@@ -56,18 +39,8 @@ public class ElasticsearchEngineAdapterFixture {
 		ReflectionTestUtil.setFieldValue(
 			elasticsearchSearchEngineAdapterImpl,
 			"_elasticsearchClientResolver", elasticsearchClientResolver);
-		ReflectionTestUtil.setFieldValue(
-			elasticsearchSearchEngineAdapterImpl, "_documentRequestExecutor",
-			documentRequestExecutorFixture.getDocumentRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			elasticsearchSearchEngineAdapterImpl, "_searchRequestExecutor",
-			_searchRequestExecutorFixture.getSearchRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			elasticsearchSearchEngineAdapterImpl, "_snapshotRequestExecutor",
-			SnapshotRequestExecutorTestUtil.createSnapshotRequestExecutor(
-				elasticsearchClientResolver));
 
-		elasticsearchSearchEngineAdapterImpl.activate();
+		elasticsearchSearchEngineAdapterImpl.activate(Collections.emptyMap());
 
 		return elasticsearchSearchEngineAdapterImpl;
 	}
@@ -77,8 +50,6 @@ public class ElasticsearchEngineAdapterFixture {
 
 		_elasticsearchClientResolver = elasticsearchClientResolver;
 	}
-
-	private static SearchRequestExecutorFixture _searchRequestExecutorFixture;
 
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 	private SearchEngineAdapter _searchEngineAdapter;

@@ -7,26 +7,18 @@ package com.liferay.portal.search.engine.adapter.document;
 
 import com.liferay.portal.search.engine.adapter.ccr.CrossClusterRequest;
 
-import java.util.function.Consumer;
-
 /**
  * @author Bryan Engler
  */
 public class GetDocumentRequest
 	extends CrossClusterRequest
-	implements BulkableDocumentRequest<GetDocumentRequest>,
-			   DocumentRequest<GetDocumentResponse> {
+	implements DocumentRequest<GetDocumentResponse> {
 
 	public GetDocumentRequest(String indexName, String id) {
 		_indexName = indexName;
 		_id = id;
 
 		setPreferLocalCluster(true);
-	}
-
-	@Override
-	public void accept(Consumer<GetDocumentRequest> consumer) {
-		consumer.accept(this);
 	}
 
 	@Override

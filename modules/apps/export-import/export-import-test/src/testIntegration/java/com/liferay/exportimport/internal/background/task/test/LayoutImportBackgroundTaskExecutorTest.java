@@ -38,7 +38,6 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.util.FeatureFlagTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -49,8 +48,6 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.test.rule.FeatureFlag;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.staging.StagingGroupHelper;
@@ -81,14 +78,8 @@ public class LayoutImportBackgroundTaskExecutorTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@FeatureFlags(
-		featureFlags = {@FeatureFlag("LPD-35443"), @FeatureFlag("LPD-35914")}
-	)
 	@Test
 	public void testGetStatusCompletedWithErrors() throws Exception {
-		FeatureFlagTestUtil.invokeFeatureFlagListeners(
-			TestPropsValues.getCompanyId(), true, "LPD-35914");
-
 		ServiceContextThreadLocal.pushServiceContext(
 			ServiceContextTestUtil.getServiceContext());
 
@@ -148,9 +139,6 @@ public class LayoutImportBackgroundTaskExecutorTest {
 			});
 
 		ServiceContextThreadLocal.popServiceContext();
-
-		FeatureFlagTestUtil.invokeFeatureFlagListeners(
-			TestPropsValues.getCompanyId(), false, "LPD-35914");
 	}
 
 	private DLFileEntry _addDLFileEntry(String content, long groupId)
@@ -220,12 +208,19 @@ public class LayoutImportBackgroundTaskExecutorTest {
 						).name(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE
 						).value(
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
+						).build(),
+						new ObjectFieldSettingBuilder(
+						).name(
+							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE
+						).value(
+							"100"
 						).build(),
 						new ObjectFieldSettingBuilder(
 						).name(
 							ObjectFieldSettingConstants.
-								NAME_SHOW_FILES_IN_DOCS_AND_MEDIA
+								NAME_SHOW_FILES_IN_LIBRARY
 						).value(
 							Boolean.TRUE.toString()
 						).build(),
@@ -235,12 +230,6 @@ public class LayoutImportBackgroundTaskExecutorTest {
 								NAME_STORAGE_DL_FOLDER_PATH
 						).value(
 							StringPool.SLASH + objectDefinitionName
-						).build(),
-						new ObjectFieldSettingBuilder(
-						).name(
-							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE
-						).value(
-							"100"
 						).build()),
 					false),
 				ObjectFieldUtil.createObjectField(
@@ -260,7 +249,8 @@ public class LayoutImportBackgroundTaskExecutorTest {
 						).name(
 							ObjectFieldSettingConstants.NAME_FILE_SOURCE
 						).value(
-							ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+							ObjectFieldSettingConstants.
+								VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 						).build(),
 						new ObjectFieldSettingBuilder(
 						).name(

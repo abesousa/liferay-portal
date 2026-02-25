@@ -2826,8 +2826,14 @@ test(
 
 test(
 	'Info panel shows title with content structure',
-	{tag: '@LPD-69788'},
-	async ({assetsPage, contentsPage, page, structureBuilderPage}) => {
+	{tag: ['@LPD-69788', '@LPD-76513']},
+	async ({
+		assetsPage,
+		contentsPage,
+		infoPanelPage,
+		page,
+		structureBuilderPage,
+	}) => {
 		const structureLabel = `StructureName${getRandomInt()}`;
 		const title = getRandomString();
 
@@ -2861,6 +2867,17 @@ test(
 			await expect(
 				page.getByRole('heading', {name: title})
 			).toBeVisible();
+		});
+
+		await test.step('Assert that all tabs are visible', async () => {
+			await expect(infoPanelPage.selectTab('Performance')).toBeVisible();
+
+			await expect(infoPanelPage.selectTab('More')).toBeVisible();
+
+			await infoPanelPage.selectTab('Categorization').click();
+
+			await expect(page.getByPlaceholder('Add tag')).toBeVisible();
+			await expect(page.getByPlaceholder('Add category')).toBeVisible();
 		});
 	}
 );
@@ -2998,6 +3015,129 @@ test(
 			await apiHelpers.objectEntry.deleteObjectEntry(
 				fileApplicationName,
 				String(fileObjectEntry2.id)
+			);
+		});
+	}
+);
+
+test(
+	'Delete Asset Versions in bulk',
+	{tag: '@LPD-67234'},
+	async ({apiHelpers, assetsPage, page}) => {
+		const contentApplicationName = 'cms/basic-web-contents';
+		const spaceName = 'Default';
+
+		const webContentNames = [
+			getRandomString(),
+			getRandomString(),
+			getRandomString(),
+		];
+
+		let contentObjectEntry = await apiHelpers.objectEntry.postObjectEntry(
+			{
+				objectEntryFolderExternalReferenceCode: 'L_CONTENTS',
+				title: webContentNames[0],
+			},
+			contentApplicationName,
+			spaceName
+		);
+
+		await test.step('Edit object entry to generate more versions', async () => {
+			await apiHelpers.objectEntry.patchObjectEntry(
+				{
+					title_i18n: {
+						en_US: webContentNames[1],
+					},
+				},
+				contentApplicationName,
+				contentObjectEntry.id
+			);
+
+			contentObjectEntry = await apiHelpers.objectEntry.patchObjectEntry(
+				{
+					title_i18n: {
+						en_US: webContentNames[2],
+					},
+				},
+				contentApplicationName,
+				contentObjectEntry.id
+			);
+		});
+
+		await test.step('Navigate to history page and bulk delete all versions', async () => {
+			await assetsPage.gotoAll();
+
+			await assetsPage.execItemAction({
+				action: 'View History',
+				filter: webContentNames[2],
+			});
+
+			for (const webContentName of webContentNames) {
+				await assetsPage
+					.getItem(webContentName)
+					.locator('input[title="Select Item"]')
+					.check();
+			}
+
+			await assetsPage.execBulkItemAction('Delete');
+
+			await waitForModal({
+				page,
+			});
+
+			await page
+				.locator('.modal')
+				.getByRole('button', {name: 'Delete'})
+				.click();
+
+			await waitForAlert(
+				page,
+				'Info:Delete asset versions action started for 3 versions.',
+				{
+					autoClose: true,
+					type: 'info',
+				}
+			);
+		});
+
+		await test.step('All versions are removed excluding the current one', async () => {
+			await page.reload();
+
+			await expect(
+				assetsPage.getItem(webContentNames[0])
+			).not.toBeVisible();
+
+			await expect(
+				assetsPage.getItem(webContentNames[1])
+			).not.toBeVisible();
+
+			await expect(assetsPage.getItem(webContentNames[2])).toBeVisible();
+		});
+
+		await test.step('Assert that current version cannot be deleted', async () => {
+			await assetsPage
+				.getItem(webContentNames[2])
+				.locator('input[title="Select Item"]')
+				.check();
+
+			await assetsPage.execBulkItemAction('Delete');
+
+			await waitForModal({
+				page,
+			});
+
+			await page
+				.locator('.modal')
+				.getByRole('button', {name: 'Delete'})
+				.click();
+
+			await waitForAlert(
+				page,
+				'Error:Current asset version cannot be deleted.',
+				{
+					autoClose: true,
+					type: 'danger',
+				}
 			);
 		});
 	}

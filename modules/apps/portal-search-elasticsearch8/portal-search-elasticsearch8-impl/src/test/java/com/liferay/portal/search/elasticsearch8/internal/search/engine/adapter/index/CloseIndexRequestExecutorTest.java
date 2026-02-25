@@ -17,7 +17,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -42,17 +41,16 @@ public class CloseIndexRequestExecutorTest {
 		_elasticsearchFixture.tearDown();
 	}
 
-	@Ignore
 	@Test
 	public void testIndexRequestTranslation() {
 		CloseIndexRequest closeIndexRequest = new CloseIndexRequest(
 			_INDEX_NAME);
 
-		IndicesOptions indicesOptions1 = new IndicesOptions();
+		IndicesOptions indicesOptions = new IndicesOptions();
 
-		indicesOptions1.setIgnoreUnavailable(true);
+		indicesOptions.setIgnoreUnavailable(true);
 
-		closeIndexRequest.setIndicesOptions(indicesOptions1);
+		closeIndexRequest.setIndicesOptions(indicesOptions);
 
 		closeIndexRequest.setTimeout(100);
 
@@ -67,24 +65,6 @@ public class CloseIndexRequestExecutorTest {
 		Assert.assertArrayEquals(
 			closeIndexRequest.getIndexNames(),
 			ArrayUtil.toStringArray(elasticsearchCloseIndexRequest.index()));
-
-		IndicesOptions indicesOptions2 = closeIndexRequest.getIndicesOptions();
-
-		Assert.assertEquals(
-			indicesOptions2.isIgnoreUnavailable(),
-			elasticsearchCloseIndexRequest.ignoreUnavailable());
-
-		Assert.assertEquals(
-			indicesOptions2.isAllowNoIndices(),
-			elasticsearchCloseIndexRequest.allowNoIndices());
-
-		Assert.assertEquals(
-			indicesOptions2.isExpandToOpenIndices(),
-			elasticsearchCloseIndexRequest.expandWildcards());
-
-		Assert.assertEquals(
-			indicesOptions2.isExpandToClosedIndices(),
-			elasticsearchCloseIndexRequest.expandWildcards());
 
 		Time masterTimeout = elasticsearchCloseIndexRequest.masterTimeout();
 

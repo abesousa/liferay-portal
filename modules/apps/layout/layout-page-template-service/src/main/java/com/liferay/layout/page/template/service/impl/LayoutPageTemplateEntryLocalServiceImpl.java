@@ -26,6 +26,7 @@ import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.base.LayoutPageTemplateEntryLocalServiceBaseImpl;
 import com.liferay.layout.page.template.service.persistence.LayoutPageTemplateCollectionPersistence;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
 import com.liferay.layout.validator.LayoutValidator;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
@@ -33,6 +34,7 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.LockedLayoutException;
 import com.liferay.portal.kernel.exception.NoSuchClassNameException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.license.util.LicenseManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
@@ -130,7 +132,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 			String externalReferenceCode, long userId, long groupId,
 			long layoutPageTemplateCollectionId,
 			String layoutPageTemplateEntryKey, long classNameId,
-			long classTypeId, String name, int type, long previewFileEntryId,
+			String classTypeKey, String name, int type, long previewFileEntryId,
 			boolean defaultTemplate, long layoutPrototypeId, long plid,
 			long masterLayoutPlid, int status, ServiceContext serviceContext)
 		throws PortalException {
@@ -174,7 +176,10 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 		layoutPageTemplateEntry.setLayoutPageTemplateEntryKey(
 			layoutPageTemplateEntryKey);
 		layoutPageTemplateEntry.setClassNameId(classNameId);
-		layoutPageTemplateEntry.setClassTypeId(classTypeId);
+		layoutPageTemplateEntry.setClassTypeId(
+			LayoutPageTemplateEntryUtil.getClassTypeId(
+				classNameId, classTypeKey, groupId));
+		layoutPageTemplateEntry.setClassTypeKey(classTypeKey);
 		layoutPageTemplateEntry.setName(name);
 		layoutPageTemplateEntry.setType(type);
 		layoutPageTemplateEntry.setPreviewFileEntryId(previewFileEntryId);
@@ -257,11 +262,14 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 			String externalReferenceCode, long userId, long groupId,
 			long layoutPageTemplateCollectionId,
 			String layoutPageTemplateEntryKey, long classNameId,
-			long classTypeId, String name, int type, long masterLayoutPlid,
+			String classTypeKey, String name, int type, long masterLayoutPlid,
 			int status, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Layout page template entry
+
+		long classTypeId = LayoutPageTemplateEntryUtil.getClassTypeId(
+			classNameId, classTypeKey, groupId);
 
 		_validate(groupId, classNameId, classTypeId);
 
@@ -269,7 +277,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 			addLayoutPageTemplateEntry(
 				externalReferenceCode, userId, groupId,
 				layoutPageTemplateCollectionId, layoutPageTemplateEntryKey,
-				classNameId, classTypeId, name, type, 0, false, 0, 0,
+				classNameId, classTypeKey, name, type, 0, false, 0, 0,
 				masterLayoutPlid, status, serviceContext);
 
 		// Dynamic data mapping structure link
@@ -293,7 +301,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 
 		return addLayoutPageTemplateEntry(
 			externalReferenceCode, userId, groupId,
-			layoutPageTemplateCollectionId, layoutPageTemplateEntryKey, 0, 0,
+			layoutPageTemplateCollectionId, layoutPageTemplateEntryKey, 0, null,
 			name, type, 0, false, 0, 0, masterLayoutPlid, status,
 			serviceContext);
 	}
@@ -338,7 +346,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 			addLayoutPageTemplateEntry(
 				null, userId, groupId, layoutPageTemplateCollectionId, null,
 				sourceLayoutPageTemplateEntry.getClassNameId(),
-				sourceLayoutPageTemplateEntry.getClassTypeId(), name,
+				sourceLayoutPageTemplateEntry.getClassTypeKey(), name,
 				sourceLayoutPageTemplateEntry.getType(), 0, false,
 				sourceLayoutPageTemplateEntry.getLayoutPrototypeId(), 0,
 				masterLayoutPlid, WorkflowConstants.STATUS_DRAFT,
@@ -477,7 +485,18 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 		long groupId, long classNameId, long classTypeId) {
 
 		return layoutPageTemplateEntryPersistence.fetchByG_C_C_D_First(
-			groupId, classNameId, classTypeId, true, null);
+			groupId, classNameId,
+			LayoutPageTemplateEntryUtil.getClassTypeKey(
+				classNameId, classTypeId, groupId),
+			true, null);
+	}
+
+	@Override
+	public LayoutPageTemplateEntry fetchDefaultLayoutPageTemplateEntry(
+		long groupId, long classNameId, String classTypeKey) {
+
+		return layoutPageTemplateEntryPersistence.fetchByG_C_C_D_First(
+			groupId, classNameId, classTypeKey, true, null);
 	}
 
 	@Override
@@ -751,7 +770,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 			layoutPageTemplateEntryPersistence.fetchByG_C_C_D_First(
 				layoutPageTemplateEntry.getGroupId(),
 				layoutPageTemplateEntry.getClassNameId(),
-				layoutPageTemplateEntry.getClassTypeId(), true, null);
+				layoutPageTemplateEntry.getClassTypeKey(), true, null);
 
 		if (defaultTemplate && (defaultLayoutPageTemplateEntry != null) &&
 			(defaultLayoutPageTemplateEntry.getLayoutPageTemplateEntryId() !=
@@ -798,7 +817,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 	@Override
 	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
 			long userId, long layoutPageTemplateEntryId, long classNameId,
-			long classTypeId)
+			String classTypeKey)
 		throws PortalException {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
@@ -816,7 +835,9 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 
 		layoutPageTemplateEntry.setModifiedDate(new Date());
 		layoutPageTemplateEntry.setClassNameId(classNameId);
-		layoutPageTemplateEntry.setClassTypeId(classTypeId);
+		layoutPageTemplateEntry.setClassTypeId(
+			layoutPageTemplateEntry.getClassTypeId());
+		layoutPageTemplateEntry.setClassTypeKey(classTypeKey);
 
 		return layoutPageTemplateEntryLocalService.
 			updateLayoutPageTemplateEntry(layoutPageTemplateEntry);
@@ -833,6 +854,8 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			layoutPageTemplateEntryPersistence.findByPrimaryKey(
 				layoutPageTemplateEntryId);
+
+		_validateCMSFreeTier(layoutPageTemplateEntry.getGroupId(), status);
 
 		if (!Objects.equals(layoutPageTemplateEntry.getName(), name)) {
 			_validate(
@@ -944,6 +967,8 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 			throw new LayoutPageTemplateEntryDefaultTemplateException(
 				layoutPageTemplateEntry.getType());
 		}
+
+		_validateCMSFreeTier(layoutPageTemplateEntry.getGroupId(), status);
 
 		User user = _userLocalService.getUser(userId);
 
@@ -1058,7 +1083,7 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 		}
 
 		return addLayoutPageTemplateEntry(
-			null, layoutPrototype.getUserId(), groupId, 0, null, 0, 0,
+			null, layoutPrototype.getUserId(), groupId, 0, null, 0, null,
 			nameMap.get(defaultLocale),
 			LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE, 0, false,
 			layoutPrototype.getLayoutPrototypeId(), layout.getPlid(), 0, status,
@@ -1321,6 +1346,16 @@ public class LayoutPageTemplateEntryLocalServiceImpl
 		}
 
 		_validate(groupId, layoutPageTemplateCollectionId, name, type);
+	}
+
+	private void _validateCMSFreeTier(long groupId, int status)
+		throws PortalException {
+
+		Group group = _groupLocalService.getGroup(groupId);
+
+		if (group.isCMS() && (status == WorkflowConstants.STATUS_APPROVED)) {
+			LicenseManagerUtil.checkFreeTier();
+		}
 	}
 
 	private void _validateLayoutPageTemplateEntryKey(

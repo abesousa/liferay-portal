@@ -39,6 +39,8 @@ public interface Store {
 			String versionLabel, InputStream inputStream)
 		throws PortalException;
 
+	public void deleteDirectory(long companyId) throws PortalException;
+
 	/**
 	 * Deletes a directory.
 	 *

@@ -254,6 +254,12 @@ public interface ExportImportReportEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportImportReportEntry getOrAddEmptyExportImportReportEntry(
+		long groupId, long companyId, String classExternalReferenceCode,
+		long classNameId, long exportImportConfigurationId,
+		String modelNameLanguageKey);
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -267,6 +273,11 @@ public interface ExportImportReportEntryLocalService
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
+		throws PortalException;
+
+	public void resolveEmptyExportImportReportEntries(
+			long groupId, long companyId, String classExternalReferenceCode,
+			long classNameId)
 		throws PortalException;
 
 	/**

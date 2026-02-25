@@ -9,11 +9,13 @@ import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.bean.BeanLocatorImpl;
 import com.liferay.portal.dao.db.DBManagerImpl;
 import com.liferay.portal.dao.init.DBInitUtil;
+import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.bean.BeanLocator;
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.internal.configuration.ConfigurationFactoryImpl;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.log.SanitizerLogWrapper;
@@ -163,6 +165,12 @@ public class InitUtil {
 		FileUtil fileUtil = new FileUtil();
 
 		fileUtil.setFile(new FileImpl());
+
+		// JSON factory
+
+		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
+
+		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
 
 		// XML
 

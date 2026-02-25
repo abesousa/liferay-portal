@@ -9,15 +9,12 @@ import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.engine.adapter.ccr.CrossClusterRequest;
 import com.liferay.portal.search.script.Script;
 
-import java.util.function.Consumer;
-
 /**
  * @author Michael C. Han
  */
 public class UpdateDocumentRequest
 	extends CrossClusterRequest
-	implements BulkableDocumentRequest<UpdateDocumentRequest>,
-			   DocumentRequest<UpdateDocumentResponse> {
+	implements BulkableDocumentRequest<UpdateDocumentResponse> {
 
 	/**
 	 * @deprecated As of Mueller (7.2.x), replaced by
@@ -53,11 +50,6 @@ public class UpdateDocumentRequest
 
 		_document = null;
 		_legacyDocument = null;
-	}
-
-	@Override
-	public void accept(Consumer<UpdateDocumentRequest> consumer) {
-		consumer.accept(this);
 	}
 
 	@Override

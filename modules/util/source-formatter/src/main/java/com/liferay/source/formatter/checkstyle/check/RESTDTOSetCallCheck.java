@@ -27,6 +27,7 @@ import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +38,10 @@ public class RESTDTOSetCallCheck extends BaseCheck {
 
 	@Override
 	public int[] getDefaultTokens() {
-		return new int[] {TokenTypes.CLASS_DEF, TokenTypes.INSTANCE_INIT};
+		return new int[] {
+			TokenTypes.INSTANCE_INIT, TokenTypes.PARAMETER_DEF,
+			TokenTypes.VARIABLE_DEF
+		};
 	}
 
 	@Override
@@ -52,67 +56,90 @@ public class RESTDTOSetCallCheck extends BaseCheck {
 			return;
 		}
 
-		if (detailAST.getType() == TokenTypes.CLASS_DEF) {
-			_checkClassDeclaration(detailAST, absolutePath);
+		if (detailAST.getType() == TokenTypes.INSTANCE_INIT) {
+			_checkSetCallInInstanceInitializer(absolutePath, detailAST);
 		}
-		else if (detailAST.getType() == TokenTypes.INSTANCE_INIT) {
-			_checkInstanceInitializer(detailAST, absolutePath);
+		else {
+			_checkSetCallByVariableDefinition(absolutePath, detailAST);
 		}
 	}
 
-	private void _checkClassDeclaration(
-		DetailAST detailAST, String absolutePath) {
+	private void _checkSetCall(
+		String absolutePath, DetailAST detailAST, String methodName,
+		String fullyQualifiedTypeName) {
 
-		DetailAST parentDetailAST = detailAST.getParent();
+		if (detailAST.getType() == TokenTypes.METHOD_CALL) {
+			DetailAST elistDetailAST = detailAST.findFirstToken(
+				TokenTypes.ELIST);
 
-		if (parentDetailAST != null) {
+			DetailAST childDetailAST = elistDetailAST.getFirstChild();
+
+			if ((childDetailAST == null) ||
+				(childDetailAST.findFirstToken(TokenTypes.METHOD_REF) !=
+					null) ||
+				(childDetailAST.getType() == TokenTypes.LAMBDA)) {
+
+				return;
+			}
+		}
+
+		JavaClass javaClass = _getDTOJavaClass(
+			absolutePath, fullyQualifiedTypeName);
+
+		if ((javaClass == null) ||
+			!_hasReplaceableMethodSignature(methodName, javaClass)) {
+
 			return;
 		}
 
-		DetailAST objBlockDetailAST = detailAST.findFirstToken(
-			TokenTypes.OBJBLOCK);
+		log(detailAST, _MSG_USE_SET_METHOD_INSTEAD, methodName);
+	}
 
-		List<DetailAST> methodCallDetailASTs = getAllChildTokens(
-			objBlockDetailAST, true, TokenTypes.METHOD_CALL);
+	private void _checkSetCallByVariableDefinition(
+		String absolutePath, DetailAST detailAST) {
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
-			DetailAST dotDetailAST = methodCallDetailAST.findFirstToken(
-				TokenTypes.DOT);
+		String variableName = getName(detailAST);
 
-			if (dotDetailAST == null) {
+		String fullyQualifiedTypeName = getVariableTypeName(
+			detailAST, variableName, false, false, true);
+
+		if ((fullyQualifiedTypeName == null) ||
+			!fullyQualifiedTypeName.matches(
+				"com\\.liferay\\..+\\.dto\\.v\\d+_\\d+\\.\\w+")) {
+
+			return;
+		}
+
+		List<DetailAST> variableCallerDetailASTs = getVariableCallerDetailASTs(
+			detailAST, variableName);
+
+		for (DetailAST variableCallerDetailAST : variableCallerDetailASTs) {
+			DetailAST parentDetailAST = variableCallerDetailAST.getParent();
+
+			if (parentDetailAST.getType() != TokenTypes.DOT) {
 				continue;
 			}
 
-			String methodName = getMethodName(methodCallDetailAST);
+			parentDetailAST = parentDetailAST.getParent();
+
+			if (parentDetailAST.getType() != TokenTypes.METHOD_CALL) {
+				continue;
+			}
+
+			String methodName = getMethodName(parentDetailAST);
 
 			if (!methodName.startsWith("set")) {
 				continue;
 			}
 
-			String variableName = getVariableName(methodCallDetailAST);
-
-			if (variableName == null) {
-				return;
-			}
-
-			String fullyQualifiedTypeName = getVariableTypeName(
-				methodCallDetailAST, variableName, false, false, true);
-
-			if ((fullyQualifiedTypeName == null) ||
-				!fullyQualifiedTypeName.startsWith("com.liferay.") ||
-				!fullyQualifiedTypeName.contains(".dto.v")) {
-
-				continue;
-			}
-
 			_checkSetCall(
-				absolutePath, methodCallDetailAST, methodName,
+				absolutePath, parentDetailAST, methodName,
 				fullyQualifiedTypeName);
 		}
 	}
 
-	private void _checkInstanceInitializer(
-		DetailAST detailAST, String absolutePath) {
+	private void _checkSetCallInInstanceInitializer(
+		String absolutePath, DetailAST detailAST) {
 
 		DetailAST parentDetailAST = detailAST.getParent();
 
@@ -126,157 +153,56 @@ public class RESTDTOSetCallCheck extends BaseCheck {
 			return;
 		}
 
-		DetailAST literalNewDetailAST = parentDetailAST;
-
 		String fullyQualifiedTypeName = null;
 
 		DetailAST firstChildDetailAST = parentDetailAST.getFirstChild();
 
-		if (firstChildDetailAST.getType() == TokenTypes.IDENT) {
-			fullyQualifiedTypeName = getFullyQualifiedTypeName(
-				firstChildDetailAST.getText(), detailAST, false);
-		}
-		else if (firstChildDetailAST.getType() == TokenTypes.DOT) {
+		if (firstChildDetailAST.getType() == TokenTypes.DOT) {
 			FullIdent fullIdent = FullIdent.createFullIdent(
 				firstChildDetailAST);
 
 			fullyQualifiedTypeName = fullIdent.getText();
 		}
+		else if (firstChildDetailAST.getType() == TokenTypes.IDENT) {
+			fullyQualifiedTypeName = getFullyQualifiedTypeName(
+				firstChildDetailAST.getText(), detailAST, false);
+		}
 
 		if ((fullyQualifiedTypeName == null) ||
-			!fullyQualifiedTypeName.startsWith("com.liferay.") ||
-			!fullyQualifiedTypeName.contains(".dto.v")) {
+			!fullyQualifiedTypeName.matches(
+				"com\\.liferay\\..+\\.dto\\.v\\d+_\\d+\\.\\w+")) {
 
 			return;
 		}
 
-		List<DetailAST> childDetailASTs = getAllChildTokens(
-			detailAST, true, TokenTypes.ASSIGN, TokenTypes.METHOD_CALL);
+		DetailAST slistDetailAST = detailAST.findFirstToken(TokenTypes.SLIST);
 
-		for (DetailAST childDetailAST : childDetailASTs) {
-			parentDetailAST = getParentWithTokenType(
-				childDetailAST, TokenTypes.INSTANCE_INIT);
+		List<DetailAST> exprDetailASTs = getAllChildTokens(
+			slistDetailAST, false, TokenTypes.EXPR);
 
-			if (parentDetailAST == null) {
-				continue;
-			}
+		for (DetailAST exprDetailAST : exprDetailASTs) {
+			firstChildDetailAST = exprDetailAST.getFirstChild();
 
-			parentDetailAST = parentDetailAST.getParent();
+			String methodName = null;
 
-			if ((parentDetailAST == null) ||
-				(parentDetailAST.getType() != TokenTypes.OBJBLOCK)) {
+			if (firstChildDetailAST.getType() == TokenTypes.ASSIGN) {
+				String variableName = getName(firstChildDetailAST);
 
-				continue;
-			}
-
-			parentDetailAST = parentDetailAST.getParent();
-
-			if ((parentDetailAST == null) ||
-				!equals(parentDetailAST, literalNewDetailAST)) {
-
-				continue;
-			}
-
-			if (childDetailAST.getType() == TokenTypes.ASSIGN) {
-				firstChildDetailAST = childDetailAST.getFirstChild();
-
-				if (firstChildDetailAST.getType() != TokenTypes.IDENT) {
-					continue;
-				}
-
-				String variableName = firstChildDetailAST.getText();
-
-				DetailAST variableDefinitionDetailAST =
-					getVariableDefinitionDetailAST(
-						childDetailAST, variableName, false);
-
-				if (variableDefinitionDetailAST != null) {
-					return;
-				}
-
-				String methodName =
+				methodName =
 					"set" + StringUtil.upperCaseFirstLetter(variableName);
-
-				_checkSetCall(
-					absolutePath, childDetailAST, methodName,
-					fullyQualifiedTypeName);
 			}
 			else {
-				DetailAST dotDetailAST = childDetailAST.findFirstToken(
-					TokenTypes.DOT);
-
-				if (dotDetailAST != null) {
-					continue;
-				}
-
-				String methodName = getMethodName(childDetailAST);
+				methodName = getMethodName(firstChildDetailAST);
 
 				if (!methodName.startsWith("set")) {
 					continue;
 				}
-
-				_checkSetCall(
-					absolutePath, childDetailAST, methodName,
-					fullyQualifiedTypeName);
-			}
-		}
-	}
-
-	private void _checkSetCall(
-		String absolutePath, DetailAST detailAST, String methodName,
-		String fullyQualifiedTypeName) {
-
-		File javaFile = JavaSourceUtil.getJavaFile(
-			fullyQualifiedTypeName, _getRootDirName(absolutePath),
-			_getBundleSymbolicNamesMap(absolutePath));
-
-		if (javaFile == null) {
-			return;
-		}
-
-		JavaClass javaClass = null;
-
-		try {
-			javaClass = _getJavaClass(absolutePath, fullyQualifiedTypeName);
-		}
-		catch (IOException | ParseException exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
 			}
 
-			return;
+			_checkSetCall(
+				absolutePath, firstChildDetailAST, methodName,
+				fullyQualifiedTypeName);
 		}
-
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if (parentDetailAST.getType() != TokenTypes.EXPR) {
-			return;
-		}
-
-		parentDetailAST = parentDetailAST.getParent();
-
-		if ((parentDetailAST.getType() != TokenTypes.SLIST) ||
-			!_hasReplaceableMethodSignature(methodName, javaClass)) {
-
-			return;
-		}
-
-		if (detailAST.getType() == TokenTypes.METHOD_CALL) {
-			DetailAST elistDetailAST = detailAST.findFirstToken(
-				TokenTypes.ELIST);
-
-			DetailAST childDetailAST = elistDetailAST.getFirstChild();
-
-			if ((childDetailAST == null) ||
-				(childDetailAST.getType() == TokenTypes.LAMBDA) ||
-				(childDetailAST.findFirstToken(TokenTypes.METHOD_REF) !=
-					null)) {
-
-				return;
-			}
-		}
-
-		log(detailAST, _MSG_USE_SET_METHOD_INSTEAD, methodName);
 	}
 
 	private synchronized Map<String, String> _getBundleSymbolicNamesMap(
@@ -290,9 +216,12 @@ public class RESTDTOSetCallCheck extends BaseCheck {
 		return _bundleSymbolicNamesMap;
 	}
 
-	private JavaClass _getJavaClass(
-			String absolutePath, String fullyQualifiedTypeName)
-		throws IOException, ParseException {
+	private JavaClass _getDTOJavaClass(
+		String absolutePath, String fullyQualifiedTypeName) {
+
+		if (_dtoJavaClasses.containsKey(fullyQualifiedTypeName)) {
+			return _dtoJavaClasses.get(fullyQualifiedTypeName);
+		}
 
 		File javaFile = JavaSourceUtil.getJavaFile(
 			fullyQualifiedTypeName, _getRootDirName(absolutePath),
@@ -302,8 +231,23 @@ public class RESTDTOSetCallCheck extends BaseCheck {
 			return null;
 		}
 
-		return JavaClassParser.parseJavaClass(
-			SourceUtil.getAbsolutePath(javaFile), FileUtil.read(javaFile));
+		JavaClass javaClass = null;
+
+		try {
+			javaClass = JavaClassParser.parseJavaClass(
+				SourceUtil.getAbsolutePath(javaFile), FileUtil.read(javaFile));
+
+			_dtoJavaClasses.put(fullyQualifiedTypeName, javaClass);
+
+			return javaClass;
+		}
+		catch (IOException | ParseException exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			return null;
+		}
 	}
 
 	private synchronized String _getRootDirName(String absolutePath) {
@@ -357,6 +301,7 @@ public class RESTDTOSetCallCheck extends BaseCheck {
 		RESTDTOSetCallCheck.class);
 
 	private volatile Map<String, String> _bundleSymbolicNamesMap;
+	private final Map<String, JavaClass> _dtoJavaClasses = new HashMap<>();
 	private volatile String _rootDirName;
 
 }

@@ -26,7 +26,6 @@ export interface IFrontendDataSetContext {
 	customDataRenderers?: Array<any>;
 	customRenderers?: {
 		tableCell?: Array<TRenderer>;
-		views?: Array<TRenderer>;
 	};
 	executeAsyncItemAction: ({
 		errorMessage,
@@ -74,6 +73,7 @@ export interface IFrontendDataSetContext {
 	onItemsChange: ({itemKey, items}: {itemKey: string; items: any}) => void;
 	onSearch: ({query}: {query: string}) => void;
 	onSnapshotChange: Function;
+	onViewChange: (viewName: string) => void;
 	openModal: Function;
 	openSidePanel: Function;
 	portletId?: string;

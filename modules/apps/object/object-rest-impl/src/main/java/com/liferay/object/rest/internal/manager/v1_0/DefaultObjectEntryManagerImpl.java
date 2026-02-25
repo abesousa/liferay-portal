@@ -12,6 +12,7 @@ import com.liferay.depot.model.DepotEntryModel;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.exportimport.attachment.ExportImportAttachmentManager;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.object.action.engine.ObjectActionEngine;
 import com.liferay.object.comment.ObjectEntryComment;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
@@ -63,6 +64,7 @@ import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectDefinitionSettingLocalService;
 import com.liferay.object.service.ObjectEntryFolderService;
+import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectEntryService;
 import com.liferay.object.service.ObjectEntryVersionLocalService;
 import com.liferay.object.service.ObjectEntryVersionService;
@@ -177,6 +179,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -1379,15 +1382,19 @@ public class DefaultObjectEntryManagerImpl
 			_addOrUpdateNestedObjectEntries(
 				dtoConverterContext, objectDefinition, objectEntry,
 				_getObjectRelationships(objectDefinition, objectEntry),
-				_objectEntryService.addOrUpdateObjectEntry(
-					externalReferenceCode, groupId,
-					objectDefinition.getObjectDefinitionId(),
-					_getObjectEntryFolderId(
-						objectDefinition.getCompanyId(), groupId, objectEntry,
+				_updateStatus(
+					dtoConverterContext, objectEntry,
+					_objectEntryService.addOrUpdateObjectEntry(
+						externalReferenceCode, groupId,
+						objectDefinition.getObjectDefinitionId(),
+						_getObjectEntryFolderId(
+							objectDefinition.getCompanyId(), groupId,
+							objectEntry, serviceContext),
+						_toObjectValues(
+							0L, dtoConverterContext.getLocale(),
+							objectDefinition, objectEntry, scopeKey,
+							serviceContext),
 						serviceContext),
-					_toObjectValues(
-						0L, dtoConverterContext.getLocale(), objectDefinition,
-						objectEntry, scopeKey, serviceContext),
 					serviceContext),
 				scopeKey),
 			null);
@@ -2928,14 +2935,13 @@ public class DefaultObjectEntryManagerImpl
 			return 0;
 		}
 
+		Set<String> allowedFileSources =
+			ObjectFieldSettingUtil.getAllowedFileSources(
+				objectField.getCompanyId());
 		String fileSource = ObjectFieldSettingUtil.getValue(
 			ObjectFieldSettingConstants.NAME_FILE_SOURCE, objectField);
 
-		if (!StringUtil.equals(
-				fileSource, ObjectFieldSettingConstants.VALUE_DOCS_AND_MEDIA) &&
-			!StringUtil.equals(
-				fileSource, ObjectFieldSettingConstants.VALUE_USER_COMPUTER)) {
-
+		if (!allowedFileSources.contains(fileSource)) {
 			throw new UnsupportedOperationException(
 				"File source " + fileSource + " is not supported");
 		}
@@ -3025,10 +3031,7 @@ public class DefaultObjectEntryManagerImpl
 				fileEntry.getName(), folderExternalReferenceCode, folderGroupId,
 				objectField.getObjectFieldId(), serviceContext);
 		}
-		else if (StringUtil.equals(
-					fileSource,
-					ObjectFieldSettingConstants.VALUE_USER_COMPUTER)) {
-
+		else {
 			serviceBuilderFileEntry = _attachmentManager.getOrAddFileEntry(
 				objectField.getCompanyId(),
 				fileEntry.getExternalReferenceCode(), fileContent,
@@ -3746,7 +3749,10 @@ public class DefaultObjectEntryManagerImpl
 			_addOrUpdateNestedObjectEntries(
 				dtoConverterContext, objectDefinition, objectEntry,
 				_getObjectRelationships(objectDefinition, objectEntry),
-				serviceBuilderObjectEntry, scopeKey),
+				_updateStatus(
+					dtoConverterContext, objectEntry, serviceBuilderObjectEntry,
+					serviceContext),
+				scopeKey),
 			null);
 	}
 
@@ -3784,6 +3790,31 @@ public class DefaultObjectEntryManagerImpl
 			_objectDefinitionLocalService.getObjectDefinition(
 				objectRelationship.getObjectDefinitionId2()),
 			objectEntry, objectEntryId, false, true);
+	}
+
+	private com.liferay.object.model.ObjectEntry _updateStatus(
+			DTOConverterContext dtoConverterContext, ObjectEntry objectEntry,
+			com.liferay.object.model.ObjectEntry serviceBuilderObjectEntry,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		if (!ExportImportThreadLocal.isImportInProcess() ||
+			(serviceBuilderObjectEntry.getStatus() !=
+				WorkflowConstants.STATUS_EMPTY)) {
+
+			return serviceBuilderObjectEntry;
+		}
+
+		Status status = objectEntry.getStatus();
+
+		if (status == null) {
+			return serviceBuilderObjectEntry;
+		}
+
+		return _objectEntryLocalService.updateStatus(
+			dtoConverterContext.getUserId(),
+			serviceBuilderObjectEntry.getObjectEntryId(), status.getCode(),
+			serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -3848,6 +3879,9 @@ public class DefaultObjectEntryManagerImpl
 
 	@Reference
 	private ObjectEntryFolderService _objectEntryFolderService;
+
+	@Reference
+	private ObjectEntryLocalService _objectEntryLocalService;
 
 	@Reference
 	private ObjectEntryManagerRegistry _objectEntryManagerRegistry;

@@ -13,7 +13,7 @@ export default function EditorCustomizerModal() {
 		return null;
 	}
 
-	if (Liferay.FeatureFlags['LPD-74377']) {
+	if (config.freeTier) {
 		return <EnterpriseModal />;
 	}
 
@@ -68,7 +68,7 @@ function IntroModal() {
 			]}
 			imageSrc={`${config.imagesPath}/editor_customizer.svg`}
 			onCloseModal={handleClose}
-			title={Liferay.Language.get('introducing-editor-customizer')}
+			title={Liferay.Language.get('introducing-editor-customization')}
 		/>
 	);
 }
@@ -84,7 +84,7 @@ function EnterpriseModal() {
 		<CardStyleModal
 			badgeText={Liferay.Language.get('enterprise')}
 			body={Liferay.Language.get(
-				'editor-customization-is-available-on-enterprise-plans'
+				'editor-customization-is-available-on-the-enterprise-subscription'
 			)}
 			buttons={[
 				{
@@ -93,13 +93,15 @@ function EnterpriseModal() {
 				},
 				{
 					displayType: 'primary',
+					href: 'https://www.liferay.com/en/contact-sales',
+					icon: 'shortcut',
 					label: Liferay.Language.get('contact-sales'),
 				},
 			]}
 			imageSrc={`${config.imagesPath}/editor_customizer.svg`}
 			onCloseModal={() => setVisible(false)}
 			title={Liferay.Language.get(
-				'upgrade-to-unlock-the-editor-customizer'
+				'upgrade-to-unlock-the-editor-customization'
 			)}
 		/>
 	);

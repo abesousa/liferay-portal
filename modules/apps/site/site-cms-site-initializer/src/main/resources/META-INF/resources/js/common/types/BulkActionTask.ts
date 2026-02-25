@@ -45,6 +45,7 @@ export interface IBulkActionTask {
 		};
 	};
 	id: number;
+	numberOfFailedItems: number;
 	numberOfItems: number;
 	taskResult: string;
 	totalCount: number;
@@ -77,6 +78,7 @@ export interface IBulkActionTaskStarterDTO<
 > {
 	apiURL?: string;
 	dataSetId?: string;
+	entryClassName?: string;
 	keyValues?: IBulkActionTaskType[T];
 	onCreateError?:
 		| ((response: RequestResult<IBulkActionTaskPage>) => void)
@@ -91,6 +93,9 @@ export interface IBulkActionTaskStarterDTO<
 }
 
 export interface IBulkActionTaskType {
+	AssignStructureDefaultWorkflowBulkAction: {
+		workflow?: string;
+	};
 	AssignToBulkAction: {
 		className: string;
 		externalReferenceCode: string;
@@ -101,6 +106,9 @@ export interface IBulkActionTaskType {
 		depotGroupId?: number;
 		roleKey?: string;
 		treePath?: string;
+	};
+	DeleteAssetVersionBulkAction: {
+		versions?: number[];
 	};
 	DeleteBulkAction: {};
 	DownloadBulkAction: {};
@@ -139,4 +147,5 @@ export type TBulkActionTaskDTO = {
 		[k: string]: any;
 	};
 	type: keyof IBulkActionTaskType;
+	versions?: number[] | [];
 } & IBulkActionTaskType[keyof IBulkActionTaskType];

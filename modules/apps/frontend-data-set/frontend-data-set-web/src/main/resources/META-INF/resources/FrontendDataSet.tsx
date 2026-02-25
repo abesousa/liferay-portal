@@ -89,7 +89,6 @@ import {
 	ISuccessNotification,
 	ITableSchema,
 	IView,
-	TRenderer,
 	TSort,
 	VisibleFieldNames,
 } from './utils/types';
@@ -560,27 +559,8 @@ const FrontendDataSetContent = ({
 				(pagination?.initialDelta || DEFAULT_PAGINATION_DELTA),
 		};
 
-		const customInternalViews =
-			customRenderers?.views?.map((customRenderer: TRenderer) => ({
-
-				// Need to check presence of property in TRenderer Union type
-
-				component:
-					'component' in customRenderer && customRenderer.component,
-				default: 'default' in customRenderer && customRenderer?.default,
-				label: 'label' in customRenderer && customRenderer?.label,
-				name: customRenderer.name,
-				schema: 'schema' in customRenderer && customRenderer?.schema,
-				thumbnail: 'symbol' in customRenderer && customRenderer?.symbol,
-			})) || [];
-
 		let initialActiveView =
-			views.find(({default: defaultProp}) => defaultProp) ||
-			customInternalViews?.find(
-				({default: defaultProp}) => defaultProp
-			) ||
-			views[0] ||
-			(customInternalViews?.length && customInternalViews[0]);
+			views.find(({default: defaultProp}) => defaultProp) || views[0];
 
 		defaultSnapshot.activeView = {
 			component: getViewComponent(initialActiveView as IView),
@@ -626,8 +606,12 @@ const FrontendDataSetContent = ({
 				})
 			: [];
 
-		const paginationDelta =
-			showPagination && (getDelta() || defaultSnapshot.paginationDelta);
+		const paginationDelta: number =
+			getDelta() ||
+			activeView.initialPaginationDelta ||
+			defaultSnapshot.paginationDelta;
+
+		defaultSnapshot.paginationDelta = paginationDelta;
 
 		const pageNumber =
 			getPageNumber() ||
@@ -656,7 +640,7 @@ const FrontendDataSetContent = ({
 			snapshots: parsedSnapshots,
 			snapshotsEnabled,
 			sorts,
-			views: [...views, ...customInternalViews],
+			views,
 			visibleFieldNames: initialVisibleFieldNames,
 		};
 	};
@@ -1613,7 +1597,10 @@ const FrontendDataSetContent = ({
 		);
 
 	const paginationComponent =
-		showPagination && pagination && items?.length && total ? (
+		(activeView.showPagination ?? showPagination) &&
+		pagination &&
+		items?.length &&
+		total ? (
 			<div className="data-set-pagination-wrapper">
 				<ClayPaginationBarWithBasicItems
 					active={pageNumber}
@@ -2045,6 +2032,53 @@ const FrontendDataSetContent = ({
 					});
 				},
 				onSnapshotChange: handleSnapshotChange,
+				onViewChange: (viewName: string) => {
+					const view = views.find(({name}) => name === viewName);
+
+					if (!view) {
+						return;
+					}
+
+					const paginationDelta =
+						view.initialPaginationDelta ||
+						pagination?.initialDelta ||
+						DEFAULT_PAGINATION_DELTA;
+
+					const stateUpdates: Array<{
+						type: EViewsActionTypes;
+						value: IConfigInURL[keyof IConfigInURL];
+					}> = [
+						{
+							type: EViewsActionTypes.UPDATE_ACTIVE_VIEW,
+							value: viewName,
+						},
+						{
+							type: EViewsActionTypes.UPDATE_PAGINATION_DELTA,
+							value: paginationDelta,
+						},
+					];
+
+					const configInURLUpdates: Record<string, any> = {
+						[EConfigInURLKeys.VIEW_NAME]: viewName,
+						[EConfigInURLKeys.DELTA]: paginationDelta,
+					};
+
+					if (view.initialPaginationDelta) {
+						stateUpdates.push({
+							type: EViewsActionTypes.UPDATE_PAGE_NUMBER,
+							value: 1,
+						});
+
+						configInURLUpdates[EConfigInURLKeys.PAGE_NUMBER] = 1;
+					}
+
+					updateConfigInURL(configInURLUpdates);
+
+					viewsDispatch({
+						type: EViewsActionTypes.BATCH_UPDATE,
+						value: stateUpdates,
+					});
+				},
 				openModal,
 				openSidePanel,
 				portletId,

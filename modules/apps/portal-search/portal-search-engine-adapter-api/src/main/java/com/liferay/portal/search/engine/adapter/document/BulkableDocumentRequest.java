@@ -5,16 +5,12 @@
 
 package com.liferay.portal.search.engine.adapter.document;
 
-import java.util.function.Consumer;
-
 import org.osgi.annotation.versioning.ProviderType;
 
 /**
  * @author Michael C. Han
  */
 @ProviderType
-public interface BulkableDocumentRequest<T> {
-
-	public void accept(Consumer<T> consumer);
-
+public interface BulkableDocumentRequest<T extends DocumentResponse>
+	extends DocumentRequest<T> {
 }

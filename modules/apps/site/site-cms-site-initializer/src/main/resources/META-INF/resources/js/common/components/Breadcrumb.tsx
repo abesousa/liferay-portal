@@ -17,6 +17,7 @@ import ApiHelper from '../services/ApiHelper';
 import {LogoColor} from '../types/Space';
 import {openCMSModal} from '../utils/openCMSModal';
 import {displayErrorToast} from '../utils/toastUtil';
+import EnterpriseFeatureIndicator from './EnterpriseFeatureIndicator';
 import SpaceSticker from './SpaceSticker';
 
 export interface ActionDropdownItemProps {
@@ -40,6 +41,7 @@ interface Props extends Pick<React.ComponentProps<typeof ClaySticker>, 'size'> {
 		ActionDropdownItemProps;
 	breadcrumbItems: BreadcrumbItem[];
 	displayType?: LogoColor;
+	freeTier?: boolean;
 	hideSpace?: boolean;
 }
 
@@ -180,6 +182,7 @@ export default function Breadcrumb({
 	actionItems,
 	breadcrumbItems,
 	displayType,
+	freeTier,
 	hideSpace,
 	size,
 }: Props) {
@@ -203,9 +206,13 @@ export default function Breadcrumb({
 
 			<div className="autofit-col">
 				{isTitle ? (
-					<h2 className="font-weight-semi-bold mb-0 text-7 text-dark">
-						{breadcrumbItems[0]?.label}
-					</h2>
+					<div className="c-gap-2 d-flex">
+						<h2 className="font-weight-semi-bold mb-0 text-7 text-dark">
+							{breadcrumbItems[0]?.label}
+						</h2>
+
+						{freeTier && <EnterpriseFeatureIndicator showTooltip />}
+					</div>
 				) : (
 					<ClayBreadcrumb className="p-0" items={breadcrumbItems} />
 				)}

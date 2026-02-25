@@ -52,6 +52,7 @@ export class ApplicationsMenuPage {
 	private readonly licenseManagerMenuItem: Locator;
 	private readonly metricsItem: Locator;
 	private readonly oAuth2Administration: Locator;
+	private readonly oAuthClientAdministration: Locator;
 	private readonly objectsMenuItem: Locator;
 	private readonly onDemandAdminItem: Locator;
 	private readonly page: Page;
@@ -247,6 +248,10 @@ export class ApplicationsMenuPage {
 		this.oAuth2Administration = page.getByRole('menuitem', {
 			exact: true,
 			name: 'OAuth 2 Administration',
+		});
+		this.oAuthClientAdministration = page.getByRole('menuitem', {
+			exact: true,
+			name: 'OAuth Client Administration',
 		});
 		this.objectsMenuItem = page.getByRole('menuitem', {
 			exact: true,
@@ -594,6 +599,11 @@ export class ApplicationsMenuPage {
 	async goToMetrics() {
 		await this.goToApplicationsMenu();
 		await this.metricsItem.click();
+	}
+
+	async goToOAuthClientAdministration() {
+		await this.goToControlPanel();
+		await this.oAuthClientAdministration.click();
 	}
 
 	async goToOauth2Administration() {

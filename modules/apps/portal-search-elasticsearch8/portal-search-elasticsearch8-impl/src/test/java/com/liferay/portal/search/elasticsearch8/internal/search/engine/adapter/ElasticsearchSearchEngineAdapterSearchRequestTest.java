@@ -21,12 +21,12 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
-import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.generic.MatchAllQuery;
 import com.liferay.portal.kernel.search.suggest.CompletionSuggester;
 import com.liferay.portal.kernel.search.suggest.PhraseSuggester;
@@ -37,12 +37,10 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchFixture;
 import com.liferay.portal.search.elasticsearch8.internal.document.ElasticsearchDocumentFactoryUtil;
-import com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
 import com.liferay.portal.search.elasticsearch8.internal.util.IndexUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.search.OpenPointInTimeRequest;
 import com.liferay.portal.search.engine.adapter.search.OpenPointInTimeResponse;
-import com.liferay.portal.search.engine.adapter.search.SearchRequestExecutor;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.engine.adapter.search.SuggestSearchRequest;
@@ -50,12 +48,16 @@ import com.liferay.portal.search.engine.adapter.search.SuggestSearchResponse;
 import com.liferay.portal.search.engine.adapter.search.SuggestSearchResult;
 import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.internal.sort.SortsImpl;
 import com.liferay.portal.search.pit.PointInTime;
+import com.liferay.portal.search.sort.SortOrder;
+import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.test.util.indexing.DocumentFixture;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.IOException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +67,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.mockito.MockedStatic;
@@ -93,8 +94,7 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 			bundleContext.getBundle()
 		);
 
-		_elasticsearchFixture = new ElasticsearchFixture(
-			ElasticsearchSearchEngineAdapterSearchRequestTest.class);
+		_elasticsearchFixture = new ElasticsearchFixture();
 
 		_elasticsearchFixture.setUp();
 	}
@@ -119,21 +119,53 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		_createIndex();
 
 		_putMapping(
-			StringBundler.concat(
-				"{\n\"dynamic_templates\": [\n{\n",
-				"\"template_en\": {\n\"mapping\": {\n",
-				"\"analyzer\": \"english\",\n\"store\": true,\n",
-				"\"term_vector\": \"with_positions_offsets\",\n",
-				"\"type\": \"text\"\n},\n",
-				"\"match\": \"\\\\w+_en\\\\b|\\\\w+_en_[A-Z]{2}\\\\b\",\n",
-				"\"match_mapping_type\": \"string\",\n",
-				"\"match_pattern\": \"regex\"\n}\n}\n],\n",
-				"\"properties\": {\n\"companyId\": {\n",
-				"\"store\": true,\n\"type\": \"keyword\"\n},\n",
-				"\"languageId\": {\n\"index\": false,\n",
-				"\"store\": true,\n\"type\": \"keyword\"\n},",
-				"\"keywordSuggestion\" : {\n\"type\" : \"completion\"\n",
-				"}\n\n}\n}"));
+			JSONUtil.put(
+				"dynamic_templates",
+				JSONUtil.put(
+					JSONUtil.put(
+						"template_en",
+						JSONUtil.put(
+							"mapping",
+							JSONUtil.put(
+								"analyzer", "english"
+							).put(
+								"store", true
+							).put(
+								"term_vector", "with_positions_offsets"
+							).put(
+								"type", "text"
+							)
+						).put(
+							"match", "\\w+_en\\b|\\w+_en_[A-Z]{2}\\b"
+						).put(
+							"match_mapping_type", "string"
+						).put(
+							"match_pattern", "regex"
+						)))
+			).put(
+				"properties",
+				JSONUtil.put(
+					"companyId",
+					JSONUtil.put(
+						"store", true
+					).put(
+						"type", "keyword"
+					)
+				).put(
+					"keywordSuggestion", JSONUtil.put("type", "completion")
+				).put(
+					"languageId",
+					JSONUtil.put(
+						"index", false
+					).put(
+						"store", true
+					).put(
+						"type", "keyword"
+					)
+				).put(
+					"uid", JSONUtil.put("type", "keyword")
+				)
+			).toString());
 	}
 
 	@After
@@ -169,7 +201,6 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 			"completion|[search]", "completion2|[message]");
 	}
 
-	@Ignore
 	@Test
 	public void testDeepPaginationWithScroll() throws Exception {
 		_indexSuggestKeyword(RandomTestUtil.randomString());
@@ -198,7 +229,6 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		Assert.assertEquals(0, _getDocumentsLength(searchSearchResponse));
 	}
 
-	@Ignore
 	@Test
 	public void testDeepPaginationWithSearchAfter() throws IOException {
 		_indexSuggestKeyword(RandomTestUtil.randomString());
@@ -216,13 +246,15 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		PointInTime pointInTime = new PointInTime(
 			openPointInTimeResponse.pitId());
 
+		Sorts sorts = new SortsImpl();
+
 		SearchSearchRequest searchSearchRequest = new SearchSearchRequest();
 
+		searchSearchRequest.addSorts(sorts.field("uid", SortOrder.DESC));
 		searchSearchRequest.setIndexNames(_INDEX_NAME);
 		searchSearchRequest.setPointInTime(pointInTime);
 		searchSearchRequest.setQuery(new MatchAllQuery());
 		searchSearchRequest.setSize(1);
-		searchSearchRequest.setSorts(new Sort[] {new Sort("_count", true)});
 		searchSearchRequest.setStart(0);
 
 		SearchSearchResponse searchSearchResponse =
@@ -318,7 +350,7 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 			_searchEngineAdapter.execute(suggestSearchRequest);
 
 		_assertSuggestion(
-			suggestSearchResponse.getSuggestSearchResultMap(), 2,
+			2, suggestSearchResponse.getSuggestSearchResultMap(),
 			"phrase|[indexef phrase, index phrasd]");
 	}
 
@@ -346,18 +378,21 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 	protected SearchEngineAdapter createSearchEngineAdapter(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
-		SearchEngineAdapter searchEngineAdapter =
-			new ElasticsearchSearchEngineAdapterImpl();
+		ElasticsearchSearchEngineAdapterImpl
+			elasticsearchSearchEngineAdapterImpl =
+				new ElasticsearchSearchEngineAdapterImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			searchEngineAdapter, "_searchRequestExecutor",
-			_createSearchRequestExecutor(elasticsearchClientResolver));
+			elasticsearchSearchEngineAdapterImpl,
+			"_elasticsearchClientResolver", elasticsearchClientResolver);
 
-		return searchEngineAdapter;
+		elasticsearchSearchEngineAdapterImpl.activate(Collections.emptyMap());
+
+		return elasticsearchSearchEngineAdapterImpl;
 	}
 
 	private void _assertSuggestion(
-		Map<String, SuggestSearchResult> suggestSearchResultMap, int size,
+		int size, Map<String, SuggestSearchResult> suggestSearchResultMap,
 		String... expectedSuggestionsString) {
 
 		for (String expectedSuggestionString : expectedSuggestionsString) {
@@ -400,7 +435,7 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		String... expectedSuggestionsString) {
 
 		_assertSuggestion(
-			suggestSearchResultsMap, 1, expectedSuggestionsString);
+			1, suggestSearchResultsMap, expectedSuggestionsString);
 	}
 
 	private void _createIndex() {
@@ -413,20 +448,6 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
-	}
-
-	private SearchRequestExecutor _createSearchRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
-			{
-				setElasticsearchClientResolver(elasticsearchClientResolver);
-			}
-		};
-
-		_searchRequestExecutorFixture.setUp();
-
-		return _searchRequestExecutorFixture.getSearchRequestExecutor();
 	}
 
 	private void _deleteIndex() {
@@ -554,6 +575,5 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 	private ElasticsearchClient _elasticsearchClient;
 	private ElasticsearchIndicesClient _elasticsearchIndicesClient;
 	private SearchEngineAdapter _searchEngineAdapter;
-	private SearchRequestExecutorFixture _searchRequestExecutorFixture;
 
 }

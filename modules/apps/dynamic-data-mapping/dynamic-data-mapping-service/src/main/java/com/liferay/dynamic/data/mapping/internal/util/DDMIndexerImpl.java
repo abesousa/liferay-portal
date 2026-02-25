@@ -431,9 +431,24 @@ public class DDMIndexerImpl implements DDMIndexer {
 
 		String valueFieldName = getValueFieldName(indexType, locale);
 
+		Serializable sortableValue = null;
+
+		if (value instanceof Serializable[] serializables) {
+			List<String> sortableValues = new ArrayList<>();
+
+			for (Serializable serializable : serializables) {
+				sortableValues.add(
+					_getSortableValue(ddmFormField, locale, serializable));
+			}
+
+			sortableValue = sortableValues.toString();
+		}
+		else {
+			sortableValue = _getSortableValue(ddmFormField, locale, value);
+		}
+
 		_addToDocument(
-			document, indexType, valueFieldName,
-			_getSortableValue(ddmFormField, locale, value),
+			document, indexType, valueFieldName, sortableValue,
 			ddmFormField.getType(), value);
 
 		Map<String, com.liferay.portal.kernel.search.Field> documentFields =
@@ -752,14 +767,30 @@ public class DDMIndexerImpl implements DDMIndexer {
 			document.addNumberSortable(name, doubles);
 		}
 		else if (value instanceof Object[]) {
-			String[] valuesString = ArrayUtil.toStringArray((Object[])value);
+			String[] valueStringArray = ArrayUtil.toStringArray(
+				(Object[])value);
 
-			String[] truncatedValuesString = valuesString;
+			String[] truncatedValueStringArray = valueStringArray;
 
-			if (type.equals(DDMFormFieldTypeConstants.DATE) ||
-				type.equals(DDMFormFieldTypeConstants.DATE_TIME)) {
+			if (type.equals(DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE) ||
+				type.equals(DDMFormFieldTypeConstants.SELECT)) {
 
-				Date[] dateValues = _getDateValues(type, valuesString);
+				String[] sortableValueStringArray = _toStringArray(
+					sortableValue);
+
+				document.addKeyword(
+					_getFieldName(name), sortableValueStringArray);
+
+				document.addKeyword(name, valueStringArray);
+
+				truncatedValueStringArray = TransformUtil.transform(
+					sortableValueStringArray, StringUtil::toLowerCase,
+					String.class);
+			}
+			else if (type.equals(DDMFormFieldTypeConstants.DATE) ||
+					 type.equals(DDMFormFieldTypeConstants.DATE_TIME)) {
+
+				Date[] dateValues = _getDateValues(type, valueStringArray);
 
 				if (dateValues.length > 0) {
 					document.addDate(name.concat("_date"), dateValues);
@@ -767,11 +798,11 @@ public class DDMIndexerImpl implements DDMIndexer {
 			}
 			else if (type.equals(DDMFormFieldTypeConstants.RICH_TEXT)) {
 				List<String> richTextValues = new ArrayList<>(
-					valuesString.length);
+					valueStringArray.length);
 				List<String> truncatedValues = new ArrayList<>(
-					valuesString.length);
+					valueStringArray.length);
 
-				for (String valueString : valuesString) {
+				for (String valueString : valueStringArray) {
 					String richTextValue = _htmlParser.extractText(valueString);
 
 					richTextValues.add(richTextValue);
@@ -779,26 +810,27 @@ public class DDMIndexerImpl implements DDMIndexer {
 					truncatedValues.add(_truncate(richTextValue));
 				}
 
-				valuesString = richTextValues.toArray(new String[0]);
-				truncatedValuesString = truncatedValues.toArray(new String[0]);
+				valueStringArray = richTextValues.toArray(new String[0]);
+				truncatedValueStringArray = truncatedValues.toArray(
+					new String[0]);
 			}
 			else if (type.equals(DDMFormFieldTypeConstants.TEXT)) {
-				truncatedValuesString = TransformUtil.transform(
-					valuesString, valueString -> _truncate(valueString),
+				truncatedValueStringArray = TransformUtil.transform(
+					valueStringArray, valueString -> _truncate(valueString),
 					String.class);
 			}
 
 			if (indexType.equals("keyword")) {
-				document.addKeywordSortable(name, valuesString);
+				document.addKeywordSortable(name, valueStringArray);
 
 				document.addKeyword(
-					_getSortableFieldName(name), truncatedValuesString);
+					_getSortableFieldName(name), truncatedValueStringArray);
 			}
 			else {
-				document.addTextSortable(name, valuesString);
+				document.addTextSortable(name, valueStringArray);
 
 				document.addText(
-					_getSortableFieldName(name), truncatedValuesString);
+					_getSortableFieldName(name), truncatedValueStringArray);
 			}
 		}
 		else {

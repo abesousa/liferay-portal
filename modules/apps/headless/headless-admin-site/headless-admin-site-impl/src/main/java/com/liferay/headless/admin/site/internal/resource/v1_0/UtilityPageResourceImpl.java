@@ -6,7 +6,6 @@
 package com.liferay.headless.admin.site.internal.resource.v1_0;
 
 import com.liferay.client.extension.type.manager.CETManager;
-import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.headless.admin.site.dto.v1_0.ContentPageSpecification;
@@ -20,13 +19,13 @@ import com.liferay.headless.admin.site.internal.resource.v1_0.util.FileEntryUtil
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.GroupUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.LayoutUtil;
 import com.liferay.headless.admin.site.internal.resource.v1_0.util.ServiceContextUtil;
+import com.liferay.headless.admin.site.internal.util.EnabledUtil;
 import com.liferay.headless.admin.site.resource.v1_0.UtilityPageResource;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
 import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryService;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.search.Field;
@@ -47,6 +46,9 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.tags.Tags;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 
@@ -72,20 +74,18 @@ public class UtilityPageResourceImpl
 	implements ExportImportVulcanBatchEngineTaskItemDelegate<UtilityPage> {
 
 	@Override
+	@Tags({@Tag(description = "[BETA]", name = "UtilityPage")})
 	public void deleteSiteUtilityPage(
 			String siteExternalReferenceCode,
 			String utilityPageExternalReferenceCode)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		_layoutUtilityPageEntryService.deleteLayoutUtilityPageEntry(
 			utilityPageExternalReferenceCode,
-			GroupUtil.getGroupId(
-				false, contextCompany.getCompanyId(),
-				siteExternalReferenceCode));
+			GroupUtil.getStagingAwareGroupId(
+				contextCompany.getCompanyId(), siteExternalReferenceCode));
 	}
 
 	@Override
@@ -128,11 +128,6 @@ public class UtilityPageResourceImpl
 			}
 
 			@Override
-			public boolean isActive(PortletDataContext portletDataContext) {
-				return FeatureFlagManagerUtil.isEnabled("LPD-35443");
-			}
-
-			@Override
 			public boolean isStagingSupported() {
 				return true;
 			}
@@ -147,16 +142,14 @@ public class UtilityPageResourceImpl
 			ContentPageSpecification contentPageSpecification)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry =
 			_layoutUtilityPageEntryService.
 				getLayoutUtilityPageEntryByExternalReferenceCode(
 					utilityPageExternalReferenceCode,
-					GroupUtil.getGroupId(
-						false, contextCompany.getCompanyId(),
+					GroupUtil.getStagingAwareGroupId(
+						contextCompany.getCompanyId(),
 						siteExternalReferenceCode));
 
 		return (ContentPageSpecification)_pageSpecificationDTOConverter.toDTO(
@@ -179,9 +172,7 @@ public class UtilityPageResourceImpl
 			String utilityPageExternalReferenceCode)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry =
 			_layoutUtilityPageEntryService.
@@ -207,9 +198,7 @@ public class UtilityPageResourceImpl
 			Sort[] sorts)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		long groupId = GroupUtil.getGroupId(
 			true, contextCompany.getCompanyId(), siteExternalReferenceCode);
@@ -245,14 +234,11 @@ public class UtilityPageResourceImpl
 			String siteExternalReferenceCode, UtilityPage utilityPage)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
 		return _addLayoutUtilityPageEntry(
-			GroupUtil.getGroupId(
-				false, contextCompany.getCompanyId(),
-				siteExternalReferenceCode),
+			GroupUtil.getStagingAwareGroupId(
+				contextCompany.getCompanyId(), siteExternalReferenceCode),
 			utilityPage);
 	}
 
@@ -262,12 +248,10 @@ public class UtilityPageResourceImpl
 			String utilityPageExternalReferenceCode, UtilityPage utilityPage)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPD-35443")) {
-			throw new UnsupportedOperationException();
-		}
+		EnabledUtil.checkEnabled(contextCompany);
 
-		long groupId = GroupUtil.getGroupId(
-			false, contextCompany.getCompanyId(), siteExternalReferenceCode);
+		long groupId = GroupUtil.getStagingAwareGroupId(
+			contextCompany.getCompanyId(), siteExternalReferenceCode);
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry =
 			_layoutUtilityPageEntryService.
@@ -452,7 +436,7 @@ public class UtilityPageResourceImpl
 		Layout layout = LayoutUtil.addContentLayout(
 			_cetManager, _fragmentEntryProcessorRegistry, groupId,
 			_infoItemServiceRegistry, utilityPage.getPageSpecifications(),
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, false, nameMap, titleMap,
+			false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap, titleMap,
 			descriptionMap, null, null, LayoutConstants.TYPE_UTILITY, null,
 			true, true,
 			LocalizedMapUtil.getLocalizedMap(

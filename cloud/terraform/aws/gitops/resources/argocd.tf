@@ -189,6 +189,10 @@ resource "kubernetes_manifest" "infrastructure_provider_application" {
 								value=data.aws_eks_cluster.cluster.vpc_config[0].cluster_security_group_id
 							},
 							{
+								name="aws.oidcProvider"
+								value=local.oidc_provider
+							},
+							{
 								name="aws.privateSubnetIds"
 								value=jsonencode(data.aws_subnets.private.ids)
 							},
@@ -286,6 +290,22 @@ resource "kubernetes_manifest" "liferay_applicationset" {
 							{
 								helm={
 									parameters=[
+										{
+											name="global.aws.accountId"
+											value=local.account_id
+										},
+										{
+											name="global.deploymentName"
+											value=var.deployment_name
+										},
+										{
+											name="global.environmentId"
+											value=var.infrastructure_git_repo_config.target.slugEnvironmentId
+										},
+										{
+											name="global.projectId"
+											value=var.infrastructure_git_repo_config.target.slugProjectId
+										},
 										{
 											name="${local.liferay_helm_chart_config.values_scope_prefix}serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
 											value="arn:aws:iam::${local.account_id}:role/${var.deployment_name}-irsa"

@@ -105,7 +105,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.util.FeatureFlagTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -171,7 +170,6 @@ import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -192,7 +190,6 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
  * @author Vendel Toreki
  * @author Petteri Karttunen
  */
-@FeatureFlag("LPD-35914")
 @RunWith(Arquillian.class)
 public class BatchEnginePortletDataHandlerTest {
 
@@ -205,19 +202,10 @@ public class BatchEnginePortletDataHandlerTest {
 
 	@BeforeClass
 	public static void setUpClass() throws PortalException {
-		FeatureFlagTestUtil.invokeFeatureFlagListeners(
-			TestPropsValues.getCompanyId(), true, "LPD-35914");
-
 		Bundle bundle = FrameworkUtil.getBundle(
 			BatchEnginePortletDataHandlerTest.class);
 
 		_bundleContext = bundle.getBundleContext();
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws PortalException {
-		FeatureFlagTestUtil.invokeFeatureFlagListeners(
-			TestPropsValues.getCompanyId(), false, "LPD-35914");
 	}
 
 	@Test
@@ -763,7 +751,6 @@ public class BatchEnginePortletDataHandlerTest {
 			objectEntries[1]);
 	}
 
-	@FeatureFlag("LPD-35443")
 	@Test
 	@TestInfo("LPD-64365")
 	public void testExportImportLayoutsToOtherSite() throws Exception {
@@ -1041,6 +1028,7 @@ public class BatchEnginePortletDataHandlerTest {
 		new ExportImportExecutor(
 		).withGroupId(
 			group2.getGroupId()
+		).withIncludeLayoutSetLayouts(
 		).withLARFile(
 			larFile
 		).withPrivateLayouts(
@@ -2035,12 +2023,19 @@ public class BatchEnginePortletDataHandlerTest {
 							).name(
 								ObjectFieldSettingConstants.NAME_FILE_SOURCE
 							).value(
-								ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+								ObjectFieldSettingConstants.
+									VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
+							).build(),
+							new ObjectFieldSettingBuilder(
+							).name(
+								ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE
+							).value(
+								"100"
 							).build(),
 							new ObjectFieldSettingBuilder(
 							).name(
 								ObjectFieldSettingConstants.
-									NAME_SHOW_FILES_IN_DOCS_AND_MEDIA
+									NAME_SHOW_FILES_IN_LIBRARY
 							).value(
 								Boolean.TRUE.toString()
 							).build(),
@@ -2050,12 +2045,6 @@ public class BatchEnginePortletDataHandlerTest {
 									NAME_STORAGE_DL_FOLDER_PATH
 							).value(
 								StringPool.SLASH + objectDefinitionName
-							).build(),
-							new ObjectFieldSettingBuilder(
-							).name(
-								ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE
-							).value(
-								"100"
 							).build()),
 						false),
 					ObjectFieldUtil.createObjectField(
@@ -2075,7 +2064,8 @@ public class BatchEnginePortletDataHandlerTest {
 							).name(
 								ObjectFieldSettingConstants.NAME_FILE_SOURCE
 							).value(
-								ObjectFieldSettingConstants.VALUE_USER_COMPUTER
+								ObjectFieldSettingConstants.
+									VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA
 							).build(),
 							new ObjectFieldSettingBuilder(
 							).name(

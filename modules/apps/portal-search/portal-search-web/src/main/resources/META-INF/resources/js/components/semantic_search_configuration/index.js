@@ -9,11 +9,10 @@ import ClayForm, {ClayCheckbox} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import {ClayTooltipProvider} from '@clayui/tooltip';
 import {useFormik} from 'formik';
-import {fetch} from 'frontend-js-web';
+import {fetch, sub} from 'frontend-js-web';
 import React, {useMemo, useState} from 'react';
 
 import {LearnMessageWithoutContext} from '../../shared/LearnMessage';
-import sub from '../../utils/language/sub';
 import Input from './Input';
 import SubmitWarningModal from './SubmitWarningModal';
 import TestConfigurationButton from './TestConfigurationButton';
@@ -405,19 +404,6 @@ export default function ({
 										'please-enter-a-value-greater-than-or-equal-to-x'
 									),
 									['50']
-								);
-						}
-
-						if (
-							textEmbeddingProviderConfigurationJSON.attributes
-								?.maxCharacterCount > 10000
-						) {
-							textEmbeddingProviderConfigurationJSONError.attributes.maxCharacterCount =
-								sub(
-									Liferay.Language.get(
-										'please-enter-a-value-less-than-or-equal-to-x'
-									),
-									['10000']
 								);
 						}
 					}
@@ -895,7 +881,7 @@ export default function ({
 								onChange={_handleInputChange(
 									`textEmbeddingProviderConfigurationJSONs[${index}].attributes.basicAuthPassword`
 								)}
-								type="basicAuthPassword"
+								type="password"
 								value={
 									formik.values
 										.textEmbeddingProviderConfigurationJSONs?.[
@@ -934,6 +920,7 @@ export default function ({
 										index
 									]?.attributes?.accessToken
 								}
+								type="password"
 								value={
 									formik.values
 										.textEmbeddingProviderConfigurationJSONs?.[
@@ -1057,6 +1044,7 @@ export default function ({
 										index
 									]?.attributes?.accessToken
 								}
+								type="password"
 								value={
 									formik.values
 										.textEmbeddingProviderConfigurationJSONs?.[
@@ -1131,6 +1119,7 @@ export default function ({
 										index
 									]?.attributes?.apiKey
 								}
+								type="password"
 								value={
 									formik.values
 										.textEmbeddingProviderConfigurationJSONs?.[
@@ -1554,7 +1543,7 @@ export default function ({
 						onChange={_handleInputChange(
 							`textEmbeddingProviderConfigurationJSONs[${index}].attributes.maxCharacterCount`
 						)}
-						options={{max: 10000, min: 50}}
+						options={{min: 50}}
 						required
 						touched={
 							formik.touched
@@ -1569,7 +1558,15 @@ export default function ({
 								index
 							]?.attributes?.maxCharacterCount
 						}
-					/>
+					>
+						<ClayForm.FeedbackGroup>
+							<ClayForm.Text>
+								{Liferay.Language.get(
+									'text-embedding-provider-max-character-count-refer-to-doc-help'
+								)}
+							</ClayForm.Text>
+						</ClayForm.FeedbackGroup>
+					</Input>
 
 					<Input
 						disabled={formik.isSubmitting}

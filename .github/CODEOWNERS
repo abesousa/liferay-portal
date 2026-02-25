@@ -293,7 +293,7 @@ modules/apps/portal-rules-engine/
 modules/apps/portal-scheduler/    @liferay-core-infra
 modules/apps/portal-scripting/
 modules/apps/portal-search/    @liferay-search
-modules/apps/portal-search-elasticsearch7/    @liferay-search
+modules/apps/portal-search-elasticsearch8/    @liferay-search
 modules/apps/portal-search-opensearch2/    @liferay-search
 modules/apps/portal-search-solr8/    @liferay-search
 modules/apps/portal-security/    @liferay-appsec
@@ -418,7 +418,6 @@ modules/dxp/apps/osb/osb-site-initializer/    @liferay-site-management
 modules/dxp/apps/osb/osb-testray/
 modules/dxp/apps/portal/
 modules/dxp/apps/portal/portal-dao-db    @liferay-database-infra
-modules/dxp/apps/portal/portal-properties-swapper/    @liferay-core-infra
 modules/dxp/apps/portal-reports-engine-console/    @liferay-bpm
 modules/dxp/apps/portal-rules-engine-drools/    @liferay-bpm
 modules/dxp/apps/portal-search-elasticsearch-cross-cluster-replication/    @liferay-search

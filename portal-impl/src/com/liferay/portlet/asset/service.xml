@@ -350,6 +350,7 @@
 		<exception>AssetCategory</exception>
 		<exception>AssetCategoryLimit</exception>
 		<exception>AssetCategoryName</exception>
+		<exception>AssetCategoryParentCategoryId</exception>
 		<exception>AssetTag</exception>
 		<exception>AssetTagGroupRelGroupId</exception>
 		<exception>AssetTagName</exception>

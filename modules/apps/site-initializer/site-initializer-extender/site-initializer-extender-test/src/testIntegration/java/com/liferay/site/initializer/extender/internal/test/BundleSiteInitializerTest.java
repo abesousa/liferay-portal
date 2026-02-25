@@ -671,6 +671,9 @@ public class BundleSiteInitializerTest {
 
 		String typeSettings = assetListEntrySegmentsEntryRel.getTypeSettings();
 
+		Assert.assertTrue(
+			typeSettings.contains(
+				"classTypeIdsJournalArticleAssetRendererFactory"));
 		Assert.assertTrue(typeSettings.contains("queryValues0=Test Keyword"));
 
 		assetListEntry = assetListEntries.get(1);
@@ -688,6 +691,17 @@ public class BundleSiteInitializerTest {
 		Assert.assertEquals(
 			"com.liferay.document.library.kernel.model.DLFileEntry",
 			assetListEntry.getAssetEntryType());
+
+		assetListEntrySegmentsEntryRel =
+			_assetListEntrySegmentsEntryRelLocalService.
+				fetchAssetListEntrySegmentsEntryRel(
+					assetListEntry.getAssetListEntryId(), 0);
+
+		typeSettings = assetListEntrySegmentsEntryRel.getTypeSettings();
+
+		Assert.assertTrue(
+			typeSettings.contains(
+				"classTypeIdsDLFileEntryAssetRendererFactory"));
 
 		assetListEntry = assetListEntries.get(3);
 
@@ -3819,10 +3833,14 @@ public class BundleSiteInitializerTest {
 		Assert.assertEquals(GroupConstants.TYPE_SITE_OPEN, _group.getType());
 		Assert.assertTrue(_group.isManualMembership());
 
-		Assert.assertEquals(
-			2,
+		String[] accessToControlMenuRoleIds =
 			_menuAccessConfigurationManager.getAccessToControlMenuRoleIds(
-				_group.getGroupId()).length);
+				_group.getGroupId());
+
+		Assert.assertEquals(
+			Arrays.toString(accessToControlMenuRoleIds), 2,
+			accessToControlMenuRoleIds.length);
+
 		Assert.assertTrue(
 			_menuAccessConfigurationManager.isShowControlMenuByRole(
 				_group.getGroupId()));
@@ -3835,10 +3853,14 @@ public class BundleSiteInitializerTest {
 		Assert.assertEquals(GroupConstants.TYPE_SITE_OPEN, _group.getType());
 		Assert.assertTrue(_group.isManualMembership());
 
-		Assert.assertEquals(
-			0,
+		String[] accessToControlMenuRoleIds =
 			_menuAccessConfigurationManager.getAccessToControlMenuRoleIds(
-				_group.getGroupId()).length);
+				_group.getGroupId());
+
+		Assert.assertEquals(
+			Arrays.toString(accessToControlMenuRoleIds), 0,
+			accessToControlMenuRoleIds.length);
+
 		Assert.assertTrue(
 			_menuAccessConfigurationManager.isShowControlMenuByRole(
 				_group.getGroupId()));

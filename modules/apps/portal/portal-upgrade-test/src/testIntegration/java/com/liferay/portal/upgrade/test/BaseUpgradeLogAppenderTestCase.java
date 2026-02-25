@@ -5,6 +5,7 @@
 
 package com.liferay.portal.upgrade.test;
 
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.lang.SafeCloseable;
@@ -27,6 +28,7 @@ import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ReleaseLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -323,8 +325,6 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 			_assertLogContextDiagnostics(
 				"upgrade.report.data.clean.up", _CLEANUP_INFO_MESSAGE);
 			_assertLogContextDiagnostics(
-				"upgrade.report.data.clean.up", _CLEANUP_WARNING_MESSAGE);
-			_assertLogContextDiagnostics(
 				"upgrade.report.data.clean.up",
 				_DELETE_DUPLICATES_FINDER_WARNING_MESSAGE);
 			_assertLogContextDiagnostics(
@@ -336,6 +336,8 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 					randomCompanyId, " was not found in column ",
 					dbInspector.normalizeName("companyId"), " from table ",
 					dbInspector.normalizeName("Company")));
+			_assertLogContextDiagnostics(
+				"upgrade.report.warnings", _CLEANUP_WARNING_MESSAGE);
 		}
 		finally {
 			_db.runSQL(
@@ -1346,10 +1348,13 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 		Method method = clazz.getMethod("cleanUp");
 
 		Constructor<?> constructor = clazz.getConstructor(
-			ClassNameLocalService.class, Connection.class);
+			ClassNameLocalService.class, CompanyLocalService.class,
+			Connection.class, ObjectDefinitionLocalService.class);
 
 		method.invoke(
-			constructor.newInstance(_classNameLocalService, connection));
+			constructor.newInstance(
+				_classNameLocalService, _companyLocalService, connection,
+				_objectDefinitionLocalService));
 	}
 
 	private void _setEnv(String key, String value) throws Exception {
@@ -1411,7 +1416,13 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 	@Inject
 	private ClassNameLocalService _classNameLocalService;
 
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
 	private String _diagnosticsReportContent;
+
+	@Inject
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 	@Inject
 	private ReleaseLocalService _releaseLocalService;
@@ -1466,7 +1477,7 @@ public abstract class BaseUpgradeLogAppenderTestCase {
 			).setLoggerName(
 				DuplicateUniqueFinderRowsCleaner.class.getName()
 			).setLevel(
-				Level.WARN
+				Level.INFO
 			).setMessage(
 				new SimpleMessage(_DELETE_DUPLICATES_FINDER_WARNING_MESSAGE)
 			).build();

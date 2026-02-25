@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -101,7 +100,6 @@ public class ElasticsearchQueryTranslatorTest {
 			jsonp, jsonp.contains("\"boost\":" + String.valueOf(_BOOST)));
 	}
 
-	@Ignore
 	@Test
 	public void testTranslateTermsFilterExceedingMaxAllowedTerms() {
 		TermsFilter termsFilter = new TermsFilter("groupId");
@@ -125,7 +123,6 @@ public class ElasticsearchQueryTranslatorTest {
 		QueryUtil.maxTermsCount = maxTermsCount;
 	}
 
-	@Ignore
 	@Test
 	public void testTranslateTermsQueryExceedingMaxAllowedTerms() {
 		TermsQuery termsQuery = new TermsQuery("groupId");
@@ -164,21 +161,19 @@ public class ElasticsearchQueryTranslatorTest {
 	}
 
 	private void _assertTermsCount(int expected, TermsFilter termsFilter) {
-		String queryString = termsFilter.accept(
-			ElasticsearchFilterVisitor.INSTANCE
-		).toString();
+		String jsonp = JsonpUtil.toString(
+			new co.elastic.clients.elasticsearch._types.query_dsl.Query(
+				termsFilter.accept(ElasticsearchFilterVisitor.INSTANCE)));
 
-		Assert.assertEquals(
-			queryString, expected, StringUtil.count(queryString, "terms"));
+		Assert.assertEquals(jsonp, expected, StringUtil.count(jsonp, "terms"));
 	}
 
 	private void _assertTermsCount(int expected, TermsQuery termsQuery) {
-		String queryString = ElasticsearchQueryVisitor.INSTANCE.visit(
-			termsQuery
-		).toString();
+		String jsonp = JsonpUtil.toString(
+			new co.elastic.clients.elasticsearch._types.query_dsl.Query(
+				ElasticsearchQueryVisitor.INSTANCE.translate(termsQuery)));
 
-		Assert.assertEquals(
-			queryString, expected, StringUtil.count(queryString, "terms"));
+		Assert.assertEquals(jsonp, expected, StringUtil.count(jsonp, "terms"));
 	}
 
 	private static final Float _BOOST = 1.5F;

@@ -47,10 +47,9 @@ export default function AddChildDropdown({
 	const addField = (type: Field['type']) =>
 		dispatch({
 			field: getDefaultField({
-				parent: parentUuid || structure.uuid,
+				parent: parentUuid ?? structure.uuid,
 				type,
 			}),
-			parentUuid,
 			type: 'add-field',
 		});
 
@@ -99,6 +98,7 @@ export default function AddChildDropdown({
 							openReferencedStructureModal({
 								dispatch,
 								objectDefinitions,
+								parentUuid: parentUuid ?? structure.uuid,
 								status,
 								structure,
 							}),

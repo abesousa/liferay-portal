@@ -8,20 +8,38 @@ package com.liferay.portal.search.aggregation.metrics;
 import com.liferay.portal.search.aggregation.AggregationResult;
 import com.liferay.portal.search.geolocation.GeoLocationPoint;
 
-import org.osgi.annotation.versioning.ProviderType;
-
 /**
  * @author Michael C. Han
  */
-@ProviderType
-public interface GeoBoundsAggregationResult extends AggregationResult {
+public class GeoBoundsAggregationResult extends AggregationResult {
 
-	public GeoLocationPoint getBottomRight();
+	public GeoBoundsAggregationResult(
+		String name, GeoLocationPoint topLeftGeoLocationPoint,
+		GeoLocationPoint bottomRightGeoLocationPoint) {
 
-	public GeoLocationPoint getTopLeft();
+		super(name);
 
-	public void setBottomRight(GeoLocationPoint geoLocationPoint);
+		_topLeftGeoLocationPoint = topLeftGeoLocationPoint;
+		_bottomRightGeoLocationPoint = bottomRightGeoLocationPoint;
+	}
 
-	public void setTopLeft(GeoLocationPoint geoLocationPoint);
+	public GeoLocationPoint getBottomRight() {
+		return _bottomRightGeoLocationPoint;
+	}
+
+	public GeoLocationPoint getTopLeft() {
+		return _topLeftGeoLocationPoint;
+	}
+
+	public void setBottomRight(GeoLocationPoint geoLocationPoint) {
+		_bottomRightGeoLocationPoint = geoLocationPoint;
+	}
+
+	public void setTopLeft(GeoLocationPoint geoLocationPoint) {
+		_topLeftGeoLocationPoint = geoLocationPoint;
+	}
+
+	private GeoLocationPoint _bottomRightGeoLocationPoint;
+	private GeoLocationPoint _topLeftGeoLocationPoint;
 
 }

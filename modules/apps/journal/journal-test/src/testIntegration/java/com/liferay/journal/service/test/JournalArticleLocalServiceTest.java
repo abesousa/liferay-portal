@@ -1475,7 +1475,7 @@ public class JournalArticleLocalServiceTest {
 			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
 				_group.getGroupId(),
 				_portal.getClassNameId(JournalArticle.class.getName()),
-				journalArticle.getDDMStructureId(), true,
+				journalArticle.getDDMStructureKey(), true,
 				WorkflowConstants.STATUS_APPROVED);
 
 		_assetDisplayPageEntryLocalService.addAssetDisplayPageEntry(
@@ -2115,6 +2115,9 @@ public class JournalArticleLocalServiceTest {
 		Assert.assertEquals(
 			journalArticle.getResourcePrimKey(),
 			latestArticle.getResourcePrimKey());
+		Assert.assertEquals(
+			journalArticle.getExternalReferenceCode(),
+			latestArticle.getExternalReferenceCode());
 		Assert.assertTrue(
 			updatedJournalArticle.getVersion() < latestArticle.getVersion());
 		Assert.assertEquals(

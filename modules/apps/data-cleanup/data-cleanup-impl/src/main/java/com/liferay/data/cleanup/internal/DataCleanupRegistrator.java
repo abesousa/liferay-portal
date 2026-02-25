@@ -58,6 +58,7 @@ import com.liferay.data.cleanup.internal.verify.ClassNamePostUpgradeDataCleanupP
 import com.liferay.data.cleanup.internal.verify.PortletPreferencesPostUpgradeDataCleanupProcess;
 import com.liferay.data.cleanup.internal.verify.PostUpgradeDataCleanupProcess;
 import com.liferay.data.cleanup.internal.verify.ResourceActionPostUpgradeDataCleanupProcess;
+import com.liferay.data.cleanup.internal.verify.ResourcePermissionPostupgradeDataCleanupProcess;
 import com.liferay.data.cleanup.internal.verify.ServiceComponentPostUpgradeDataCleanupProcess;
 import com.liferay.data.cleanup.util.DataCleanupUtil;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
@@ -69,12 +70,15 @@ import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLo
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.portal.kernel.model.ReleaseConstants;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.ServiceComponentLocalService;
 import com.liferay.portal.kernel.upgrade.data.cleanup.DataCleanupPreupgradeProcess;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -402,7 +406,9 @@ public class DataCleanupRegistrator {
 						PostUpgradeDataCleanupProcess
 							postUpgradeDataCleanupProcess =
 								new ClassNamePostUpgradeDataCleanupProcess(
-									_classNameLocalService, connection);
+									_classNameLocalService,
+									_companyLocalService, connection,
+									_objectDefinitionLocalService);
 
 						postUpgradeDataCleanupProcess.cleanUp();
 					}
@@ -478,6 +484,26 @@ public class DataCleanupRegistrator {
 							postUpgradeDataCleanupProcess =
 								new ResourceActionPostUpgradeDataCleanupProcess(
 									connection, _resourceActionLocalService);
+
+						postUpgradeDataCleanupProcess.cleanUp();
+					}
+
+				}));
+		_registerDataCleanup(
+			DataCleanupAdapter.create(
+				"remove-resource-permission-orphan-data",
+				_getBundleSymbolicName(
+					ClassNamePostUpgradeDataCleanupProcess.class),
+				DataCleanup.SYSTEM_DATA_CLEANUP,
+				new VerifyProcess() {
+
+					@Override
+					protected void doVerify() throws Exception {
+						PostUpgradeDataCleanupProcess
+							postUpgradeDataCleanupProcess =
+								new ResourcePermissionPostupgradeDataCleanupProcess(
+									connection,
+									_resourcePermissionLocalService);
 
 						postUpgradeDataCleanupProcess.cleanUp();
 					}
@@ -582,6 +608,9 @@ public class DataCleanupRegistrator {
 	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
 	private ContentManager _contentManager;
 
 	@Reference
@@ -629,6 +658,9 @@ public class DataCleanupRegistrator {
 	private MBThreadLocalService _mbThreadLocalService;
 
 	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Reference
 	private Portal _portal;
 
 	@Reference
@@ -639,6 +671,9 @@ public class DataCleanupRegistrator {
 
 	@Reference
 	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Reference
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
 
 	@Reference
 	private ServiceComponentLocalService _serviceComponentLocalService;

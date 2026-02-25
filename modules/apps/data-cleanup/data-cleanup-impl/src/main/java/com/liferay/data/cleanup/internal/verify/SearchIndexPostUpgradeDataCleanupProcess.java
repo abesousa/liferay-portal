@@ -5,6 +5,7 @@
 
 package com.liferay.data.cleanup.internal.verify;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -59,8 +60,10 @@ public class SearchIndexPostUpgradeDataCleanupProcess
 
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"Found orphan index from deleted company: " +
-							indexName);
+						StringBundler.concat(
+							"Index ", indexName, " belongs to deleted company ",
+							companyId, ". Remove it if it is not used ",
+							"anywhere else."));
 				}
 			}
 		}

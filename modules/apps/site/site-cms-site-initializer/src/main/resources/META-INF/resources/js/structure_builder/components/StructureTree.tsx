@@ -10,6 +10,7 @@ import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {useEventListener} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
+import {openToast} from 'frontend-js-components-web';
 import React, {Key, useEffect, useMemo, useRef, useState} from 'react';
 
 import getLocalizedValue from '../../common/utils/getLocalizedValue';
@@ -21,6 +22,7 @@ import {
 	useStateDispatch,
 } from '../contexts/StateContext';
 import useIsBeingRenamed from '../hooks/useIsBeingRenamed';
+import selectHistory from '../selectors/selectHistory';
 import selectInvalids from '../selectors/selectInvalids';
 import selectPublishedChildren from '../selectors/selectPublishedChildren';
 import selectSelection from '../selectors/selectSelection';
@@ -36,9 +38,11 @@ import {
 	StructureChild,
 } from '../types/Structure';
 import {Uuid} from '../types/Uuid';
-import confirmDeletionAction from '../utils/confirmDeletionAction';
-import {createRepeatableGroup} from '../utils/createRepeatableGroup';
 import {FIELD_TYPE_ICON, FieldType} from '../utils/field';
+import handleAddRepeatableGroup from '../utils/handleAddRepeatableGroup';
+import handleDeleteChildren from '../utils/handleDeleteChildren';
+import handleMoveChildren from '../utils/handleMoveChildren';
+import handleUngroupRepeatableGroup from '../utils/handleUngroupRepeatableGroup';
 import isField from '../utils/isField';
 import isLocked from '../utils/isLocked';
 import isReferenced from '../utils/isReferenced';
@@ -77,6 +81,7 @@ export default function StructureTree({search}: {search: string}) {
 	const isBeingRenamed = useIsBeingRenamed();
 
 	const children = useSelector(selectStructureChildren);
+	const history = useSelector(selectHistory);
 	const invalids = useSelector(selectInvalids);
 	const publishedChildren = useSelector(selectPublishedChildren);
 	const selection = useSelector(selectSelection);
@@ -209,10 +214,53 @@ export default function StructureTree({search}: {search: string}) {
 	return (
 		<ClayTreeView
 			className="px-4 structure-builder__tree"
+			dragAndDrop
+			dragAndDropMode="multiple"
+			dragHandlerVisibility="keyboard"
 			expandedKeys={expandedKeys}
+			itemNameKey="label"
 			items={items}
 			nestedKey="children"
 			onExpandedChange={setExpandedKeys}
+			onItemHover={(ids, target, index, position) => {
+				if (position !== 'middle') {
+					return false;
+				}
+
+				if (target.id === structure.uuid) {
+					return true;
+				}
+
+				if (target.type !== 'repeatable-group') {
+					return false;
+				}
+
+				if (isReferenced({root: structure, uuid: target.id})) {
+					return false;
+				}
+
+				return true;
+			}}
+			onItemInvalidMove={() =>
+				openToast({
+					message: Liferay.Language.get(
+						'items-could-not-be-moved-because-the-target-is-not-allowed'
+					),
+					type: 'danger',
+				})
+			}
+			onItemMove={(ids, parent) => {
+				handleMoveChildren({
+					deletedChildren: history.deletedChildren,
+					dispatch,
+					publishedChildren,
+					structure,
+					targetUuid: parent.id,
+					uuids: [...(ids as Set<Uuid>)],
+				});
+
+				return true;
+			}}
 			onSelect={onSelect}
 			onSelectionChange={setSelectedKeys}
 			selectedKeys={selectedKeys}
@@ -249,7 +297,11 @@ export default function StructureTree({search}: {search: string}) {
 									isBeingRenamed(childItem.id) ? undefined : (
 										<>
 											{childItem.type ===
-											'repeatable-group' ? (
+												'repeatable-group' &&
+											!isReferenced({
+												root: structure,
+												uuid: childItem.id,
+											}) ? (
 												<AddChildDropdown
 													className="component-action quick-action-item"
 													displayType="unstyled"
@@ -306,7 +358,7 @@ export default function StructureTree({search}: {search: string}) {
 	);
 }
 
-function ItemContent({item}: {item: TreeItem}) {
+function ItemContent({id, item}: {id?: string; item: TreeItem}) {
 	const isBeingRenamed = useIsBeingRenamed();
 
 	if (isBeingRenamed(item.id)) {
@@ -316,7 +368,7 @@ function ItemContent({item}: {item: TreeItem}) {
 	return (
 		<div className="align-items-center c-gap-2 d-flex ml-1">
 			<span>
-				<ItemLabel item={item} />
+				<ItemLabel id={id} item={item} />
 
 				<ItemStatus item={item} />
 			</span>
@@ -349,13 +401,17 @@ function ItemContent({item}: {item: TreeItem}) {
 	);
 }
 
-function ItemLabel({item}: {item: TreeItem}) {
+function ItemLabel({id, item}: {id?: string; item: TreeItem}) {
 	const dispatch = useStateDispatch();
 
 	const structure = useSelector(selectStructure);
 
 	return (
 		<span
+			aria-label={
+				item.label ? undefined : Liferay.Language.get('untitled')
+			}
+			id={id}
 			onDoubleClick={() => {
 				if (isRenamable({structure, uuid: item.id})) {
 					dispatch({type: 'set-renaming-item-uuid', uuid: item.id});
@@ -629,13 +685,14 @@ function getItemActions({
 		});
 	}
 
-	if (!isReferenced({item, root: structure}) && isField(item)) {
+	if (!isReferenced({root: structure, uuid: item.uuid}) && isField(item)) {
 		actions.push({
 			label: Liferay.Language.get('create-repeatable-group'),
 			onClick: () =>
-				createRepeatableGroup({
+				handleAddRepeatableGroup({
 					dispatch,
 					publishedChildren,
+					structure,
 					uuids: [item.uuid],
 				}),
 			symbolLeft: 'repeat',
@@ -646,13 +703,14 @@ function getItemActions({
 		actions.push({type: 'divider' as const});
 	}
 
-	if (!isReferenced({item, root: structure})) {
+	if (!isReferenced({root: structure, uuid: item.uuid})) {
 		if (item.type === 'repeatable-group') {
 			actions.push({
 				label: Liferay.Language.get('ungroup'),
 				onClick: () =>
-					dispatch({
-						type: 'ungroup',
+					handleUngroupRepeatableGroup({
+						dispatch,
+						publishedChildren,
 						uuid: item.uuid,
 					}),
 			});
@@ -673,21 +731,13 @@ function getItemActions({
 
 		actions.push({
 			label: Liferay.Language.get('delete-field'),
-			onClick: async () => {
-				if (publishedChildren.has(item.uuid)) {
-					const confirm =
-						await confirmDeletionAction('delete-children');
-
-					if (!confirm) {
-						return;
-					}
-				}
-
-				dispatch({
-					type: 'delete-child',
-					uuid: item.uuid,
-				});
-			},
+			onClick: async () =>
+				handleDeleteChildren({
+					dispatch,
+					publishedChildren,
+					structure,
+					uuids: [item.uuid],
+				}),
 			symbolLeft: 'trash',
 		});
 	}

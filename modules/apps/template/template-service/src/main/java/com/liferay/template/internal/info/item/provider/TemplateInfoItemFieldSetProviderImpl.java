@@ -17,8 +17,10 @@ import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.localized.InfoLocalizedValue;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -29,6 +31,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ScopeUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.template.constants.TemplatePortletKeys;
@@ -59,6 +63,8 @@ public class TemplateInfoItemFieldSetProviderImpl
 	public InfoFieldSet getInfoFieldSet(
 		String infoItemClassName, String infoItemFormVariationKey) {
 
+		long scopeGroupId = ScopeUtil.getScopeGroupId(0);
+
 		return InfoFieldSet.builder(
 		).infoFieldSetEntry(
 			consumer -> {
@@ -66,7 +72,7 @@ public class TemplateInfoItemFieldSetProviderImpl
 						_getTemplateEntries(
 							infoItemClassName, infoItemFormVariationKey)) {
 
-					consumer.accept(_getInfoField(templateEntry));
+					consumer.accept(_getInfoField(scopeGroupId, templateEntry));
 				}
 			}
 		).labelInfoLocalizedValue(
@@ -83,13 +89,15 @@ public class TemplateInfoItemFieldSetProviderImpl
 
 		List<InfoFieldValue<Object>> infoFieldValues = new ArrayList<>();
 
+		long scopeGroupId = ScopeUtil.getScopeGroupId(0);
+
 		for (TemplateEntry templateEntry :
 				_getTemplateEntries(
 					infoItemClassName, infoItemFormVariationKey)) {
 
 			infoFieldValues.add(
 				new InfoFieldValue<>(
-					_getInfoField(templateEntry),
+					_getInfoField(scopeGroupId, templateEntry),
 					() -> InfoLocalizedValue.function(
 						locale -> _getValue(
 							itemObject, locale, templateEntry))));
@@ -98,7 +106,39 @@ public class TemplateInfoItemFieldSetProviderImpl
 		return infoFieldValues;
 	}
 
-	private InfoField<?> _getInfoField(TemplateEntry templateEntry) {
+	private String _getExternalUniqueId(
+		String externalReferenceCode, long itemGroupId, long scopeGroupId) {
+
+		String scopeExternalReferenceCode = null;
+
+		try {
+			scopeExternalReferenceCode =
+				ScopeUtil.getItemScopeExternalReferenceCode(
+					itemGroupId, scopeGroupId);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		if (Validator.isNull(scopeExternalReferenceCode)) {
+			return StringBundler.concat(
+				PortletDisplayTemplate.DISPLAY_STYLE_PREFIX,
+				StringPool.UNDERLINE,
+				PortletDisplayTemplate.DISPLAY_STYLE_PREFIX, "_ERC__",
+				externalReferenceCode);
+		}
+
+		return StringBundler.concat(
+			PortletDisplayTemplate.DISPLAY_STYLE_PREFIX, StringPool.UNDERLINE,
+			PortletDisplayTemplate.DISPLAY_STYLE_PREFIX, "_ERC__",
+			externalReferenceCode, "__SERC__", scopeExternalReferenceCode);
+	}
+
+	private InfoField<?> _getInfoField(
+		long scopeGroupId, TemplateEntry templateEntry) {
+
 		DDMTemplate ddmTemplate = _ddmTemplateLocalService.fetchDDMTemplate(
 			templateEntry.getDDMTemplateId());
 
@@ -110,6 +150,10 @@ public class TemplateInfoItemFieldSetProviderImpl
 		).name(
 			PortletDisplayTemplate.DISPLAY_STYLE_PREFIX +
 				templateEntry.getTemplateEntryId()
+		).externalUniqueId(
+			_getExternalUniqueId(
+				templateEntry.getExternalReferenceCode(),
+				templateEntry.getGroupId(), scopeGroupId)
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.<String>builder(
 			).defaultLocale(

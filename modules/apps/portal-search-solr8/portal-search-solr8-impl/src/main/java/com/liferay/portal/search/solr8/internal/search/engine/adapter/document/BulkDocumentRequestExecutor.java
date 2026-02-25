@@ -67,9 +67,6 @@ public class BulkDocumentRequestExecutor {
 			bulkDocumentRequest, bulkDocumentRequestClassifier,
 			bulkDocumentResponses);
 
-		executeGetDocumentRequests(
-			bulkDocumentRequestClassifier, bulkDocumentResponses);
-
 		List<BulkDocumentItemResponse> bulkDocumentItemResponses =
 			new ArrayList<>();
 
@@ -267,19 +264,6 @@ public class BulkDocumentRequestExecutor {
 		}
 	}
 
-	protected void executeGetDocumentRequests(
-		BulkDocumentRequestClassifier bulkDocumentRequestClassifier,
-		List<BulkDocumentResponse> bulkDocumentResponses) {
-
-		if (bulkDocumentRequestClassifier.hasGetDocumentRequests()) {
-			BulkDocumentResponse bulkDocumentResponse = execute(
-				buildGetSolrRequest(
-					bulkDocumentRequestClassifier.getGetDocumentRequests()));
-
-			bulkDocumentResponses.add(bulkDocumentResponse);
-		}
-	}
-
 	protected void executeIndexDocumentRequests(
 		BulkDocumentRequest bulkDocumentRequest,
 		BulkDocumentRequestClassifier bulkDocumentRequestClassifier,
@@ -328,10 +312,6 @@ public class BulkDocumentRequestExecutor {
 			return _deleteDocumentRequests;
 		}
 
-		public List<GetDocumentRequest> getGetDocumentRequests() {
-			return _getDocumentRequests;
-		}
-
 		public List<IndexDocumentRequest> getIndexDocumentRequests() {
 			return _indexDocumentRequests;
 		}
@@ -342,10 +322,6 @@ public class BulkDocumentRequestExecutor {
 
 		public boolean hasDeleteDocumentRequests() {
 			return !_deleteDocumentRequests.isEmpty();
-		}
-
-		public boolean hasGetDocumentRequests() {
-			return !_getDocumentRequests.isEmpty();
 		}
 
 		public boolean hasIndexDocumentRequests() {
@@ -360,31 +336,26 @@ public class BulkDocumentRequestExecutor {
 			for (BulkableDocumentRequest<?> bulkableDocumentRequest :
 					bulkDocumentRequest.getBulkableDocumentRequests()) {
 
-				bulkableDocumentRequest.accept(
-					request -> {
-						if (request instanceof DeleteDocumentRequest) {
-							_deleteDocumentRequests.add(
-								(DeleteDocumentRequest)request);
-						}
-						else if (request instanceof GetDocumentRequest) {
-							_getDocumentRequests.add(
-								(GetDocumentRequest)request);
-						}
-						else if (request instanceof IndexDocumentRequest) {
-							_indexDocumentRequests.add(
-								(IndexDocumentRequest)request);
-						}
-						else if (request instanceof UpdateDocumentRequest) {
-							_updateDocumentRequests.add(
-								(UpdateDocumentRequest)request);
-						}
-					});
+				if (bulkableDocumentRequest instanceof DeleteDocumentRequest) {
+					_deleteDocumentRequests.add(
+						(DeleteDocumentRequest)bulkableDocumentRequest);
+				}
+				else if (bulkableDocumentRequest instanceof
+							IndexDocumentRequest) {
+
+					_indexDocumentRequests.add(
+						(IndexDocumentRequest)bulkableDocumentRequest);
+				}
+				else if (bulkableDocumentRequest instanceof
+							UpdateDocumentRequest) {
+
+					_updateDocumentRequests.add(
+						(UpdateDocumentRequest)bulkableDocumentRequest);
+				}
 			}
 		}
 
 		private List<DeleteDocumentRequest> _deleteDocumentRequests =
-			new ArrayList<>();
-		private List<GetDocumentRequest> _getDocumentRequests =
 			new ArrayList<>();
 		private List<IndexDocumentRequest> _indexDocumentRequests =
 			new ArrayList<>();

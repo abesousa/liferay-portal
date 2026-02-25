@@ -26,14 +26,14 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.ResourcePermission;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.data.cleanup.util.OrphanReferencesDataCleanupUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -43,6 +43,7 @@ import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.data.cleanup.DDMDataCleanupPreupgradeProcess;
+import com.liferay.portal.upgrade.data.cleanup.ResourcePermissionDataCleanupPreupgradeProcess;
 
 import java.sql.Connection;
 
@@ -88,9 +89,6 @@ public class DDMDataCleanupPreupgradeProcessTest
 	public void setUp() throws Exception {
 		_classNames = _classNameLocalService.getClassNames(
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-		_resourcePermissions =
-			_resourcePermissionLocalService.getResourcePermissions(
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 	}
 
 	@After
@@ -102,16 +100,6 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 		for (ClassName className : classNames) {
 			_classNameLocalService.deleteClassName(className);
-		}
-
-		List<ResourcePermission> resourcePermissions = ListUtil.remove(
-			_resourcePermissionLocalService.getResourcePermissions(
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
-			_resourcePermissions);
-
-		for (ResourcePermission resourcePermission : resourcePermissions) {
-			_resourcePermissionLocalService.deleteResourcePermission(
-				resourcePermission);
 		}
 	}
 
@@ -146,6 +134,11 @@ public class DDMDataCleanupPreupgradeProcessTest
 			group.getGroupId(), journalArticle.getArticleId());
 
 		_groupLocalService.deleteGroup(group);
+
+		UpgradeProcess upgradeProcess =
+			new ResourcePermissionDataCleanupPreupgradeProcess();
+
+		upgradeProcess.upgrade();
 	}
 
 	@Test
@@ -267,6 +260,11 @@ public class DDMDataCleanupPreupgradeProcessTest
 		upgrade();
 
 		_groupLocalService.deleteGroup(group);
+
+		UpgradeProcess upgradeProcess =
+			new ResourcePermissionDataCleanupPreupgradeProcess();
+
+		upgradeProcess.upgrade();
 	}
 
 	@Test
@@ -275,15 +273,15 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 		connection = _connection;
 
-		String companyStructureKey = RandomTestUtil.randomString();
-		String orphanStructureKey = RandomTestUtil.randomString();
-		String parentStructureKey = RandomTestUtil.randomString();
 		long childGroupId = RandomTestUtil.nextLong();
 		long companyGroupId = RandomTestUtil.nextLong();
 		long companyId = RandomTestUtil.randomLong();
+		String companyStructureKey = RandomTestUtil.randomString();
 		long orphanGroupId = RandomTestUtil.nextLong();
+		String orphanStructureKey = RandomTestUtil.randomString();
 		long otherGroupId = RandomTestUtil.nextLong();
 		long parentGroupId = RandomTestUtil.nextLong();
+		String parentStructureKey = RandomTestUtil.randomString();
 
 		try {
 			alterTableAddColumn(
@@ -293,7 +291,8 @@ public class DDMDataCleanupPreupgradeProcessTest
 				DDMDataCleanupPreupgradeProcess.class.getName(),
 				() -> {
 					_insertGroup(
-						companyId, "/company", companyGroupId, "company", 0);
+						companyId, GroupConstants.GLOBAL_FRIENDLY_URL,
+						companyGroupId, GroupConstants.GLOBAL, 0);
 					_insertGroup(
 						companyId, "/parent", parentGroupId, "parent", 0);
 					_insertGroup(
@@ -459,7 +458,6 @@ public class DDMDataCleanupPreupgradeProcessTest
 	private static List<ClassName> _classNames;
 	private static Connection _connection;
 	private static DBInspector _dbInspector;
-	private static List<ResourcePermission> _resourcePermissions;
 
 	@Inject
 	private ClassNameLocalService _classNameLocalService;
@@ -476,8 +474,5 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 	@Inject
 	private Portal _portal;
-
-	@Inject
-	private ResourcePermissionLocalService _resourcePermissionLocalService;
 
 }

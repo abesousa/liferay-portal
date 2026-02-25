@@ -8,9 +8,8 @@ package com.liferay.portal.search.opensearch2.internal.search.engine.adapter;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
-import com.liferay.portal.search.opensearch2.internal.search.engine.adapter.document.DocumentRequestExecutorFixture;
-import com.liferay.portal.search.opensearch2.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
-import com.liferay.portal.search.opensearch2.internal.search.engine.adapter.snapshot.SnapshotRequestExecutorTestUtil;
+
+import java.util.Collections;
 
 /**
  * @author Michael C. Han
@@ -29,22 +28,6 @@ public class OpenSearchEngineAdapterFixture {
 	protected static SearchEngineAdapter createSearchEngineAdapter(
 		OpenSearchConnectionManager openSearchConnectionManager) {
 
-		DocumentRequestExecutorFixture documentRequestExecutorFixture =
-			new DocumentRequestExecutorFixture() {
-				{
-					setOpenSearchConnectionManager(openSearchConnectionManager);
-				}
-			};
-
-		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
-			{
-				setOpenSearchConnectionManager(openSearchConnectionManager);
-			}
-		};
-
-		documentRequestExecutorFixture.setUp();
-		_searchRequestExecutorFixture.setUp();
-
 		OpenSearchSearchEngineAdapterImpl openSearchSearchEngineAdapterImpl =
 			new OpenSearchSearchEngineAdapterImpl() {
 				{
@@ -55,18 +38,8 @@ public class OpenSearchEngineAdapterFixture {
 		ReflectionTestUtil.setFieldValue(
 			openSearchSearchEngineAdapterImpl, "_openSearchConnectionManager",
 			openSearchConnectionManager);
-		ReflectionTestUtil.setFieldValue(
-			openSearchSearchEngineAdapterImpl, "_documentRequestExecutor",
-			documentRequestExecutorFixture.getDocumentRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			openSearchSearchEngineAdapterImpl, "_searchRequestExecutor",
-			_searchRequestExecutorFixture.getSearchRequestExecutor());
-		ReflectionTestUtil.setFieldValue(
-			openSearchSearchEngineAdapterImpl, "_snapshotRequestExecutor",
-			SnapshotRequestExecutorTestUtil.createSnapshotRequestExecutor(
-				openSearchConnectionManager));
 
-		openSearchSearchEngineAdapterImpl.activate();
+		openSearchSearchEngineAdapterImpl.activate(Collections.emptyMap());
 
 		return openSearchSearchEngineAdapterImpl;
 	}
@@ -76,8 +49,6 @@ public class OpenSearchEngineAdapterFixture {
 
 		_openSearchConnectionManager = openSearchConnectionManager;
 	}
-
-	private static SearchRequestExecutorFixture _searchRequestExecutorFixture;
 
 	private OpenSearchConnectionManager _openSearchConnectionManager;
 	private SearchEngineAdapter _searchEngineAdapter;

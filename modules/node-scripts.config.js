@@ -10,7 +10,7 @@
  */
 
 module.exports = {
-	hash: '4890fb315ea9fe7a925543783d5ba6622864497793ebb003059795fa68c1c64d',
+	hash: '09f34a5b45a0fccdfba72133abcc1be5f133ae769973ce41b27c1a5dc0e124eb',
 	imports: {
 		'@liferay/accessibility-menu-web': [],
 		'@liferay/accessibility-settings-state-web': [],
@@ -243,6 +243,7 @@ module.exports = {
 		'@liferay/portal-security-script-management-web': [],
 		'@liferay/portal-settings-web': [],
 		'@liferay/portal-tools-rest-builder-test-client-js': [],
+		'@liferay/portal-url-builder-impl': [],
 		'@liferay/portal-workflow-instance-tracker-web': [],
 		'@liferay/portal-workflow-taglib': [],
 		'@liferay/product-analytics-web': [],
@@ -257,6 +258,7 @@ module.exports = {
 		'@liferay/search-experiences-web': [],
 		'@liferay/site-cmp-site-initializer': [],
 		'@liferay/site-cms-site-initializer': [],
+		'@liferay/site-dsr-site-initializer': [],
 		'@liferay/site-navigation-menu-item-display-page': [],
 		'@liferay/site-navigation-menu-item-vocabulary': [],
 		'@liferay/site-navigation-taglib': [],

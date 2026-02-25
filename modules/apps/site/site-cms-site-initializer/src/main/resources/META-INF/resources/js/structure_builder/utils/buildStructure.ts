@@ -21,7 +21,7 @@ import {Uuid} from '../types/Uuid';
 import {Field, FieldType, SelectFromListField} from './field';
 import getUuid from './getUuid';
 import isCustomObjectField from './isCustomObjectField';
-import sortChildren from './sortChildren';
+import sortChildren from './state/sortChildren';
 
 export default function buildStructure({
 	mainObjectDefinition,
@@ -311,9 +311,11 @@ function getFieldSettings(objectField: ObjectField): Field['settings'] {
 		settings.fileSource = objectFieldSettings.fileSource;
 		settings.maximumFileSize = objectFieldSettings.maximumFileSize;
 
-		if (objectFieldSettings.fileSource === 'userComputer') {
-			settings.showFilesInDocumentsAndMedia =
-				objectFieldSettings.showFilesInDocumentsAndMedia;
+		if (
+			objectFieldSettings.fileSource === 'userComputerToDocumentsAndMedia'
+		) {
+			settings.showFilesInLibrary =
+				objectFieldSettings.showFilesInLibrary;
 			settings.storageDLFolderPath =
 				objectFieldSettings.storageDLFolderPath;
 		}
@@ -350,21 +352,19 @@ function getFieldType(objectField: ObjectField): FieldType {
 		return 'select-from-list';
 	}
 
-	const DB_TYPE_TO_FIELD_TYPE: Record<string, FieldType> = {
-		BigDecimal: 'decimal',
+	const BUSINESS_TYPE_TO_FIELD_TYPE: Record<string, FieldType> = {
+		Attachment: 'upload',
 		Boolean: 'boolean',
-		Clob: 'long-text',
 		Date: 'date',
 		DateTime: 'datetime',
-		Double: 'decimal',
+		Decimal: 'decimal',
 		Integer: 'integer',
-		Long: 'upload',
+		LongText: 'long-text',
 		RichText: 'rich-text',
-		String: 'text',
-		Upload: 'upload',
+		Text: 'text',
 	} as const;
 
-	return DB_TYPE_TO_FIELD_TYPE[objectField.DBType];
+	return BUSINESS_TYPE_TO_FIELD_TYPE[objectField.businessType];
 }
 
 export function getSpaces(objectDefinition: ObjectDefinition) {

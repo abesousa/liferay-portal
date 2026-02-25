@@ -45,11 +45,22 @@ import java.util.function.Supplier;
 @JsonSubTypes(
 	{
 		@JsonSubTypes.Type(
+			name = "AssignStructureDefaultWorkflowBulkAction",
+			value = AssignStructureDefaultWorkflowBulkAction.class
+		),
+		@JsonSubTypes.Type(
 			name = "AssignToBulkAction", value = AssignToBulkAction.class
+		),
+		@JsonSubTypes.Type(
+			name = "CopyBulkAction", value = CopyBulkAction.class
 		),
 		@JsonSubTypes.Type(
 			name = "DefaultPermissionBulkAction",
 			value = DefaultPermissionBulkAction.class
+		),
+		@JsonSubTypes.Type(
+			name = "DeleteAssetVersionBulkAction",
+			value = DeleteAssetVersionBulkAction.class
 		),
 		@JsonSubTypes.Type(
 			name = "DeleteBulkAction", value = DeleteBulkAction.class
@@ -325,8 +336,12 @@ public abstract class BulkAction implements Serializable {
 	@GraphQLName("Type")
 	public static enum Type {
 
+		ASSIGN_STRUCTURE_DEFAULT_WORKFLOW_BULK_ACTION(
+			"AssignStructureDefaultWorkflowBulkAction"),
 		ASSIGN_TO_BULK_ACTION("AssignToBulkAction"),
+		COPY_BULK_ACTION("CopyBulkAction"),
 		DEFAULT_PERMISSION_BULK_ACTION("DefaultPermissionBulkAction"),
+		DELETE_ASSET_VERSION_BULK_ACTION("DeleteAssetVersionBulkAction"),
 		DELETE_BULK_ACTION("DeleteBulkAction"),
 		DUE_DATE_BULK_ACTION("DueDateBulkAction"),
 		EXPIRE_BULK_ACTION("ExpireBulkAction"),

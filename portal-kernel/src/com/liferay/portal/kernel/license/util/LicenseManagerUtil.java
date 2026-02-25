@@ -17,6 +17,12 @@ import java.util.Set;
  */
 public class LicenseManagerUtil {
 
+	public static void checkFreeTier() {
+		if (isFreeTier()) {
+			throw new UnsupportedOperationException();
+		}
+	}
+
 	public static void checkLicense(String productId) {
 		_licenseManager.checkLicense(productId);
 	}
@@ -61,6 +67,10 @@ public class LicenseManagerUtil {
 
 	public static Set<String> getMacAddresses() {
 		return _licenseManager.getMacAddresses();
+	}
+
+	public static boolean isCMPEnabled() {
+		return _licenseManager.isCMPEnabled();
 	}
 
 	public static boolean isFreeTier() {

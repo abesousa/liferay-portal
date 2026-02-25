@@ -31,7 +31,6 @@ import com.liferay.portal.kernel.service.SystemEventLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.util.FeatureFlagTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -43,8 +42,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
-import com.liferay.portal.test.rule.FeatureFlag;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -71,10 +68,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,9 +83,6 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * @author Alejandro Tardín
  */
-@FeatureFlags(
-	featureFlags = {@FeatureFlag("LPD-35443"), @FeatureFlag("LPD-35914")}
-)
 @RunWith(Arquillian.class)
 public class BatchTestEntityExportImportTest {
 
@@ -100,18 +92,6 @@ public class BatchTestEntityExportImportTest {
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
-
-	@BeforeClass
-	public static void setUpClass() throws PortalException {
-		FeatureFlagTestUtil.invokeFeatureFlagListeners(
-			TestPropsValues.getCompanyId(), true, "LPD-35914");
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws PortalException {
-		FeatureFlagTestUtil.invokeFeatureFlagListeners(
-			TestPropsValues.getCompanyId(), false, "LPD-35914");
-	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -914,7 +894,7 @@ public class BatchTestEntityExportImportTest {
 		throws Exception {
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				"com.liferay.batch.engine.internal.strategy." +
+				"com.liferay.batch.engine.internal." +
 					"BatchEngineImportTaskExecutorImpl",
 				LoggerTestUtil.ERROR)) {
 
