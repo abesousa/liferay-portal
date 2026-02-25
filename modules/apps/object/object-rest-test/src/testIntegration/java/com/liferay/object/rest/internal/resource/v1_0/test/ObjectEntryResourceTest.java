@@ -16484,11 +16484,11 @@ public class ObjectEntryResourceTest {
 		if ((Objects.equals(
 				fileSource,
 				ObjectFieldSettingConstants.
-					VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA) ||
+					VALUE_USER_COMPUTER_TO_CMS_BASIC_DOCUMENT) ||
 			 Objects.equals(
 				 fileSource,
 				 ObjectFieldSettingConstants.
-					 VALUE_USER_COMPUTER_TO_CMS_BASIC_DOCUMENT)) &&
+					 VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA)) &&
 			!GetterUtil.getBoolean(
 				ObjectFieldSettingUtil.getValue(
 					ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
@@ -19113,7 +19113,7 @@ public class ObjectEntryResourceTest {
 			"thumbnailURL", objectDefinition,
 			_OBJECT_FIELD_NAME_ATTACHMENT_DOCS_AND_MEDIA_SOURCE);
 
-		// File from URL
+		// File from documents and media with URL
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -19135,7 +19135,7 @@ public class ObjectEntryResourceTest {
 			null, objectDefinition,
 			_OBJECT_FIELD_NAME_ATTACHMENT_DOCS_AND_MEDIA_SOURCE);
 
-		// File from URL and host down
+		// File from documents and media with URL and host down
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
 				"com.liferay.object.rest.internal.manager.v1_0." +
@@ -19158,7 +19158,7 @@ public class ObjectEntryResourceTest {
 				_OBJECT_FIELD_NAME_ATTACHMENT_DOCS_AND_MEDIA_SOURCE);
 		}
 
-		// File from URL malformed
+		// File from documents and media with URL malformed
 
 		String malformedFileURL = StringBundler.concat(
 			"http//", company.getVirtualHostname(), ":8080/",
@@ -19182,7 +19182,7 @@ public class ObjectEntryResourceTest {
 				_OBJECT_FIELD_NAME_ATTACHMENT_DOCS_AND_MEDIA_SOURCE);
 		}
 
-		// File from URL not found
+		// File from documents and media with URL not found
 
 		String resourceNotFoundFileURL = StringBundler.concat(
 			"http://", company.getVirtualHostname(), ":8080/",
@@ -19202,7 +19202,7 @@ public class ObjectEntryResourceTest {
 			null, objectDefinition,
 			_OBJECT_FIELD_NAME_ATTACHMENT_DOCS_AND_MEDIA_SOURCE);
 
-		// File from URL with unsupported protocol
+		// File from documents and media with URL with unsupported protocol
 
 		String unsupportedProtocolURL = StringBundler.concat(
 			"file://", company.getVirtualHostname(), ":8080");
@@ -19350,7 +19350,7 @@ public class ObjectEntryResourceTest {
 			null, objectDefinition,
 			_OBJECT_FIELD_NAME_ATTACHMENT_USER_COMPUTER_TO_DOCS_AND_MEDIA_SOURCE_2);
 
-		// File validation user permission
+		// File user permission validation
 
 		String userName = RandomTestUtil.randomString();
 		String userPassword = RandomTestUtil.randomString();
