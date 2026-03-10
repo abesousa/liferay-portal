@@ -32,11 +32,13 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProvider;
@@ -91,23 +93,39 @@ public class AttachmentManagerImpl implements AttachmentManager {
 		ObjectField objectField = _objectFieldLocalService.getObjectField(
 			objectFieldId);
 
-		if (Objects.equals(
-				ObjectFieldSettingUtil.getValue(
-					ObjectFieldSettingConstants.NAME_FILE_SOURCE,
-					objectField.getObjectFieldSettings()),
-				ObjectFieldSettingConstants.
-					VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA) &&
-			GetterUtil.getBoolean(
-				ObjectFieldSettingUtil.getValue(
-					ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
-					objectField.getObjectFieldSettings()))) {
+
+
+		if(GetterUtil.getBoolean(
+			ObjectFieldSettingUtil.getValue(
+				ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
+				objectField.getObjectFieldSettings()))){
 
 			String storageDLFolderPath = ObjectFieldSettingUtil.getValue(
 				ObjectFieldSettingConstants.NAME_STORAGE_DL_FOLDER_PATH,
 				objectField.getObjectFieldSettings());
 
-			dlFolderId = _getStorageDLFolderId(
-				companyId, groupId, serviceContext, storageDLFolderPath);
+			if (Objects.equals(
+				ObjectFieldSettingUtil.getValue(
+					ObjectFieldSettingConstants.NAME_FILE_SOURCE,
+					objectField.getObjectFieldSettings()),
+				ObjectFieldSettingConstants.
+					VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA)) {
+
+				dlFolderId = _getStorageDLFolderId(
+					companyId, groupId, serviceContext, storageDLFolderPath);
+			} else if (Objects.equals(
+				ObjectFieldSettingUtil.getValue(
+					ObjectFieldSettingConstants.NAME_FILE_SOURCE,
+					objectField.getObjectFieldSettings()),
+				ObjectFieldSettingConstants.
+					VALUE_USER_COMPUTER_TO_CMS_BASIC_DOCUMENT)) {
+
+				Long storageDepotGroupId = ObjectFieldSettingUtil.getValue(
+					ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP,
+					objectField.getObjectFieldSettings());
+
+				dlFolderId = ;
+			}
 		}
 		else {
 			ObjectDefinition objectDefinition =
@@ -344,6 +362,39 @@ public class AttachmentManagerImpl implements AttachmentManager {
 
 		return _portletFileRepository.addPortletRepository(
 			groupId, portletId, serviceContext);
+	}
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	private Long _getStorageDLFolderId(
+		long companyId, long groupId, String storageDLFolderPath, long storageDepotGroupId)
+		throws PortalException {
+
+		long storageDLFolderId = DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+
+		Group group = _groupLocalService.getGroup(storageDepotGroupId);
+
+		for (String name :
+			StringUtil.split(storageDLFolderPath, CharPool.FORWARD_SLASH)) {
+
+			DLFolder dlFolder = _dlFolderLocalService.fetchFolder(
+				groupId, storageDLFolderId, name);
+
+			if (dlFolder != null) {
+				storageDLFolderId = dlFolder.getFolderId();
+
+				continue;
+			}
+
+//			Folder folder = _dlAppLocalService.addFolder(
+//				null, _userLocalService.getGuestUserId(companyId), groupId,
+//				storageDLFolderId, name, null, serviceContext);
+//
+//			storageDLFolderId = folder.getFolderId();
+		}
+
+		return storageDLFolderId;
 	}
 
 	private Long _getStorageDLFolderId(
