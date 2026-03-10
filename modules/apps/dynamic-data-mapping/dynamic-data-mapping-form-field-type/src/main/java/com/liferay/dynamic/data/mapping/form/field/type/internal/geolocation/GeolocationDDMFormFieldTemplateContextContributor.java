@@ -45,7 +45,7 @@ public class GeolocationDDMFormFieldTemplateContextContributor
 
 		HttpServletRequest httpServletRequest =
 			ddmFormFieldRenderingContext.getHttpServletRequest();
-//faskjdflkajslkfdj
+//faskjdf
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
