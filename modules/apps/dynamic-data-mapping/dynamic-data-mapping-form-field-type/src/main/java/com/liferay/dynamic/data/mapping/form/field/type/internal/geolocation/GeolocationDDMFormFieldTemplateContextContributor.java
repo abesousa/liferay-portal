@@ -50,6 +50,8 @@ public class GeolocationDDMFormFieldTemplateContextContributor
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		// sdjkfahksjdfhlka
+
 		Group group = _getGroup(httpServletRequest, themeDisplay);
 
 		String mapProviderKey = GetterUtil.getString(
