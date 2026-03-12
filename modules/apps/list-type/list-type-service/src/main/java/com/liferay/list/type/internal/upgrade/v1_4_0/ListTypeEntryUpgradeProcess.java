@@ -43,6 +43,8 @@ public class ListTypeEntryUpgradeProcess extends UpgradeProcess {
 				preparedStatement2.addBatch();
 			}
 
+//			skhdflkahsfdkljhaslkjdf
+
 			preparedStatement2.executeBatch();
 		}
 	}
