@@ -27,9 +27,12 @@ const test = mergeTests(
 	objectPagesTest
 );
 
+test.beforeEach(({page}) => {
+	page.setViewportSize({height: 1080, width: 1920});
+});
+
 test(
-	'LPD-78504 Allow Multiple Selections option is not available for Select From List field when form is mapped to an object',
-	{tag: '@LPD-78504'},
+	'Allow Multiple Selections option is not available for Select From List field when form is mapped to an object',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -102,8 +105,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can delete a form mapped to an object after adding entries',
-	{tag: '@LPD-78504'},
+	'Can delete a form mapped to an object after adding entries',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -174,7 +176,7 @@ test(
 
 		await page.getByLabel('Text').fill('Entry Test');
 
-		await page.getByRole('button', {name: 'Submit'}).click();
+		await page.getByRole('button', {name: 'Save'}).click();
 
 		await expect(
 			page.getByText(
@@ -203,8 +205,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can map and view entries for Rich Text field',
-	{tag: '@LPD-78504'},
+	'Can map and view entries for Rich Text field',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -258,8 +259,6 @@ test(
 
 		await formBuilderSidePanelPage.selectObjectField(fieldLabel);
 
-		await apiHelpers.dynamicDataMapping.waitForDDMEvaluate(page);
-
 		// Save and publish the form
 
 		await formBuilderPage.clickPublishFormButton();
@@ -280,7 +279,7 @@ test(
 
 		await richTextEditor.fill(richTextContent);
 
-		await page.getByRole('button', {name: 'Submit'}).click();
+		await page.getByRole('button', {name: 'Save'}).click();
 
 		await expect(
 			page.getByText(
@@ -305,8 +304,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can map Clob type and view entries with Multiple Lines',
-	{tag: '@LPD-78504'},
+	'Can map Clob type and view entries with Multiple Lines',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -382,7 +380,7 @@ test(
 
 		await page.getByRole('textbox').fill(entryText);
 
-		await page.getByRole('button', {name: 'Submit'}).click();
+		await page.getByRole('button', {name: 'Save'}).click();
 
 		await expect(
 			page.getByText(
@@ -407,8 +405,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can map Clob type and view entries with Single Line',
-	{tag: '@LPD-78504'},
+	'Can map Clob type and view entries with Single Line',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -482,7 +479,7 @@ test(
 
 		await page.getByLabel('Text').fill(entryText);
 
-		await page.getByRole('button', {name: 'Submit'}).click();
+		await page.getByRole('button', {name: 'Save'}).click();
 
 		await expect(
 			page.getByText(
@@ -507,8 +504,7 @@ test(
 );
 
 test(
-	'LPD-78504 Cannot edit Picklist entries in Forms Sidebar',
-	{tag: '@LPD-78504'},
+	'Cannot edit Picklist entries in Forms Sidebar',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -581,8 +577,7 @@ test(
 );
 
 test(
-	'LPD-78504 Cannot select an unpublished Object in form settings',
-	{tag: '@LPD-78504'},
+	'Cannot select an unpublished Object in form settings',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -625,8 +620,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can retrieve Data Providers on Select from List field',
-	{tag: '@LPD-78504'},
+	'Can retrieve Data Providers on Select from List field',
 	async ({apiHelpers, page, site}) => {
 		// This test requires Data Provider infrastructure (REST Data Provider configuration,
 		// local network data provider enablement) which is complex to set up in Playwright.
@@ -636,8 +630,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can retrieve Data Providers on Text field',
-	{tag: '@LPD-78504'},
+	'Can retrieve Data Providers on Text field',
 	async ({apiHelpers, page, site}) => {
 		// This test requires Data Provider infrastructure (REST Data Provider configuration,
 		// local network data provider enablement, autocomplete configuration) which is
@@ -648,8 +641,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can send form email when form is related with Object',
-	{tag: '@LPD-78504'},
+	'Can send form email when form is related with Object',
 	async ({apiHelpers, page, site}) => {
 		// This test requires an SMTP test server (MockMock) to verify email sending,
 		// which is not available in the Playwright test environment.
@@ -659,8 +651,7 @@ test(
 );
 
 test(
-	'LPD-78504 Can submit form entries using object storage type',
-	{tag: '@LPD-78504'},
+	'Can submit form entries using object storage type',
 	async ({
 		apiHelpers,
 		formBuilderPage,
@@ -731,7 +722,7 @@ test(
 
 		await page.getByLabel('Text').fill(textValue);
 
-		await page.getByRole('button', {name: 'Submit'}).click();
+		await page.getByRole('button', {name: 'Save'}).click();
 
 		await expect(
 			page.getByText(
