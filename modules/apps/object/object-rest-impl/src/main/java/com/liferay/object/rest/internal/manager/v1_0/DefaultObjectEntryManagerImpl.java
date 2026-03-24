@@ -2386,6 +2386,16 @@ public class DefaultObjectEntryManagerImpl
 				return GetterUtil.getLong(objectEntry.getObjectEntryFolderId());
 			}
 
+			if (objectEntry.getObjectEntryFolderId() != null) {
+				ObjectEntryFolder objectEntryFolder =
+					_objectEntryFolderLocalService.fetchObjectEntryFolder(
+						objectEntry.getObjectEntryFolderId());
+
+				if (objectEntryFolder != null) {
+					return objectEntryFolder.getObjectEntryFolderId();
+				}
+			}
+
 			objectEntryFolderExternalReferenceCode =
 				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS;
 
