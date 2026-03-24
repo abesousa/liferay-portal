@@ -15,9 +15,11 @@ import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectEntryFolderConstants;
+import com.liferay.object.constants.ObjectFolderConstants;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectEntryFolder;
+import com.liferay.object.model.ObjectFolder;
 import com.liferay.object.rest.filter.factory.FilterFactory;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryFolderLocalService;
@@ -128,6 +130,38 @@ public class ObjectEntryModelListener extends BaseModelListener<ObjectEntry> {
 							objectEntry.getObjectEntryId())) {
 
 				indexer.reindex(kaleoTaskInstanceToken);
+			}
+		}
+		catch (Exception exception) {
+			throw new ModelListenerException(exception);
+		}
+	}
+
+	@Override
+	public void onBeforeCreate(ObjectEntry objectEntry)
+		throws ModelListenerException {
+
+		try {
+			if (_isCMSObjectEntry(objectEntry)) {
+				_validateObjectEntryFolder(objectEntry);
+			}
+		}
+		catch (Exception exception) {
+			throw new ModelListenerException(exception);
+		}
+	}
+
+	@Override
+	public void onBeforeUpdate(
+			ObjectEntry originalObjectEntry, ObjectEntry objectEntry)
+		throws ModelListenerException {
+
+		try {
+			if (_isCMSObjectEntry(objectEntry) &&
+				(originalObjectEntry.getObjectEntryFolderId() !=
+					objectEntry.getObjectEntryFolderId())) {
+
+				_validateObjectEntryFolder(objectEntry);
 			}
 		}
 		catch (Exception exception) {
@@ -378,6 +412,49 @@ public class ObjectEntryModelListener extends BaseModelListener<ObjectEntry> {
 				ArrayUtil.filter(
 					JSONUtil.toStringArray(jsonArray),
 					action -> resourceActions.contains(action)));
+		}
+	}
+
+	private void _validateObjectEntryFolder(ObjectEntry objectEntry) {
+		ObjectEntryFolder objectEntryFolder = _getRootObjectEntryFolder(
+			objectEntry);
+
+		if ((objectEntryFolder != null) &&
+			(Objects.equals(
+				objectEntryFolder.getExternalReferenceCode(),
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS) ||
+			 Objects.equals(
+				 objectEntryFolder.getExternalReferenceCode(),
+				 ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES))) {
+
+			return;
+		}
+
+		ObjectDefinition objectDefinition = objectEntry.getObjectDefinition();
+
+		ObjectFolder objectFolder = objectDefinition.getObjectFolder();
+
+		String objectEntryFolderExternalReferenceCode =
+			ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS;
+
+		if ((objectFolder != null) &&
+			Objects.equals(
+				objectFolder.getExternalReferenceCode(),
+				ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_FILE_TYPES)) {
+
+			objectEntryFolderExternalReferenceCode =
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES;
+		}
+
+		objectEntryFolder =
+			_objectEntryFolderLocalService.
+				fetchObjectEntryFolderByExternalReferenceCode(
+					objectEntryFolderExternalReferenceCode,
+					objectEntry.getGroupId(), objectEntry.getCompanyId());
+
+		if (objectEntryFolder != null) {
+			objectEntry.setObjectEntryFolderId(
+				objectEntryFolder.getObjectEntryFolderId());
 		}
 	}
 

@@ -17,10 +17,8 @@ import com.liferay.object.action.engine.ObjectActionEngine;
 import com.liferay.object.comment.ObjectEntryComment;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectDefinitionConstants;
-import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectFieldSettingConstants;
-import com.liferay.object.constants.ObjectFolderConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.entry.folder.subscription.util.ObjectEntryFolderSubscriptionUtil;
 import com.liferay.object.entry.util.ObjectEntryDTOConverterUtil;
@@ -37,7 +35,6 @@ import com.liferay.object.model.ObjectEntryTable;
 import com.liferay.object.model.ObjectEntryVersion;
 import com.liferay.object.model.ObjectEntryVersionTable;
 import com.liferay.object.model.ObjectField;
-import com.liferay.object.model.ObjectFolder;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.model.ObjectRelationshipModel;
 import com.liferay.object.related.models.ObjectRelatedModelsProvider;
@@ -1392,7 +1389,7 @@ public class DefaultObjectEntryManagerImpl
 						objectDefinition.getObjectDefinitionId(),
 						_getObjectEntryFolderId(
 							objectDefinition.getCompanyId(), groupId,
-							objectDefinition, objectEntry, serviceContext),
+							objectEntry, serviceContext),
 						_toObjectValues(
 							0L, dtoConverterContext.getLocale(),
 							objectDefinition, objectEntry, scopeKey,
@@ -1612,8 +1609,8 @@ public class DefaultObjectEntryManagerImpl
 			_objectEntryService.addObjectEntry(
 				groupId, objectDefinition.getObjectDefinitionId(),
 				_getObjectEntryFolderId(
-					objectDefinition.getCompanyId(), groupId, objectDefinition,
-					objectEntry, serviceContext),
+					objectDefinition.getCompanyId(), groupId, objectEntry,
+					serviceContext),
 				objectEntry.getDefaultLanguageId(), values, serviceContext);
 
 		return _toObjectEntry(
@@ -1899,8 +1896,8 @@ public class DefaultObjectEntryManagerImpl
 				_objectEntryService.addObjectEntry(
 					groupId, objectDefinition.getObjectDefinitionId(),
 					_getObjectEntryFolderId(
-						objectDefinition.getCompanyId(), groupId,
-						objectDefinition, objectEntry, serviceContext),
+						objectDefinition.getCompanyId(), groupId, objectEntry,
+						serviceContext),
 					objectEntry.getDefaultLanguageId(),
 					_toObjectValues(
 						objectField.getObjectFieldId(),
@@ -2374,31 +2371,15 @@ public class DefaultObjectEntryManagerImpl
 	}
 
 	private long _getObjectEntryFolderId(
-			long companyId, long groupId, ObjectDefinition objectDefinition,
-			ObjectEntry objectEntry, ServiceContext serviceContext)
+			long companyId, long groupId, ObjectEntry objectEntry,
+			ServiceContext serviceContext)
 		throws Exception {
 
 		String objectEntryFolderExternalReferenceCode =
 			objectEntry.getObjectEntryFolderExternalReferenceCode();
 
 		if (Validator.isNull(objectEntryFolderExternalReferenceCode)) {
-			if (!objectDefinition.isCMS()) {
-				return GetterUtil.getLong(objectEntry.getObjectEntryFolderId());
-			}
-
-			objectEntryFolderExternalReferenceCode =
-				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS;
-
-			ObjectFolder objectFolder = objectDefinition.getObjectFolder();
-
-			if ((objectFolder != null) &&
-				Objects.equals(
-					objectFolder.getExternalReferenceCode(),
-					ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_FILE_TYPES)) {
-
-				objectEntryFolderExternalReferenceCode =
-					ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES;
-			}
+			return GetterUtil.getLong(objectEntry.getObjectEntryFolderId());
 		}
 
 		ObjectEntryFolder objectEntryFolder =
@@ -3750,8 +3731,8 @@ public class DefaultObjectEntryManagerImpl
 					objectEntryId,
 					_getObjectEntryFolderId(
 						serviceBuilderObjectEntry.getCompanyId(),
-						serviceBuilderObjectEntry.getGroupId(),
-						objectDefinition, objectEntry, serviceContext),
+						serviceBuilderObjectEntry.getGroupId(), objectEntry,
+						serviceContext),
 					values, serviceContext);
 		}
 		else {
@@ -3759,8 +3740,8 @@ public class DefaultObjectEntryManagerImpl
 				objectEntryId,
 				_getObjectEntryFolderId(
 					serviceBuilderObjectEntry.getCompanyId(),
-					serviceBuilderObjectEntry.getGroupId(), objectDefinition,
-					objectEntry, serviceContext),
+					serviceBuilderObjectEntry.getGroupId(), objectEntry,
+					serviceContext),
 				values, serviceContext);
 		}
 
