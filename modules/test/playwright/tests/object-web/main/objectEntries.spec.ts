@@ -41,6 +41,7 @@ import {journalPagesTest} from '../../journal-web/main/fixtures/journalPagesTest
 import getPageDefinition from '../../layout-content-page-editor-web/main/utils/getPageDefinition';
 import getWidgetDefinition from '../../layout-content-page-editor-web/main/utils/getWidgetDefinition';
 import createSiteTemplate from '../../layout-set-prototype-web/main/utils/createSiteTemplate';
+import {cmsPagesTest} from '../../site-cms-site-initializer/main/fixtures/cmsPagesTest';
 import {templatesPageTest} from '../../template-web/main/fixtures/templatesPageTest';
 import {
 	getObjectEntryUIDateTimeFormat,
@@ -58,6 +59,7 @@ const test = mergeTests(
 	accountSettingsPagesTest,
 	applicationsMenuPageTest,
 	apiHelpersTest,
+	cmsPagesTest,
 	collectionsPagesTest,
 	commercePagesTest,
 	dataApiHelpersTest,
@@ -634,6 +636,114 @@ cmsTest.describe('Manage attachment ObjectField storage locations', () => {
 			await viewObjectEntriesPage.selectFileButton.click();
 
 			await expect(page.getByText('No Results Found')).toBeVisible();
+		}
+	);
+
+	cmsTest(
+		'files are stored in the correct folder',
+		async ({apiHelpers, assetsPage, page, viewObjectEntriesPage}) => {
+			const cmsFolderName = getRandomString();
+			const spaceName = `Space ${getRandomString()}`;
+			let space;
+
+			await test.step('Create a new Space', async () => {
+				space =
+					await apiHelpers.headlessAssetLibrary.createAssetLibrary({
+						name: spaceName,
+						settings: {},
+						type: 'Space',
+					});
+			});
+
+			const objectFields = generateObjectFields({
+				objectFieldBusinessTypes: [
+					{
+						businessType: 'Attachment',
+						name: 'userComputerToCMSBasicDocument',
+						objectFieldSettings: [
+							{
+								name: 'acceptedFileExtensions',
+								value: 'jpeg, jpg, pdf, png, txt',
+							},
+							{
+								name: 'maximumFileSize',
+								value: 0,
+							},
+							{
+								name: 'fileSource',
+								value: 'userComputerToCMSBasicDocument',
+							},
+							{
+								name: 'showFilesInLibrary',
+								value: true,
+							},
+							{
+								name: 'storageDLFolderPath',
+								value: `/${cmsFolderName}`,
+							},
+							{
+								name: 'storageDepotGroup',
+								value: space.externalReferenceCode,
+							},
+						],
+					},
+				],
+			});
+
+			const objectDefinition =
+				await apiHelpers.objectAdmin.postRandomObjectDefinition({
+					objectFields,
+					status: {code: 0},
+				});
+
+			apiHelpers.data.push({
+				id: objectDefinition.id,
+				type: 'objectDefinition',
+			});
+
+			await test.step('Create Object Entry', async () => {
+				await viewObjectEntriesPage.goto(objectDefinition.className);
+
+				await viewObjectEntriesPage.clickAddObjectEntry(
+					objectDefinition.label['en_US']
+				);
+
+				await viewObjectEntriesPage.selectFileFromUserComputer(
+					__dirname,
+					'astronaut.png'
+				);
+
+				await page
+					.getByRole('button', {name: 'astronaut.png'})
+					.waitFor({state: 'visible'});
+
+				await viewObjectEntriesPage.saveObjectEntryButton.click();
+
+				await waitForAlert(page);
+
+				await expect(
+					viewObjectEntriesPage.page.getByText('astronaut.png')
+				).toBeVisible();
+			});
+
+			await test.step('Validate CMS File location', async () => {
+				await assetsPage.gotoFiles();
+
+				await expect(
+					assetsPage.galleryPreview.getByText(cmsFolderName)
+				).toBeVisible();
+
+				await assetsPage.execCardItemAction({
+					action: 'View Folder',
+					filter: cmsFolderName,
+				});
+
+				await expect(
+					assetsPage.galleryPreview.getByRole('img', {
+						name: 'astronaut.png',
+					})
+				).toBeVisible();
+			});
 		}
 	);
 });

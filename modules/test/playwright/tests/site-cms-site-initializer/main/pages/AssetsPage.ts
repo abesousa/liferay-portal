@@ -21,6 +21,7 @@ interface ExecItemActionArgs {
 		| 'Share'
 		| 'Show Details'
 		| 'View'
+		| 'View Folder'
 		| 'View History';
 	filter: string;
 }
