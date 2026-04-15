@@ -7,9 +7,11 @@ import {expect, mergeTests} from '@playwright/test';
 
 import {dataApiHelpersTest} from '../../../fixtures/dataApiHelpersTest';
 import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
+import {globalMenuPagesTest} from '../../../fixtures/globalMenuPagesTest';
 import {isolatedSiteTest} from '../../../fixtures/isolatedSiteTest';
 import {loginTest} from '../../../fixtures/loginTest';
 import {objectPagesTest} from '../../../fixtures/objectPagesTest';
+import {workflowPagesTest} from '../../../fixtures/workflowPagesTest';
 import {FormBuilderPage} from '../../../pages/dynamic-data-mapping-form-web/FormBuilderPage';
 import {FormBuilderSidePanelPage} from '../../../pages/dynamic-data-mapping-form-web/FormBuilderSidePanelPage';
 import {FormSettingsModalPage} from '../../../pages/dynamic-data-mapping-form-web/FormSettingsModalPage';
@@ -18,16 +20,19 @@ import {MetricsPage} from '../../../pages/portal-workflow-metrics-web/MetricsPag
 import {WorkflowTasksPage} from '../../../pages/portal-workflow-task-web/WorkflowTasksPage';
 import {getRandomInt} from '../../../utils/getRandomInt';
 import {waitForAlert} from '../../../utils/waitForAlert';
-import {generateObjectFields} from './utils/generateObjectFields';
+import {generateObjectFields} from '../utils/generateObjectFields';
 
 const test = mergeTests(
 	dataApiHelpersTest,
 	featureFlagsTest({
+		'LPD-36105': {enabled: true},
 		'LPS-178052': {enabled: true},
 	}),
+	globalMenuPagesTest,
 	isolatedSiteTest,
 	loginTest(),
-	objectPagesTest
+	objectPagesTest,
+	workflowPagesTest
 );
 
 test.describe('Workflow Integration', () => {
@@ -50,7 +55,9 @@ test.describe('Workflow Integration', () => {
 			);
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 		}
 	);
@@ -76,15 +83,23 @@ test.describe('Workflow Integration', () => {
 			);
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 		}
 	);
 
 	test(
-		'Verify that the Object is no longer displayed on the Workflow Process Builder page when inactivated',
+		'Verify that the Object is displayed on the Workflow Process Builder page',
 		{tag: '@LPS-139005'},
-		async ({apiHelpers, page, viewObjectDefinitionsPage}) => {
+		async ({
+			apiHelpers,
+			configurationTabPage,
+			globalMenuPage,
+			page,
+			viewObjectDefinitionsPage,
+		}) => {
 			const objectDefinition =
 				await apiHelpers.objectAdmin.postRandomObjectDefinition({
 					status: {code: 0},
@@ -95,19 +110,62 @@ test.describe('Workflow Integration', () => {
 				type: 'objectDefinition',
 			});
 
+			await globalMenuPage.goToApplications('Process Builder');
+			await configurationTabPage.configurationTabLink.click();
+
+			await expect(
+				page.getByRole('row', {
+					name: objectDefinition.label['en_US'],
+				})
+			).toBeVisible();
+
+			await viewObjectDefinitionsPage.goto();
+			await viewObjectDefinitionsPage.clickEditObjectDefinitionLink(
+				objectDefinition.label['en_US']
+			);
+
+			const publishButton = page.getByRole('button', {name: 'Publish'});
+
+			await publishButton.click();
+
+			await globalMenuPage.goToApplications('Process Builder');
+			await configurationTabPage.configurationTabLink.click();
+
+			await expect(
+				page.getByRole('row', {
+					name: objectDefinition.label['en_US'],
+				})
+			).toBeHidden();
+
 			await viewObjectDefinitionsPage.goto();
 
 			await viewObjectDefinitionsPage.changeObjectActivateStatus(
 				objectDefinition.name
 			);
 
-			await page.goto(
-				'/group/guest/~/control_panel/manage/-/workflow_configuration'
-			);
+			await globalMenuPage.goToApplications('Process Builder');
+			await configurationTabPage.configurationTabLink.click();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('row', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
+
+			await viewObjectDefinitionsPage.goto();
+
+			await viewObjectDefinitionsPage.changeObjectActivateStatus(
+				objectDefinition.name
+			);
+
+			await globalMenuPage.goToApplications('Process Builder');
+			await configurationTabPage.configurationTabLink.click();
+
+			await expect(
+				page.getByRole('row', {
+					name: objectDefinition.label['en_US'],
+				})
+			).toBeVisible();
 		}
 	);
 
@@ -138,7 +196,9 @@ test.describe('Workflow Integration', () => {
 			);
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 		}
 	);
@@ -146,7 +206,15 @@ test.describe('Workflow Integration', () => {
 	test(
 		'Verify that the Object is displayed again on the Workflow Process Builder page when reactivated',
 		{tag: '@LPS-139005'},
-		async ({apiHelpers, page, viewObjectDefinitionsPage}) => {
+		async ({
+			apiHelpers,
+
+			// configurationTabPage,
+
+			globalMenuPage,
+			page,
+			viewObjectDefinitionsPage,
+		}) => {
 			const objectDefinition =
 				await apiHelpers.objectAdmin.postRandomObjectDefinition({
 					status: {code: 0},
@@ -169,12 +237,24 @@ test.describe('Workflow Integration', () => {
 				objectDefinition.name
 			);
 
-			await page.goto(
-				'/group/guest/~/control_panel/manage/-/workflow_configuration'
-			);
+			const configurationTabPage = new ConfigurationTabPage(page);
+
+			await configurationTabPage.goTo();
+
+			// await globalMenuPage.goToApplications('Process Builder');
+
+			// await configurationTabPage.configurationTabLink.click();
+
+			// await page.goto(
+			// 	'/group/guest/~/control_panel/manage/-/workflow_configuration'
+			// );
+
+			await configurationTabPage.goTo();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('row', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeVisible();
 		}
 	);
@@ -212,7 +292,9 @@ test.describe('Workflow Integration', () => {
 			);
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeVisible();
 		}
 	);
@@ -277,7 +359,9 @@ test.describe('Workflow Integration', () => {
 
 			await metricsPage.chooseProcess('Single Approver');
 
-			await expect(page.getByText('0', {exact: true}).first()).toBeVisible();
+			await expect(
+				page.getByText('0', {exact: true}).first()
+			).toBeVisible();
 
 			// Unassign workflow for cleanup
 
@@ -348,7 +432,9 @@ test.describe('Workflow Integration', () => {
 			await workflowTasksPage.goToAssignedToMyRoles();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 
 			// Unassign workflow for cleanup
@@ -430,13 +516,17 @@ test.describe('Workflow Integration', () => {
 			await workflowTasksPage.goto();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 
 			await workflowTasksPage.assignedToMyRolesLink.click();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 
 			// Reactivate for cleanup
@@ -533,7 +623,9 @@ test.describe('Workflow Integration', () => {
 
 			await metricsPage.chooseProcess('Single Approver');
 
-			await expect(page.getByText('1', {exact: true}).first()).toBeVisible();
+			await expect(
+				page.getByText('1', {exact: true}).first()
+			).toBeVisible();
 
 			// Unassign workflow for cleanup
 
@@ -620,13 +712,17 @@ test.describe('Workflow Integration', () => {
 			await workflowTasksPage.goto();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeVisible();
 
 			await workflowTasksPage.assignedToMyRolesLink.click();
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeVisible();
 
 			// Unassign workflow for cleanup
@@ -821,7 +917,8 @@ test.describe('Workflow Integration', () => {
 
 			// Submit an entry through the form's publish URL
 
-			const formSubmissionURL = await formBuilderPage.getFormSubmissionURL();
+			const formSubmissionURL =
+				await formBuilderPage.getFormSubmissionURL();
 
 			await page.goto(formSubmissionURL);
 
@@ -1016,7 +1113,9 @@ test.describe('Workflow Integration', () => {
 			);
 
 			await expect(
-				page.getByRole('heading', {name: objectDefinition.label['en_US']})
+				page.getByRole('heading', {
+					name: objectDefinition.label['en_US'],
+				})
 			).toBeHidden();
 		}
 	);
