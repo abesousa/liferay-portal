@@ -33,6 +33,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -52,6 +53,14 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -267,6 +276,84 @@ public class AttachmentManagerTest {
 		catch (FileSizeException fileSizeException) {
 			Assert.assertNotNull(fileSizeException);
 		}
+	}
+
+	@Test
+	public void testGetOrAddFileEntryConcurrent() throws Exception {
+		long groupId = TestPropsValues.getGroupId();
+
+		_attachmentManager.getOrAddFileEntry(
+			_objectField.getCompanyId(), RandomTestUtil.randomString(),
+			DLTestUtil.randomTextFileBytes(), "warmup.png", groupId,
+			_objectField.getObjectFieldId(),
+			ServiceContextTestUtil.getServiceContext());
+
+		User user = UserTestUtil.addUser();
+
+		int threadCount = 10;
+
+		CountDownLatch startLatch = new CountDownLatch(1);
+		CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+		List<Exception> exceptions = new CopyOnWriteArrayList<>();
+		List<FileEntry> fileEntries = new CopyOnWriteArrayList<>();
+
+		ExecutorService executorService = Executors.newFixedThreadPool(
+			threadCount);
+
+		for (int i = 0; i < threadCount; i++) {
+			String fileName = "file" + i + ".png";
+
+			executorService.submit(
+				new CompanyInheritableThreadLocalCallable<Runnable>(
+					() -> {
+						try {
+							startLatch.await();
+
+							ServiceContext serviceContext =
+								ServiceContextTestUtil.getServiceContext();
+
+							serviceContext.setUserId(user.getUserId());
+
+							fileEntries.add(
+								_attachmentManager.getOrAddFileEntry(
+									_objectField.getCompanyId(),
+									RandomTestUtil.randomString(),
+									DLTestUtil.randomTextFileBytes(), fileName,
+									groupId, _objectField.getObjectFieldId(),
+									serviceContext));
+						}
+						catch (Exception exception) {
+							exceptions.add(exception);
+						}
+						finally {
+							doneLatch.countDown();
+						}
+
+						return null;
+					}));
+		}
+
+		startLatch.countDown();
+
+		doneLatch.await(60, TimeUnit.SECONDS);
+
+		executorService.shutdown();
+
+		if (!exceptions.isEmpty()) {
+			throw exceptions.get(0);
+		}
+
+		Assert.assertEquals(
+			fileEntries.toString(), threadCount, fileEntries.size());
+
+		Set<Long> folderIds = new HashSet<>();
+
+		for (FileEntry fileEntry : fileEntries) {
+			folderIds.add(fileEntry.getFolderId());
+		}
+
+		Assert.assertEquals(folderIds.toString(), 1, folderIds.size());
 	}
 
 	private ObjectDefinition _addObjectDefinition(String acceptedFileExtensions)
