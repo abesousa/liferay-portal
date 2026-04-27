@@ -26,12 +26,15 @@ import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFieldSetting;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
@@ -39,6 +42,9 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProvider;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -52,6 +58,8 @@ import java.io.InputStream;
 
 import java.util.Map;
 import java.util.Objects;
+
+import org.hibernate.exception.ConstraintViolationException;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -129,22 +137,8 @@ public class AttachmentManagerImpl implements AttachmentManager {
 			ServiceContext serviceContext, long userId)
 		throws PortalException {
 
-		Repository repository = _getRepository(
-			groupId, portletId, serviceContext);
-
-		DLFolder dlFolder = _dlFolderLocalService.fetchFolder(
-			repository.getGroupId(), repository.getDlFolderId(),
-			String.valueOf(userId));
-
-		if (dlFolder != null) {
-			return dlFolder;
-		}
-
-		return _dlFolderLocalService.addFolder(
-			null, _userLocalService.getGuestUserId(companyId),
-			repository.getGroupId(), repository.getRepositoryId(), false,
-			repository.getDlFolderId(), String.valueOf(userId), null, false,
-			_getServiceContext(serviceContext));
+		return _getOrAddDLFolder(
+			companyId, groupId, portletId, serviceContext, userId);
 	}
 
 	@Override
@@ -326,6 +320,58 @@ public class AttachmentManagerImpl implements AttachmentManager {
 		return value * _FILE_LENGTH_MB;
 	}
 
+	private DLFolder _getOrAddDLFolder(
+			long companyId, long groupId, String portletId,
+			ServiceContext serviceContext, long userId)
+		throws PortalException {
+
+		while (true) {
+			try {
+				return TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> {
+						Repository repository = _getRepository(
+							groupId, portletId, serviceContext);
+
+						DLFolder dlFolder = _dlFolderLocalService.fetchFolder(
+							repository.getGroupId(), repository.getDlFolderId(),
+							String.valueOf(userId));
+
+						if (dlFolder != null) {
+							return dlFolder;
+						}
+
+						return _dlFolderLocalService.addFolder(
+							null, _userLocalService.getGuestUserId(companyId),
+							repository.getGroupId(),
+							repository.getRepositoryId(), false,
+							repository.getDlFolderId(), String.valueOf(userId),
+							null, false, _getServiceContext(serviceContext));
+					});
+			}
+			catch (Throwable throwable) {
+				Throwable causeThrowable = throwable;
+
+				while ((causeThrowable != null) &&
+					   !(causeThrowable instanceof
+						   ConstraintViolationException)) {
+
+					causeThrowable = causeThrowable.getCause();
+				}
+
+				if (causeThrowable != null) {
+					if (_log.isInfoEnabled()) {
+						_log.info("Unable to add DLFolder, retrying");
+					}
+
+					continue;
+				}
+
+				ReflectionUtil.throwException(throwable);
+			}
+		}
+	}
+
 	private Repository _getRepository(
 			long groupId, String portletId, ServiceContext serviceContext)
 		throws PortalException {
@@ -422,6 +468,13 @@ public class AttachmentManagerImpl implements AttachmentManager {
 	}
 
 	private static final long _FILE_LENGTH_MB = 1024 * 1024;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AttachmentManagerImpl.class);
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRES_NEW, new Class<?>[] {Exception.class});
 
 	@Reference
 	private DLAppLocalService _dlAppLocalService;
