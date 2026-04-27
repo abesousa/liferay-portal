@@ -39,6 +39,9 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProvider;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -52,6 +55,10 @@ import java.io.InputStream;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -129,22 +136,8 @@ public class AttachmentManagerImpl implements AttachmentManager {
 			ServiceContext serviceContext, long userId)
 		throws PortalException {
 
-		Repository repository = _getRepository(
-			groupId, portletId, serviceContext);
-
-		DLFolder dlFolder = _dlFolderLocalService.fetchFolder(
-			repository.getGroupId(), repository.getDlFolderId(),
-			String.valueOf(userId));
-
-		if (dlFolder != null) {
-			return dlFolder;
-		}
-
-		return _dlFolderLocalService.addFolder(
-			null, _userLocalService.getGuestUserId(companyId),
-			repository.getGroupId(), repository.getRepositoryId(), false,
-			repository.getDlFolderId(), String.valueOf(userId), null, false,
-			_getServiceContext(serviceContext));
+		return _getOrAddDLFolder(
+			companyId, groupId, portletId, serviceContext, userId);
 	}
 
 	@Override
@@ -326,6 +319,92 @@ public class AttachmentManagerImpl implements AttachmentManager {
 		return value * _FILE_LENGTH_MB;
 	}
 
+	private DLFolder _getOrAddDLFolder(
+			long companyId, long groupId, String portletId,
+			ServiceContext serviceContext, long userId)
+		throws PortalException {
+
+		String key = StringBundler.concat(
+			groupId, StringPool.POUND, portletId, StringPool.POUND, userId);
+
+		LockEntry lockEntry = _lockKeys.compute(
+			key,
+			(k, currentLockEntry) -> {
+				if (currentLockEntry == null) {
+					currentLockEntry = new LockEntry();
+				}
+
+				currentLockEntry._refCount++;
+
+				return currentLockEntry;
+			});
+
+		try {
+			boolean acquired;
+
+			try {
+				acquired = lockEntry._lock.tryLock(30, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException interruptedException) {
+				Thread.currentThread(
+				).interrupt();
+
+				throw new PortalException(interruptedException);
+			}
+
+			if (!acquired) {
+				throw new PortalException(
+					"Timeout waiting for DLFolder lock: " + key);
+			}
+
+			try {
+				return TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> {
+						Repository repository = _getRepository(
+							groupId, portletId, serviceContext);
+
+						DLFolder dlFolder = _dlFolderLocalService.fetchFolder(
+							repository.getGroupId(), repository.getDlFolderId(),
+							String.valueOf(userId));
+
+						if (dlFolder != null) {
+							return dlFolder;
+						}
+
+						return _dlFolderLocalService.addFolder(
+							null, _userLocalService.getGuestUserId(companyId),
+							repository.getGroupId(),
+							repository.getRepositoryId(), false,
+							repository.getDlFolderId(), String.valueOf(userId),
+							null, false, _getServiceContext(serviceContext));
+					});
+			}
+			catch (PortalException portalException) {
+				throw portalException;
+			}
+			catch (Throwable throwable) {
+				throw new PortalException(throwable);
+			}
+			finally {
+				lockEntry._lock.unlock();
+			}
+		}
+		finally {
+			_lockKeys.compute(
+				key,
+				(k, currentLockEntry) -> {
+					currentLockEntry._refCount--;
+
+					if (currentLockEntry._refCount == 0) {
+						return null;
+					}
+
+					return currentLockEntry;
+				});
+		}
+	}
+
 	private Repository _getRepository(
 			long groupId, String portletId, ServiceContext serviceContext)
 		throws PortalException {
@@ -423,6 +502,12 @@ public class AttachmentManagerImpl implements AttachmentManager {
 
 	private static final long _FILE_LENGTH_MB = 1024 * 1024;
 
+	private static final ConcurrentMap<String, LockEntry> _lockKeys =
+		new ConcurrentHashMap<>();
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRES_NEW, new Class<?>[] {Exception.class});
+
 	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
@@ -458,5 +543,12 @@ public class AttachmentManagerImpl implements AttachmentManager {
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	private static final class LockEntry {
+
+		private final ReentrantLock _lock = new ReentrantLock();
+		private int _refCount;
+
+	}
 
 }
