@@ -74,9 +74,9 @@
 		},
 		{
 			"active": true,
-			"description": "This agent builds or updates Liferay Content Pages from natural-language instructions, producing a full SitePage payload that can be persisted via the headless-admin-site API.",
+			"description": "This agent edits ONE existing Liferay Content Page in place, given its siteExternalReferenceCode and sitePageExternalReferenceCode, by reading the live page specification and writing back an updated one. It REQUIRES the site and the page to already exist. Do NOT invoke this agent to bootstrap a new site or to create new pages from scratch — Site Builder already produces complete page artifacts for that case.",
 			"externalReferenceCode": "L_PAGE_BUILDER",
-			"inputVariables": "instruction,current_page",
+			"inputVariables": "request,siteExternalReferenceCode,sitePageExternalReferenceCode",
 			"outputVariable": "response",
 			"r_accountToAIHubAgentDefinitions_accountEntryERC": "L_AI_HUB",
 			"title_i18n": {
