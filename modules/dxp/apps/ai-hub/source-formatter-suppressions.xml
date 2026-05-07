@@ -2,7 +2,8 @@
 
 <suppressions>
 	<source-check>
+		<suppress checks="JavaCompanyThreadLocalCheck" files="ai-hub-impl/src/main/java/com/liferay/ai/hub/internal/assistant/tool/SitePageTools\.java" />
+		<suppress checks="JavaCompanyThreadLocalCheck" files="ai-hub-impl/src/main/java/com/liferay/ai/hub/internal/assistant/tool/WorkflowNodeTools\.java" />
 		<suppress checks="JavaCompanyThreadLocalCheck" files="ai-hub-impl/src/main/java/com/liferay/ai/hub/internal/web/search/LiferayWebSearchEngine\.java" />
-		<suppress checks="JavaCompanyThreadLocalCheck" files="ai-hub-impl/src/main/java/com/liferay/ai/hub/internal/workflow/kaleo/runtime/node/AIDecisionNodeExecutor\.java" />
 	</source-check>
 </suppressions>
