@@ -46,6 +46,7 @@ import com.liferay.portal.workflow.kaleo.definition.Task;
 import com.liferay.portal.workflow.kaleo.definition.TaskForm;
 import com.liferay.portal.workflow.kaleo.definition.TaskFormReference;
 import com.liferay.portal.workflow.kaleo.definition.Timer;
+import com.liferay.portal.workflow.kaleo.definition.ToolNode;
 import com.liferay.portal.workflow.kaleo.definition.Transition;
 import com.liferay.portal.workflow.kaleo.definition.UpdateStatusAction;
 import com.liferay.portal.workflow.kaleo.definition.UserAssignment;
@@ -157,6 +158,12 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			definition.addNode(_parseLLM(llmElement));
 		}
 
+		List<Element> toolElements = rootElement.elements("tool");
+
+		for (Element toolElement : toolElements) {
+			definition.addNode(_parseToolNode(toolElement));
+		}
+
 		List<Element> stateElements = rootElement.elements("state");
 
 		for (Element stateElement : stateElements) {
@@ -172,7 +179,7 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 		_parseTransitions(
 			definition, aiDecisionElements, conditionElements, forkElements,
 			joinElements, joinXorElements, llmElements, stateElements,
-			taskElements);
+			taskElements, toolElements);
 
 		return definition;
 	}
@@ -945,6 +952,41 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 		node.setTimers(timers);
 	}
 
+	private ToolNode _parseToolNode(Element toolElement) {
+		ToolNode toolNode = new ToolNode(
+			StringUtil.trim(toolElement.elementText("description")),
+			toolElement.elementTextTrim("name"));
+
+		toolNode.setLabelMap(_parseLabels(toolElement.element("labels")));
+
+		toolNode.setMetadata(toolElement.elementTextTrim("metadata"));
+
+		Set<Setting> settings = new HashSet<>();
+
+		String toolName = toolElement.elementTextTrim("tool-name");
+
+		if (toolName != null) {
+			settings.add(new Setting("toolName", toolName));
+		}
+
+		String inputVariables = toolElement.elementTextTrim("input-variables");
+
+		if (inputVariables != null) {
+			settings.add(new Setting("inputVariables", inputVariables));
+		}
+
+		String outputVariables = toolElement.elementTextTrim(
+			"output-variables");
+
+		if (outputVariables != null) {
+			settings.add(new Setting("outputVariables", outputVariables));
+		}
+
+		toolNode.setSettings(settings);
+
+		return toolNode;
+	}
+
 	private void _parseTransition(Definition definition, Element nodeElement)
 		throws Exception {
 
@@ -996,7 +1038,7 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			List<Element> conditionElements, List<Element> forkElements,
 			List<Element> joinElements, List<Element> joinXorElements,
 			List<Element> llmElements, List<Element> stateElements,
-			List<Element> taskElements)
+			List<Element> taskElements, List<Element> toolElements)
 		throws Exception {
 
 		for (Element aiDecisionElement : aiDecisionElements) {
@@ -1029,6 +1071,10 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 
 		for (Element taskElement : taskElements) {
 			_parseTransition(definition, taskElement);
+		}
+
+		for (Element toolElement : toolElements) {
+			_parseTransition(definition, toolElement);
 		}
 	}
 
