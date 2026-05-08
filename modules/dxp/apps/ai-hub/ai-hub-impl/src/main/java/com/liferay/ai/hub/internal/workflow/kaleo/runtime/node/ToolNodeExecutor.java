@@ -8,6 +8,7 @@ package com.liferay.ai.hub.internal.workflow.kaleo.runtime.node;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.ToolsUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.VariablesUtil;
 import com.liferay.ai.hub.rest.resource.v1_0.util.SseUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -92,13 +94,17 @@ public class ToolNodeExecutor extends BaseNodeExecutor {
 			String result = _invokeTool(
 				tools, toolName, kaleoNodeSettingValues, workflowContext);
 
-			JSONArray outputVariables = VariablesUtil.getVariablesJSONArray(
-				"outputVariables", kaleoNodeSettingValues);
+			JSONArray outputVariablesJSONArray =
+				VariablesUtil.getVariablesJSONArray(
+					"outputVariables", kaleoNodeSettingValues);
 
-			if ((outputVariables != null) && (outputVariables.length() > 0)) {
-				JSONObject outputVar = outputVariables.getJSONObject(0);
+			if ((outputVariablesJSONArray != null) &&
+				(outputVariablesJSONArray.length() > 0)) {
 
-				workflowContext.put(outputVar.getString("name"), result);
+				JSONObject outputJSONObject =
+					outputVariablesJSONArray.getJSONObject(0);
+
+				workflowContext.put(outputJSONObject.getString("name"), result);
 			}
 
 			SseUtil.send(
@@ -109,14 +115,16 @@ public class ToolNodeExecutor extends BaseNodeExecutor {
 
 			if (_log.isInfoEnabled()) {
 				_log.info(
-					"ToolNodeExecutor executed tool '" + toolName +
-						"' on node '" + currentKaleoNode.getName() + "'");
+					StringBundler.concat(
+						"ToolNodeExecutor executed tool \"", toolName,
+						"\" on node \"", currentKaleoNode.getName(), "\""));
 			}
 		}
 		catch (Exception exception) {
 			_log.error(
-				"ToolNodeExecutor failed to execute tool '" + toolName +
-					"' on node '" + currentKaleoNode.getName() + "'",
+				StringBundler.concat(
+					"ToolNodeExecutor failed to execute tool \"", toolName,
+					"\" on node \"", currentKaleoNode.getName(), "\""),
 				exception);
 
 			throw new PortalException(exception);
@@ -157,31 +165,31 @@ public class ToolNodeExecutor extends BaseNodeExecutor {
 			Map<String, Serializable> workflowContext)
 		throws Exception {
 
-		JSONArray inputVariables = VariablesUtil.getVariablesJSONArray(
+		JSONArray inputVariablesJSONArray = VariablesUtil.getVariablesJSONArray(
 			"inputVariables", kaleoNodeSettingValues);
 
 		List<String> args = new ArrayList<>();
 
-		if (inputVariables != null) {
-			for (int i = 0; i < inputVariables.length(); i++) {
-				JSONObject inputVar = inputVariables.getJSONObject(i);
+		if (inputVariablesJSONArray != null) {
+			for (int i = 0; i < inputVariablesJSONArray.length(); i++) {
+				JSONObject inputJSONObject =
+					inputVariablesJSONArray.getJSONObject(i);
 
-				String name = inputVar.getString("name");
+				String name = inputJSONObject.getString("name");
 
-				args.add(
-					GetterUtil.getString(workflowContext.get(name)));
+				args.add(GetterUtil.getString(workflowContext.get(name)));
 			}
 		}
 
 		for (Object tool : tools) {
-			for (Method method : tool.getClass().getMethods()) {
+			Class<?> toolClass = tool.getClass();
+
+			for (Method method : toolClass.getMethods()) {
 				Tool toolAnnotation = method.getAnnotation(Tool.class);
 
-				if (toolAnnotation == null) {
-					continue;
-				}
+				if ((toolAnnotation == null) ||
+					!Objects.equals(method.getName(), toolName)) {
 
-				if (!method.getName().equals(toolName)) {
 					continue;
 				}
 
@@ -198,7 +206,7 @@ public class ToolNodeExecutor extends BaseNodeExecutor {
 		}
 
 		throw new IllegalArgumentException(
-			"Tool method '" + toolName + "' not found");
+			StringBundler.concat("Tool method \"", toolName, "\" not found"));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

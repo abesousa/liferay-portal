@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.util.Validator;
 
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.vertexai.gemini.VertexAiGeminiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -27,36 +28,36 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * @author Mahmoud Tayem
  */
-public class CatalogBuilderTools {
+public class FragmentsCatalogTools {
 
-	public CatalogBuilderTools(long companyId) {
+	public FragmentsCatalogTools(long companyId) {
 		_companyId = companyId;
 	}
 
 	@Tool(
 		"Build a descriptive fragment catalog from raw fragment data using an LLM"
 	)
-	public String buildCatalog(
+	public String generateFragmentsCatalog(
 		@P("Site external reference code") String siteExternalReferenceCode,
-		@P("Raw fragments JSON") String rawFragments) {
+		@P("Raw fragments JSON") String fragmentsJSON) {
 
-		String cached = _catalogCache.get(siteExternalReferenceCode);
+		String cachedCatalog = _catalogCache.get(siteExternalReferenceCode);
 
-		if (cached != null) {
+		if (cachedCatalog != null) {
 			if (_log.isInfoEnabled()) {
 				_log.info(
 					"Returning cached fragment catalog for site " +
 						siteExternalReferenceCode);
 			}
 
-			return cached;
+			return cachedCatalog;
 		}
 
 		try {
-			String catalog = _callLLM(rawFragments);
+			String generatedCatalog = _callLLM(fragmentsJSON);
 
-			if (Validator.isNotNull(catalog)) {
-				_catalogCache.put(siteExternalReferenceCode, catalog);
+			if (Validator.isNotNull(generatedCatalog)) {
+				_catalogCache.put(siteExternalReferenceCode, generatedCatalog);
 
 				if (_log.isInfoEnabled()) {
 					_log.info(
@@ -65,51 +66,55 @@ public class CatalogBuilderTools {
 				}
 			}
 
-			return catalog;
+			return generatedCatalog;
 		}
 		catch (Exception exception) {
 			return ReflectionUtil.throwException(exception);
 		}
 	}
 
-	private String _callLLM(String rawFragments) throws Exception {
-		VertexAiGeminiStreamingChatModel model =
+	private String _callLLM(String fragmentsJSON) throws Exception {
+		VertexAiGeminiStreamingChatModel vertexAiGeminiStreamingChatModel =
 			VertexAiGeminiUtil.createVertexAiGeminiStreamingChatModel(
 				_companyId);
 
 		try {
-			CatalogAssistant assistant = AiServices.builder(
+			CatalogAssistant catalogAssistant = AiServices.builder(
 				CatalogAssistant.class
 			).streamingChatModel(
-				model
+				vertexAiGeminiStreamingChatModel
 			).systemMessageProvider(
-				memoryId -> _CATALOG_BUILDER_PROMPT
+				memoryId -> _FRAGMENTS_CATALOG_PROMPT
 			).build();
 
-			CompletableFuture<String> future = new CompletableFuture<>();
+			CompletableFuture<String> completableFuture =
+				new CompletableFuture<>();
 
-			TokenStream tokenStream = assistant.buildCatalog(rawFragments);
+			TokenStream tokenStream = catalogAssistant.generateFragmentsCatalog(
+				fragmentsJSON);
 
 			tokenStream.onCompleteResponse(
-				(ChatResponse response) -> future.complete(
-					response.aiMessage(
-					).text())
+				(ChatResponse response) -> {
+					AiMessage aiMessage = response.aiMessage();
+
+					completableFuture.complete(aiMessage.text());
+				}
 			).onError(
-				future::completeExceptionally
+				completableFuture::completeExceptionally
 			).start();
 
-			return future.get();
+			return completableFuture.get();
 		}
 		finally {
-			model.close();
+			vertexAiGeminiStreamingChatModel.close();
 		}
 	}
 
-	private static final String _CATALOG_BUILDER_PROMPT = StringUtil.read(
-		CatalogBuilderTools.class, "dependencies/CatalogBuilderTools.md");
+	private static final String _FRAGMENTS_CATALOG_PROMPT = StringUtil.read(
+		FragmentsCatalogTools.class, "dependencies/FragmentsCatalogPrompt.md");
 
 	private static final Log _log = LogFactoryUtil.getLog(
-		CatalogBuilderTools.class);
+		FragmentsCatalogTools.class);
 
 	private static final Map<String, String> _catalogCache =
 		new ConcurrentHashMap<>();
@@ -118,7 +123,8 @@ public class CatalogBuilderTools {
 
 	private interface CatalogAssistant {
 
-		public TokenStream buildCatalog(@UserMessage String rawFragments);
+		public TokenStream generateFragmentsCatalog(
+			@UserMessage String fragmentsJSON);
 
 	}
 
