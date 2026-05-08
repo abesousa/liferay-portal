@@ -20,6 +20,7 @@ import com.liferay.portal.security.service.access.policy.model.SAPEntry;
 import com.liferay.portal.security.service.access.policy.service.SAPEntryLocalService;
 
 import java.util.Collections;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,25 +41,50 @@ public class AIHubCellSAPEntryPortalInstanceLifecycleListener
 		}
 
 		try {
+			String allowedServiceSignatures = StringBundler.concat(
+				"com.liferay.ai.hub.cell.rest.internal.resource.v1_0.",
+				"AuthorizationTokenResourceImpl#postAuthorizationToken\n",
+				"com.liferay.headless.admin.site.internal.resource.v1_0.",
+				"PageSpecificationResourceImpl#getSitePageSpecification\n",
+				"com.liferay.headless.admin.site.internal.resource.v1_0.",
+				"PageSpecificationResourceImpl#putSitePageSpecification\n",
+				"com.liferay.headless.admin.site.internal.resource.v1_0.",
+				"SitePageResourceImpl#getSiteSitePagePermissionsPage\n",
+				"com.liferay.object.rest.internal.resource.v1_0.",
+				"ObjectEntryResourceImpl#getByExternalReferenceCode\n",
+				"com.liferay.object.rest.internal.resource.v1_0.",
+				"ObjectEntryResourceImpl#getObjectEntry\n",
+				"com.liferay.object.rest.internal.resource.v1_0.",
+				"ObjectEntryResourceImpl#patchByExternalReferenceCode\n",
+				"com.liferay.object.rest.internal.resource.v1_0.",
+				"ObjectEntryResourceImpl#patchObjectEntry\n",
+				"com.liferay.object.rest.internal.resource.v1_0.",
+				"ObjectEntryResourceImpl#postObjectEntry\n",
+				"com.liferay.object.rest.internal.resource.v1_0.",
+				"ObjectEntryResourceImpl#putObjectEntry\n",
+				"com.liferay.portal.search.rest.internal.resource.v1_0.",
+				"SearchResultResourceImpl#getSearchPage");
+
 			SAPEntry sapEntry = _sapEntryLocalService.fetchSAPEntry(
 				company.getCompanyId(), _SAP_ENTRY_NAME);
 
 			if (sapEntry != null) {
+				if (!Objects.equals(
+						sapEntry.getAllowedServiceSignatures(),
+						allowedServiceSignatures)) {
+
+					sapEntry.setAllowedServiceSignatures(
+						allowedServiceSignatures);
+
+					_sapEntryLocalService.updateSAPEntry(sapEntry);
+				}
+
 				return;
 			}
 
 			_sapEntryLocalService.addSAPEntry(
 				_userLocalService.getGuestUserId(company.getCompanyId()),
-				StringBundler.concat(
-					"com.liferay.ai.hub.cell.rest.internal.resource.v1_0.",
-					"AuthorizationTokenResourceImpl#postAuthorizationToken\n",
-					"com.liferay.headless.admin.site.internal.resource.v1_0.",
-					"BaseSitePageResourceImpl#getSiteSitePage\n",
-					"com.liferay.headless.admin.site.internal.resource.v1_0.",
-					"BaseSitePageResourceImpl#getSiteSitePagePermissionsPage\n",
-					"com.liferay.portal.search.rest.internal.resource.v1_0.",
-					"SearchResultResourceImpl#getSearchPage"),
-				true, true, _SAP_ENTRY_NAME,
+				allowedServiceSignatures, true, true, _SAP_ENTRY_NAME,
 				Collections.singletonMap(
 					LocaleUtil.getDefault(), _SAP_ENTRY_NAME),
 				new ServiceContext());
