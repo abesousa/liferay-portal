@@ -62,7 +62,7 @@ public class AgentUtil {
 			workflowInstance.getWorkflowInstanceId(), completableFuture);
 
 		Map<String, Serializable> workflowContext = completableFuture.get(
-			1, TimeUnit.MINUTES);
+			5, TimeUnit.MINUTES);
 
 		if (workflowContext.containsKey("exception")) {
 			throw (Exception)workflowContext.get("exception");

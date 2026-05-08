@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
@@ -55,6 +56,29 @@ public class MessageResourceImpl extends BaseMessageResourceImpl {
 			message.getChatbotExternalReferenceCode(),
 			contextCompany.getCompanyId(), contextUser);
 
+		String messageTextString = message.getText();
+
+		if ((message.getContext() != null) &&
+			!message.getContext(
+			).isEmpty()) {
+
+			StringBuilder sb = new StringBuilder(messageTextString);
+
+			sb.append("\n\n# Context\n");
+
+			for (Map.Entry<String, ?> entry :
+					message.getContext(
+					).entrySet()) {
+
+				sb.append(entry.getKey());
+				sb.append(": ");
+				sb.append(entry.getValue());
+				sb.append("\n");
+			}
+
+			messageTextString = sb.toString();
+		}
+
 		_supervisorAgent.invoke(
 			AgentContext.builder(
 			).accessToken(
@@ -72,7 +96,12 @@ public class MessageResourceImpl extends BaseMessageResourceImpl {
 			).groupId(
 				AccountEntryUtil.getUserAccountEntryGroupId(user.getUserId())
 			).input(
-				Map.of("message", message.getText())
+				HashMapBuilder.<String, Object>putAll(
+					(message.getContext() != null) ? message.getContext() :
+						Map.of()
+				).put(
+					"message", messageTextString
+				).build()
 			).instructionDefinitionScope(
 				message.getInstructionDefinitionScopeAsString()
 			).serviceContext(

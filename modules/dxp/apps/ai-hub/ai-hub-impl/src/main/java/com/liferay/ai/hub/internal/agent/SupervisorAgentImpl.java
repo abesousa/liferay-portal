@@ -45,6 +45,7 @@ import dev.langchain4j.model.vertexai.gemini.VertexAiGeminiChatModel;
 import java.lang.reflect.InvocationTargetException;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -133,6 +134,12 @@ public class SupervisorAgentImpl implements SupervisorAgent {
 
 	private String _getFilterString(AgentContext agentContext)
 		throws Exception {
+
+		if (Objects.equals(
+				agentContext.getInstructionDefinitionScope(), "pageEditor")) {
+
+			return _FILTER_PAGE_EDITOR;
+		}
 
 		if (Validator.isNull(agentContext.getChatbotExternalReferenceCode())) {
 			return "(active eq true)";
@@ -248,6 +255,9 @@ public class SupervisorAgentImpl implements SupervisorAgent {
 			supervisorAgent.invoke(message), "Chat Message Sent", null,
 			agentContext.getSseEventSinkKey());
 	}
+
+	private static final String _FILTER_PAGE_EDITOR =
+		"(active eq true) and (externalReferenceCode eq 'L_PAGE_BUILDER')";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SupervisorAgentImpl.class);
