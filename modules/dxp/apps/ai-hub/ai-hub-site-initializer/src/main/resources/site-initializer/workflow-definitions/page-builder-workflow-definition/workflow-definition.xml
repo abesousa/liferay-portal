@@ -7,14 +7,146 @@
 >
 	<name>Page Builder</name>
 	<version>1</version>
+	<tool>
+		<name>fragmentLoader</name>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						300,
+						200
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Fragment Loader
+			</label>
+		</labels>
+		<tool-name>getFragments</tool-name>
+		<input-variables><![CDATA[[{"name":"siteExternalReferenceCode","type":"string"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"rawFragments","type":"string"}]]]></output-variables>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Catalog Builder
+					</label>
+				</labels>
+				<name>catalogBuilder</name>
+				<target>catalogBuilder</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</tool>
+	<tool>
+		<name>catalogBuilder</name>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						300,
+						275
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Catalog Builder
+			</label>
+		</labels>
+		<tool-name>buildCatalog</tool-name>
+		<input-variables><![CDATA[[{"name":"siteExternalReferenceCode","type":"string"},{"name":"rawFragments","type":"string"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"fragmentCatalog","type":"string"}]]]></output-variables>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Page Fetcher
+					</label>
+				</labels>
+				<name>pageFetcher</name>
+				<target>pageFetcher</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</tool>
+	<tool>
+		<name>pageFetcher</name>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						300,
+						350
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Page Fetcher
+			</label>
+		</labels>
+		<tool-name>getPageSpecification</tool-name>
+		<input-variables><![CDATA[[{"name":"siteExternalReferenceCode","type":"string"},{"name":"sitePageExternalReferenceCode","type":"string"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"currentPageSpecification","type":"string"}]]]></output-variables>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Page Spec to IR
+					</label>
+				</labels>
+				<name>pageSpecToIR</name>
+				<target>pageSpecToIR</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</tool>
+	<tool>
+		<name>pageSpecToIR</name>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						300,
+						500
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Page Spec to IR
+			</label>
+		</labels>
+		<tool-name>convertToIR</tool-name>
+		<input-variables><![CDATA[[{"name":"currentPageSpecification","type":"string"},{"name":"pageTitle","type":"string"},{"name":"locale","type":"string"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"currentPageIR","type":"string"}]]]></output-variables>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Page Builder
+					</label>
+				</labels>
+				<name>pageBuilder</name>
+				<target>pageBuilder</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</tool>
 	<llm>
 		<name>pageBuilder</name>
 		<metadata>
 			<![CDATA[
 				{
 					"xy": [
-						276,
-						242
+						300,
+						650
 					]
 				}
 			]]>
@@ -28,11 +160,15 @@
 			<![CDATA[
 [
 	{
-		"name": "instruction",
+		"name": "currentPageIR",
 		"type": "string"
 	},
 	{
-		"name": "current_page",
+		"name": "fragmentCatalog",
+		"type": "string"
+	},
+	{
+		"name": "request",
 		"type": "string"
 	}
 ]
@@ -42,510 +178,115 @@
 			<![CDATA[
 [
 	{
-		"name": "response",
+		"name": "updatedPageIR",
 		"type": "string"
 	}
 ]
 ]]>
 		</output-variables>
 		<prompt>
-			<![CDATA[# Role
+			<![CDATA[You edit a page IR JSON. Given an instruction and current IR, output the FULL updated IR JSON. No markdown, no prose — raw JSON only.
 
-You are a page-builder for Liferay. You receive a **natural-language
-instruction** (e.g. "Add a banner", "Add 3 cards with titles X/Y/Z", "Make the
-banner heading bigger") and an optional **current_page** JSON. You produce ONE
-call to the tool `update_page(body)` with a full SitePage payload.
+IR: {"title":"…","erc":"…","locale":"en-US","elements":[Container|Grid|Fragment]}
 
-# Tool contract
+Container: {"type":"container","erc":"<id>","contentDisplay?":"flex-row|flex-column","widthType?":"fixed","padding?":{"top":5,"bottom":5,"left":5,"right":5},"margin?":{"top":0,"bottom":0},"backgroundColor?":"<color>","textColor?":"<color>","textAlign?":"center|left|right","children":[…]}
+Only type+erc required. Default padding=5, contentDisplay=block.
 
-`update_page(body)` performs one of:
-- `POST /o/headless-admin-site/v1.0/sites/{siteERC}/site-pages?privateLayout=false&nestedFields=pageSpecifications` (when `current_page` is null)
-- `PATCH /o/headless-admin-site/v1.0/sites/{siteERC}/site-pages/{pageERC}?privateLayout=false&nestedFields=pageSpecifications` (otherwise)
+Grid: {"type":"grid","erc":"<id>","gutters?":true,"modulesPerRow?":{"desktop":3,"tablet":2,"mobile":1},"columns":[{"size":4,"children":[…]}]}
+Column size 1–12. N equal cols → size=floor(12/N).
 
-`?nestedFields=pageSpecifications` is REQUIRED — without it the server silently
-drops the element tree.
+Fragment: {"type":"fragment","erc":"<id>","source":"ootb|custom","key":"<name>","content?":{"<editableId>":<val>},"style?":{"backgroundColor":"<color>","textAlign":"center","padding":{"top":3}}}
 
-# Required page shape
+OOTB fragments: heading→element-text(text), paragraph→element-text(richText), card→01-img(image)+02-title(richText)+03-content(richText)+04-link(link), image→image-square(image), button→element-text(text)+element-link(link), video→element-video(link), spacer, separator.
 
-```json
-{
-	"externalReferenceCode": "<PAGE_ERC>",
-	"friendlyUrlPath_i18n": {
-		"en-US": "/..."
-	},
-	"name_i18n": {
-		"en-US": "..."
-	},
-	"pageSettings": {
-		"type": "ContentPageSettings"
-	},
-	"pageSpecifications": [
-		{
-			"draftContentPageSpecificationExternalReferenceCode": "<PAGE_ERC>-draft",
-			"externalReferenceCode": "<PAGE_ERC>",
-			"pageExperiences": [
-				{
-					"externalReferenceCode": "<PAGE_ERC>-default",
-					"key": "DEFAULT",
-					"name_i18n": {
-						"en-US": "Default"
-					},
-					"pageElements": [
-					],
-					"priority": 0
-				}
-			],
-			"status": "Approved",
-			"type": "ContentPageSpecification"
-		},
-		{
-			"externalReferenceCode": "<PAGE_ERC>-draft",
-			"pageExperiences": [
-				{
-					"externalReferenceCode": "<PAGE_ERC>-draft-default",
-					"key": "DEFAULT",
-					"name_i18n": {
-						"en-US": "Default"
-					},
-					"pageElements": [
-					],
-					"priority": 0
-				}
-			],
-			"status": "Draft",
-			"type": "ContentPageSpecification"
-		}
-	],
-	"type": "ContentPage"
-}
-```
+Custom fragments: use externalReferenceCode from fragmentCatalog as key, source="custom", editables from catalog.
 
-Hard rules (each triggers an `UnsupportedOperationException` if broken):
-- Exactly 2 ContentPageSpecifications: one `status: "Approved"` (published), one
-`status: "Draft"`.
-- Published spec's ERC MUST equal the SitePage's ERC.
-- Published spec's `draftContentPageSpecificationExternalReferenceCode` MUST
-equal the draft spec's ERC.
-- Each `pageExperience` ERC MUST equal `<specERC>-default` (matches the
-auto-created DEFAULT SegmentsExperience).
-- PATCH replaces `pageElements[]` wholesale — always send the FULL tree, not a
-diff.
+Values: text="string", richText="<p>html</p>", image={"url":"…"} or "url", link={"text":"…","url":"…","target?":"blank"} or "url".
 
-# Element tree
+Colors: primary,secondary,success,danger,warning,info,dark,light,white,black,gray000–gray900. Spacing: 0–10.
 
-Each page element:
+ERCs: new elements get stable names (heading-1, card-1, section-1, grid-cards). Reuse existing ERCs on unchanged elements.
 
-```json
-{
-	"externalReferenceCode": "<unique>",
-	"pageElementDefinition": {
-		"type": "..."
-	},
-	"pageElements": [
-	],
-	"parentExternalReferenceCode": "<parent ERC or omitted at root>",
-	"position": "<0-based index among siblings>"
-}
-```
+Rules: output FULL IR (not diff), preserve existing ERCs, only add Container/Grid when layout requested, only use listed fragment keys, error→{"_error":"reason"}.
 
-Type map (`pageElementDefinition.type` is the discriminator):
-
-| type | role | children | key fields |
-|---|---|---|---|
-| `Container` | section wrapper | any | `layout`, `fragmentViewports[]` |
-| `Grid` | row | `Module` only | `numberOfModules`, `gutters`, `gridViewports[]` |
-| `Module` | column inside a Grid | any | `moduleViewports[].moduleViewportDefinition.size` (1–12) |
-| `BasicFragment` | fragment instance | none | `fragmentInstance` |
-
-Conversion for 12-col grid: N equal cards → each Module size = floor(12/N).
-
-# Styling
-
-Viewport ids (TitleCase enum): `Desktop`, `Tablet`, `LandscapeMobile`,
-`PortraitMobile`.
-
-`FragmentViewportStyle` (on Container and BasicFragment via
-`fragmentViewports[]`): `backgroundColor`, `borderColor`, `borderRadius`,
-`borderWidth`, `fontFamily`, `fontSize`, `fontWeight`, `height`, `hidden`,
-`margin{Top|Bottom|Left|Right}`, `max{Height|Width}`, `min{Height|Width}`,
-`opacity`, `overflow`, `padding{Top|Bottom|Left|Right}`, `shadow`,
-`textAlign`, `textColor`, `width`.
-
-Token values:
-- Spacers (padding/margin): string `"0"`–`"10"` or `"auto"` → `var(--spacer-N)`.
-- Colors: `primaryColor`, `secondaryColor`, `successColor`, `dangerColor`,
-`warningColor`, `infoColor`, `darkColor`, `lightColor`, `whiteColor`,
-`blackColor`, `gray000Color`…`gray900Color`.
-- Font sizes: `h1FontSize`…`h6FontSize`, `fontSizeBase`, `fontSizeSmall`,
-`displayFontSize`.
-- Font weight: `fontWeightLight`, `fontWeightNormal`, `fontWeightBold`.
-- textAlign: `"center"`, `"left"`, `"right"`, `"start"`, `"end"`.
-
-Container `layout` (no padding/margin here — those go in fragmentViewports):
-`align` (`Baseline|Center|End|None|Start|Stretch`), `contentDisplay`
-(`Block|FlexColumn|FlexRow`), `flexWrap` (`NoWrap|Wrap|WrapReverse`), `justify`
-(`Center|End|None|SpaceAround|SpaceBetween|Start`), `widthType` (`Fixed|Fluid`).
-
-Grid `gridViewportDefinition`: `modulesPerRow` (int), `verticalAlignment`
-(`Top|Middle|Bottom`).
-
-# Fragment catalog
-
-Set `fragmentInstance.fragmentReference.defaultFragmentKey` to one of:
-- `BASIC_COMPONENT-heading` — editable `element-text` (Text)
-- `BASIC_COMPONENT-paragraph` — editable `element-text` (RichText)
-- `BASIC_COMPONENT-card` — editables `01-img` (Image), `02-title` (RichText),
-`03-content` (RichText), `04-link` (Link)
-- `BASIC_COMPONENT-image` — editable `image-square` (Image)
-- `BASIC_COMPONENT-button`, `BASIC_COMPONENT-spacer`,
-`BASIC_COMPONENT-separator`, `BASIC_COMPONENT-video`
-
-BasicFragment skeleton:
-
-```json
-{
-	"pageElementDefinition": {
-		"fragmentInstance": {
-			"fragmentEditableElements": [
-			],
-			"fragmentInstanceExternalReferenceCode": "<unique>",
-			"fragmentReference": {
-				"defaultFragmentKey": "BASIC_COMPONENT-<name>",
-				"fragmentReferenceType": "DefaultFragmentReference"
-			},
-			"fragmentViewports": [
-				{
-					"fragmentViewportStyle": {
-					},
-					"id": "Desktop"
-				}
-			]
-		},
-		"type": "BasicFragment"
-	}
-}
-```
-
-# Editable element value shapes
-
-Text (for `editable-type="text"` — used by heading):
-
-```json
-{
-	"fragmentEditableElementValue": {
-		"fragmentLinkTextValue": {
-			"textFragmentValue": {
-				"fragmentInlineValue": {
-					"value_i18n": {
-						"en-US": "..."
-					}
-				},
-				"type": "Inline"
-			}
-		},
-		"type": "Text"
-	},
-	"id": "element-text"
-}
-```
-
-RichText (for `editable-type="rich-text"` — used by paragraph, card
-title/content):
-
-```json
-{
-	"fragmentEditableElementValue": {
-		"htmlFragmentValue": {
-			"fragmentInlineValue": {
-				"value_i18n": {
-					"en-US": "..."
-				}
-			},
-			"type": "Inline"
-		},
-		"type": "RichText"
-	},
-	"id": "<editable-id>"
-}
-```
-
-# Naming scheme
-
-Give every element/experience/spec a stable ERC so updates are idempotent:
-- SitePage: slugify the page name (`my-landing`)
-- Specs: `<PAGE_ERC>` (published), `<PAGE_ERC>-draft` (draft)
-- Experiences: `<SPEC_ERC>-default`
-- Containers: `banner`, `section-<n>`
-- Grids: `grid-<n>` (or `grid-cards`)
-- Modules: `mod-<grid>-<i>` (1-based)
-- Fragments: `<purpose>-<i>` (`heading-1`, `card-1`, `card-1-title` if nested)
-- Fragment instances: `<elementERC>-inst`
-
-When modifying, reuse existing ERCs — don't regenerate them.
-
-# Worked examples
-
-## Input: "Create a page called 'My Landing' with a banner saying 'Hello World'"
-
-current_page: null
-
-Output (POST):
-
-```json
-{
-	"externalReferenceCode": "my-landing",
-	"friendlyUrlPath_i18n": {
-		"en-US": "/my-landing"
-	},
-	"name_i18n": {
-		"en-US": "My Landing"
-	},
-	"pageSettings": {
-		"type": "ContentPageSettings"
-	},
-	"pageSpecifications": [
-		{
-			"draftContentPageSpecificationExternalReferenceCode": "my-landing-draft",
-			"externalReferenceCode": "my-landing",
-			"pageExperiences": [
-				{
-					"externalReferenceCode": "my-landing-default",
-					"key": "DEFAULT",
-					"name_i18n": {
-						"en-US": "Default"
-					},
-					"pageElements": [
-						{
-							"externalReferenceCode": "banner",
-							"pageElementDefinition": {
-								"fragmentViewports": [
-									{
-										"fragmentViewportStyle": {
-											"backgroundColor": "primaryColor",
-											"marginBottom": "5",
-											"paddingBottom": "9",
-											"paddingLeft": "5",
-											"paddingRight": "5",
-											"paddingTop": "9",
-											"textAlign": "center",
-											"textColor": "whiteColor"
-										},
-										"id": "Desktop"
-									}
-								],
-								"indexed": true,
-								"layout": {
-									"align": "Center",
-									"contentDisplay": "Block",
-									"justify": "Center",
-									"widthType": "Fluid"
-								},
-								"type": "Container"
-							},
-							"pageElements": [
-								{
-									"externalReferenceCode": "banner-heading",
-									"pageElementDefinition": {
-										"fragmentInstance": {
-											"fragmentEditableElements": [
-												{
-													"fragmentEditableElementValue": {
-														"fragmentLinkTextValue": {
-															"textFragmentValue": {
-																"fragmentInlineValue": {
-																	"value_i18n": {
-																		"en-US": "Hello World"
-																	}
-																},
-																"type": "Inline"
-															}
-														},
-														"type": "Text"
-													},
-													"id": "element-text"
-												}
-											],
-											"fragmentInstanceExternalReferenceCode": "banner-heading-inst",
-											"fragmentReference": {
-												"defaultFragmentKey": "BASIC_COMPONENT-heading",
-												"fragmentReferenceType": "DefaultFragmentReference"
-											},
-											"fragmentViewports": [
-												{
-													"fragmentViewportStyle": {
-														"fontSize": "h1FontSize",
-														"fontWeight": "fontWeightBold",
-														"textAlign": "center",
-														"textColor": "whiteColor"
-													},
-													"id": "Desktop"
-												}
-											]
-										},
-										"type": "BasicFragment"
-									},
-									"pageElements": [
-									],
-									"parentExternalReferenceCode": "banner",
-									"position": 0
-								}
-							],
-							"position": 0
-						}
-					],
-					"priority": 0
-				}
-			],
-			"status": "Approved",
-			"type": "ContentPageSpecification"
-		},
-		{
-			"externalReferenceCode": "my-landing-draft",
-			"pageExperiences": [
-				{
-					"externalReferenceCode": "my-landing-draft-default",
-					"key": "DEFAULT",
-					"name_i18n": {
-						"en-US": "Default"
-					},
-					"pageElements": [
-					],
-					"priority": 0
-				}
-			],
-			"status": "Draft",
-			"type": "ContentPageSpecification"
-		}
-	],
-	"type": "ContentPage"
-}
-```
-
-## Input: "Add 3 cards under the banner"
-
-current_page: the page above (banner only)
-
-Output (PATCH with banner kept, grid appended):
-
-```json
-{
-	"externalReferenceCode": "my-landing",
-	"pageSpecifications": [
-		{
-			"draftContentPageSpecificationExternalReferenceCode": "my-landing-draft",
-			"externalReferenceCode": "my-landing",
-			"pageExperiences": [
-				{
-					"externalReferenceCode": "my-landing-default",
-					"key": "DEFAULT",
-					"name_i18n": {
-						"en-US": "Default"
-					},
-					"pageElements": [
-						{
-							"externalReferenceCode": "grid-cards",
-							"pageElementDefinition": {
-								"gridViewports": [
-									{
-										"gridViewportDefinition": {
-											"modulesPerRow": 3,
-											"verticalAlignment": "Top"
-										},
-										"id": "Desktop"
-									},
-									{
-										"gridViewportDefinition": {
-											"modulesPerRow": 2,
-											"verticalAlignment": "Top"
-										},
-										"id": "Tablet"
-									},
-									{
-										"gridViewportDefinition": {
-											"modulesPerRow": 1,
-											"verticalAlignment": "Top"
-										},
-										"id": "PortraitMobile"
-									}
-								],
-								"gutters": true,
-								"indexed": true,
-								"numberOfModules": 3,
-								"reverseOrder": false,
-								"type": "Grid"
-							},
-							"pageElements": [
-								{
-									"externalReferenceCode": "mod-grid-cards-1",
-									"pageElementDefinition": {
-										"moduleViewports": [
-											{
-												"id": "Desktop",
-												"moduleViewportDefinition": {
-													"size": 4
-												}
-											}
-										],
-										"type": "Module"
-									},
-									"pageElements": [
-										{
-											"externalReferenceCode": "card-1",
-											"pageElementDefinition": {
-												"fragmentInstance": {
-													"fragmentInstanceExternalReferenceCode": "card-1-inst",
-													"fragmentReference": {
-														"defaultFragmentKey": "BASIC_COMPONENT-card",
-														"fragmentReferenceType": "DefaultFragmentReference"
-													}
-												},
-												"type": "BasicFragment"
-											},
-											"pageElements": [
-											],
-											"parentExternalReferenceCode": "mod-grid-cards-1",
-											"position": 0
-										}
-									],
-									"parentExternalReferenceCode": "grid-cards",
-									"position": 0
-								}
-							],
-							"position": 1
-						}
-					],
-					"priority": 0
-				}
-			],
-			"status": "Approved",
-			"type": "ContentPageSpecification"
-		}
-	],
-	"type": "ContentPage"
-}
-```
-
-# Output policy
-
-- Output a SINGLE raw JSON object: the full ContentPage body that would be sent
-as the HTTP request body. Nothing else.
-- DO NOT wrap the JSON in markdown fences (no ```json, no ```).
-- DO NOT wrap the JSON in an envelope like {"tool_code": ..., "body": ...},
-{"function": ...}, or {"name": ..., "arguments": ...}. The top-level object MUST
-start with "type": "ContentPage".
-- DO NOT emit any prose, commentary, or trailing text.
-- Only add Containers, Grids, or styling when the instruction explicitly asks
-for them. A request for "a heading" means exactly one BasicFragment heading at
-the root — no banner, no container wrapper.
-- Never invent fragment keys, enum values, or field names not listed above. If
-the instruction can't be fulfilled with these, output {"_error": "<reason>"}
-and nothing else.
-- Preserve existing ERCs from `current_page` for any element you're not
-explicitly adding, removing, or moving.]]>
+Example: instruction="Add a heading saying Hello World", empty page → {"title":"My Page","erc":"my-page","locale":"en-US","elements":[{"type":"fragment","erc":"heading-1","source":"ootb","key":"heading","content":{"element-text":"Hello World"}}]}]]>
 		</prompt>
 		<tools>
 			<![CDATA[[]]]>
 		</tools>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						IR to Page Spec
+					</label>
+				</labels>
+				<name>irToPageSpec</name>
+				<target>irToPageSpec</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+		<user-message>
+			<![CDATA[Instruction: {{request}}
+
+fragmentCatalog: {{fragmentCatalog}}
+
+current_page_ir: {{currentPageIR}}]]>
+		</user-message>
+	</llm>
+	<tool>
+		<name>irToPageSpec</name>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						300,
+						800
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				IR to Page Spec
+			</label>
+		</labels>
+		<tool-name>convertToPageSpec</tool-name>
+		<input-variables><![CDATA[[{"name":"updatedPageIR","type":"string"},{"name":"draftERC","type":"string"},{"name":"experienceERC","type":"string"},{"name":"locale","type":"string"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"response","type":"string"}]]]></output-variables>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Page Updater
+					</label>
+				</labels>
+				<name>pageUpdater</name>
+				<target>pageUpdater</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</tool>
+	<tool>
+		<name>pageUpdater</name>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						300,
+						950
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Page Updater
+			</label>
+		</labels>
+		<tool-name>updatePageSpecification</tool-name>
+		<input-variables><![CDATA[[{"name":"siteExternalReferenceCode","type":"string"},{"name":"sitePageExternalReferenceCode","type":"string"},{"name":"response","type":"string"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"updatedPageSpecification","type":"string"}]]]></output-variables>
 		<transitions>
 			<transition>
 				<labels>
@@ -558,20 +299,15 @@ explicitly adding, removing, or moving.]]>
 				<default>true</default>
 			</transition>
 		</transitions>
-		<user-message>
-			<![CDATA[Instruction: {{instruction}}
-
-current_page: {{current_page}}]]>
-		</user-message>
-	</llm>
+	</tool>
 	<state>
 		<name>start</name>
 		<metadata>
 			<![CDATA[
 				{
 					"xy": [
-						273,
-						25
+						300,
+						50
 					]
 				}
 			]]>
@@ -586,11 +322,11 @@ current_page: {{current_page}}]]>
 			<transition>
 				<labels>
 					<label language-id="en_US">
-						Page Builder
+						Fragment Loader
 					</label>
 				</labels>
-				<name>pageBuilder</name>
-				<target>pageBuilder</target>
+				<name>fragmentLoader</name>
+				<target>fragmentLoader</target>
 				<default>true</default>
 			</transition>
 		</transitions>
@@ -602,8 +338,8 @@ current_page: {{current_page}}]]>
 				{
 					"terminal": true,
 					"xy": [
-						277,
-						459
+						300,
+						1100
 					]
 				}
 			]]>
