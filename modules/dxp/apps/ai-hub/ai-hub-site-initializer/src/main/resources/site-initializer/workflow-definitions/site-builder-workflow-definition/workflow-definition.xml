@@ -50,43 +50,43 @@
 # Output schema
 
 {
-  "site": {
-    "name": "<Site display name>",
-    "externalReferenceCode": "<lowercase-kebab-case>",
-    "description": "<1-2 sentence site purpose>",
-    "themePreference": "<design style keyword>",
-    "hasNavigationMenu": true|false
-  },
-  "sitemap": [
-    {
-      "title": "<Page title>",
-      "externalReferenceCode": "<lowercase-kebab-case>",
-      "description": "<What this page does, 1 sentence>"
-    }
-  ],
-  "customFragments": [
-    {
-      "name": "<Fragment display name>",
-      "key": "<lowercase-kebab-case unique key>",
-      "description": "<What this fragment renders and when to use it, 1-2 sentences>",
-      "isNavigationMenu": false,
-      "editables": [
-        {"id": "<editable-id>", "type": "text|rich-text|image|link"}
-      ]
-    }
-  ],
-  "pages": [
-    {
-      "title": "<Page title>",
-      "externalReferenceCode": "<matches sitemap entry>",
-      "ir": {
-        "title": "<Page title>",
-        "erc": "<page ERC>",
-        "locale": "en-US",
-        "elements": [Container|Grid|Fragment]
-      }
-    }
-  ]
+"site": {
+	"name": "<Site display name>",
+	"externalReferenceCode": "<lowercase-kebab-case>",
+	"description": "<1-2 sentence site purpose>",
+	"themePreference": "<design style keyword>",
+	"hasNavigationMenu": true|false
+},
+"sitemap": [
+	{
+	  "title": "<Page title>",
+	  "externalReferenceCode": "<lowercase-kebab-case>",
+	  "description": "<What this page does, 1 sentence>"
+	}
+],
+"customFragments": [
+	{
+	  "name": "<Fragment display name>",
+	  "key": "<lowercase-kebab-case unique key>",
+	  "description": "<What this fragment renders and when to use it, 1-2 sentences>",
+	  "isNavigationMenu": false,
+	  "editables": [
+		{"id": "<editable-id>", "type": "text|rich-text|image|link"}
+	  ]
+	}
+],
+"pages": [
+	{
+	  "title": "<Page title>",
+	  "externalReferenceCode": "<matches sitemap entry>",
+	  "ir": {
+		"title": "<Page title>",
+		"erc": "<page ERC>",
+		"locale": "en-US",
+		"elements": [Container|Grid|Fragment]
+	  }
+	}
+]
 }
 
 # IR element types
@@ -123,12 +123,12 @@ Colors: primary,secondary,success,danger,warning,info,dark,light,white,black,gra
 7. Editable IDs within a fragment MUST be globally unique within that fragment. If a fragment has repeated elements (e.g., 3 cards, 4 nav links), each one needs a numbered suffix: "card-title-1", "card-title-2", "card-title-3" — NEVER reuse the same ID. Duplicate IDs cause a fatal error.
 8. Include realistic placeholder content in page IRs (real-sounding text, plausible image URLs from picsum.photos or similar).
 9. JSON integrity — your output MUST be machine-parseable JSON:
-   a. Every `"` inside a string value MUST be escaped as `\"`. Example: `"description": "A \"premium\" experience"`.
-   b. Every newline inside a string value MUST be escaped as `\n`. Never use a literal line break inside a JSON string.
-   c. No trailing commas before `}` or `]`.
-   d. No comments (`//` or `/* */`).
-   e. No markdown fences — output raw JSON only.
-   f. Before finalizing, mentally parse the entire output as JSON to confirm every string terminates only where intended and all braces/brackets are balanced.
+a. Every `"` inside a string value MUST be escaped as `\"`. Example: `"description": "A \"premium\" experience"`.
+b. Every newline inside a string value MUST be escaped as `\n`. Never use a literal line break inside a JSON string.
+c. No trailing commas before `}` or `]`.
+d. No comments (`//` or `/* */`).
+e. No markdown fences — output raw JSON only.
+f. Before finalizing, mentally parse the entire output as JSON to confirm every string terminates only where intended and all braces/brackets are balanced.
 10. `site.themePreference` MUST always be set. If the user mentions a design style (e.g., "modern", "minimalist", "corporate", "playful", "dark", "elegant", "retro"), use that keyword. If the user does not mention any design preference, set it to "default".
 11. `site.hasNavigationMenu` MUST be set to `true` if the site plan includes a navigation menu or header fragment (e.g., a navbar, site header, or top navigation bar), and `false` otherwise. This flag tells downstream steps whether to create a Liferay navigation menu for the site.
 12. For each custom fragment, set `isNavigationMenu` to `true` if it is a navigation menu or header that renders site page links, `false` otherwise. Only one fragment per site should have this flag set to `true`.
@@ -269,17 +269,17 @@ If `site.hasNavigationMenu` is `true` and the fragment has `isNavigationMenu: tr
 The fragment will automatically receive a `configuration` with a `navigationMenuSelector` field:
 ```json
 {
-    "fieldSets": [
-        {
-            "fields": [
-                {
-                    "name": "source",
-                    "label": "source",
-                    "type": "navigationMenuSelector"
-                }
-            ]
-        }
-    ]
+	"fieldSets": [
+		{
+			"fields": [
+				{
+					"label": "source",
+					"name": "source",
+					"type": "navigationMenuSelector"
+				}
+			]
+		}
+	]
 }
 ```
 
@@ -288,19 +288,19 @@ Use the following reference template for the navigation links part of the fragme
 ```
 [#assign entries = sourceObject.navItems /]
 <ul aria-label="[@liferay.language key='site-pages' /]" class="navbar-nav" role="menubar">
-    [#list entries as navItem]
-        [#if navItem.isBrowsable()]
-            [#assign nav_item_css_class = "nav-item" /]
-            [#if !navItem.isChildSelected() && navItem.isSelected()]
-                [#assign nav_item_css_class = "${nav_item_css_class} active" /]
-            [/#if]
-            <li class="${nav_item_css_class}" role="presentation">
-                <a class="nav-link" href="${navItem.getURL()}" ${navItem.getTarget()} role="menuitem">
-                    <span class="text-truncate">[@liferay_theme["layout-icon"] layout=navItem.getLayout() /] ${navItem.getName()}</span>
-                </a>
-            </li>
-        [/#if]
-    [/#list]
+	[#list entries as navItem]
+		[#if navItem.isBrowsable()]
+			[#assign nav_item_css_class = "nav-item" /]
+			[#if !navItem.isChildSelected() && navItem.isSelected()]
+				[#assign nav_item_css_class = "${nav_item_css_class} active" /]
+			[/#if]
+			<li class="${nav_item_css_class}" role="presentation">
+				<a class="nav-link" href="${navItem.getURL()}" ${navItem.getTarget()} role="menuitem">
+					<span class="text-truncate">[@liferay_theme["layout-icon"] layout=navItem.getLayout() /] ${navItem.getName()}</span>
+				</a>
+			</li>
+		[/#if]
+	[/#list]
 </ul>
 ```
 
@@ -456,15 +456,15 @@ If the request specifies N blogs, emit exactly N items. If the count is not spec
 # Required blog shape (per array element)
 
 {
-    "externalReferenceCode": "<BLOG_ERC>",
-    "title": "<same value as title_i18n.en_US>",
-    "title_i18n": {"en_US": "..."},
-    "subtitle": "...",
-    "subtitle_i18n": {"en_US": "..."},
-    "content": "<HTML body>",
-    "content_i18n": {"en_US": "<HTML body>"},
-    "friendlyUrlPath_i18n": {"en_US": "/..."},
-    "keywords": ["...", "..."]
+	"externalReferenceCode": "<BLOG_ERC>",
+	"title": "<same value as title_i18n.en_US>",
+	"title_i18n": {"en_US": "..."},
+	"subtitle": "...",
+	"subtitle_i18n": {"en_US": "..."},
+	"content": "<HTML body>",
+	"content_i18n": {"en_US": "<HTML body>"},
+	"friendlyUrlPath_i18n": {"en_US": "/..."},
+	"keywords": ["...", "..."]
 }
 
 Hard rules:
@@ -488,28 +488,28 @@ Hard rules:
 
 Output:
 [
-    {
-        "externalReferenceCode": "the-wonderful-world-of-birds",
-        "title": "The Wonderful World of Birds",
-        "title_i18n": {"en_US": "The Wonderful World of Birds"},
-        "subtitle": "Discover the fascinating diversity and beauty of our feathered friends.",
-        "subtitle_i18n": {"en_US": "Discover the fascinating diversity and beauty of our feathered friends."},
-        "content": "<p>Birds are a group of warm-blooded vertebrates constituting the class Aves...</p>",
-        "content_i18n": {"en_US": "<p>Birds are a group of warm-blooded vertebrates constituting the class Aves...</p>"},
-        "friendlyUrlPath_i18n": {"en_US": "/the-wonderful-world-of-birds"},
-        "keywords": ["birds", "avian", "birdwatching", "nature", "ornithology"]
-    },
-    {
-        "externalReferenceCode": "the-importance-of-bird-conservation",
-        "title": "The Importance of Bird Conservation",
-        "title_i18n": {"en_US": "The Importance of Bird Conservation"},
-        "subtitle": "Why protecting bird populations is crucial for ecosystem health.",
-        "subtitle_i18n": {"en_US": "Why protecting bird populations is crucial for ecosystem health."},
-        "content": "<p>Birds are more than just beautiful creatures; they are essential indicators of environmental health...</p>",
-        "content_i18n": {"en_US": "<p>Birds are more than just beautiful creatures; they are essential indicators of environmental health...</p>"},
-        "friendlyUrlPath_i18n": {"en_US": "/the-importance-of-bird-conservation"},
-        "keywords": ["birds", "conservation", "ecology", "environment", "wildlife"]
-    }
+	{
+		"externalReferenceCode": "the-wonderful-world-of-birds",
+		"title": "The Wonderful World of Birds",
+		"title_i18n": {"en_US": "The Wonderful World of Birds"},
+		"subtitle": "Discover the fascinating diversity and beauty of our feathered friends.",
+		"subtitle_i18n": {"en_US": "Discover the fascinating diversity and beauty of our feathered friends."},
+		"content": "<p>Birds are a group of warm-blooded vertebrates constituting the class Aves...</p>",
+		"content_i18n": {"en_US": "<p>Birds are a group of warm-blooded vertebrates constituting the class Aves...</p>"},
+		"friendlyUrlPath_i18n": {"en_US": "/the-wonderful-world-of-birds"},
+		"keywords": ["birds", "avian", "birdwatching", "nature", "ornithology"]
+	},
+	{
+		"externalReferenceCode": "the-importance-of-bird-conservation",
+		"title": "The Importance of Bird Conservation",
+		"title_i18n": {"en_US": "The Importance of Bird Conservation"},
+		"subtitle": "Why protecting bird populations is crucial for ecosystem health.",
+		"subtitle_i18n": {"en_US": "Why protecting bird populations is crucial for ecosystem health."},
+		"content": "<p>Birds are more than just beautiful creatures; they are essential indicators of environmental health...</p>",
+		"content_i18n": {"en_US": "<p>Birds are more than just beautiful creatures; they are essential indicators of environmental health...</p>"},
+		"friendlyUrlPath_i18n": {"en_US": "/the-importance-of-bird-conservation"},
+		"keywords": ["birds", "conservation", "ecology", "environment", "wildlife"]
+	}
 ]
 
 # Output policy

@@ -5,9 +5,15 @@
 
 package com.liferay.ai.hub.internal.tools;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import dev.langchain4j.agent.tool.P;
@@ -16,6 +22,7 @@ import dev.langchain4j.agent.tool.Tool;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -29,7 +36,9 @@ public class IRToPageSpecTools {
 			fullFragmentsCatalog);
 	}
 
-	@Tool("Convert an IR JSON object into a Liferay ContentPageSpecification JSON")
+	@Tool(
+		"Convert an IR JSON object into a Liferay ContentPageSpecification JSON"
+	)
 	public String convertToPageSpec(
 		@P("IR JSON object") String irJSON,
 		@P("Draft page specification ERC") String draftERC,
@@ -41,498 +50,186 @@ public class IRToPageSpecTools {
 		}
 
 		try {
-			JSONObject ir = JSONFactoryUtil.createJSONObject(
+			JSONObject irJSONObject = JSONFactoryUtil.createJSONObject(
 				_stripMarkdownFences(irJSON));
 
-			JSONArray irElements = ir.getJSONArray("elements");
+			JSONArray irElementsJSONArray = irJSONObject.getJSONArray(
+				"elements");
 
-			if (irElements == null) {
-				irElements = JSONFactoryUtil.createJSONArray();
+			if (irElementsJSONArray == null) {
+				irElementsJSONArray = JSONFactoryUtil.createJSONArray();
 			}
 
-			JSONArray pageElements = JSONFactoryUtil.createJSONArray();
+			JSONArray pageElementsJSONArray = JSONFactoryUtil.createJSONArray();
 
-			for (int i = 0; i < irElements.length(); i++) {
-				JSONObject element = _convertElement(
-					irElements.getJSONObject(i), null, i, locale);
+			for (int i = 0; i < irElementsJSONArray.length(); i++) {
+				JSONObject elementJSONObject = _convertElement(
+					irElementsJSONArray.getJSONObject(i), locale, null, i);
 
-				if (element != null) {
-					pageElements.put(element);
+				if (elementJSONObject != null) {
+					pageElementsJSONArray.put(elementJSONObject);
 				}
 			}
 
-			JSONObject experience = JSONFactoryUtil.createJSONObject();
+			JSONArray pageExperiencesJSONArray = JSONUtil.put(
+				JSONUtil.put(
+					"externalReferenceCode", experienceERC
+				).put(
+					"key", "DEFAULT"
+				).put(
+					"name_i18n", _i18n(locale, "Default")
+				).put(
+					"pageElements", pageElementsJSONArray
+				).put(
+					"priority", 0
+				));
 
-			experience.put("externalReferenceCode", experienceERC);
-			experience.put("key", "DEFAULT");
-			experience.put(
-				"name_i18n",
-				_i18n(locale, "Default"));
-			experience.put("pageElements", pageElements);
-			experience.put("priority", 0);
-
-			JSONArray pageExperiences = JSONFactoryUtil.createJSONArray();
-
-			pageExperiences.put(experience);
-
-			JSONObject spec = JSONFactoryUtil.createJSONObject();
-
-			spec.put("customFields", JSONFactoryUtil.createJSONArray());
-			spec.put("externalReferenceCode", draftERC);
-			spec.put("pageExperiences", pageExperiences);
-			spec.put("status", "Draft");
-			spec.put("type", "ContentPageSpecification");
-
-			return spec.toString();
+			return JSONUtil.put(
+				"customFields", JSONFactoryUtil.createJSONArray()
+			).put(
+				"externalReferenceCode", draftERC
+			).put(
+				"pageExperiences", pageExperiencesJSONArray
+			).put(
+				"status", "Draft"
+			).put(
+				"type", "ContentPageSpecification"
+			).toString();
 		}
 		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(exception);
+			}
+
 			return "Error converting IR to page spec: " +
 				exception.getMessage();
 		}
 	}
 
-	private JSONObject _buildContainerLayout(JSONObject ir) throws Exception {
-		JSONObject layout = JSONFactoryUtil.createJSONObject();
+	private void _applySpacing(
+			String defaultValue, String prefix, JSONObject sourceJSONObject,
+			JSONObject targetJSONObject)
+		throws Exception {
 
-		layout.put("align", "Center");
-		layout.put("justify", "Center");
-		layout.put("widthType", "Fluid");
-		layout.put("contentDisplay", "Block");
+		JSONObject spacingJSONObject = sourceJSONObject.getJSONObject(prefix);
 
-		String contentDisplay = ir.getString("contentDisplay");
+		String[] sides = {"Top", "Bottom", "Left", "Right"};
 
-		if ("flex-row".equals(contentDisplay)) {
-			layout.put("contentDisplay", "FlexRow");
+		for (String side : sides) {
+			String value = null;
+
+			if (spacingJSONObject != null) {
+				value = spacingJSONObject.getString(
+					StringUtil.toLowerCase(side));
+			}
+
+			if ((value == null) || value.isEmpty()) {
+				value = defaultValue;
+			}
+
+			if (value != null) {
+				targetJSONObject.put(prefix + side, value);
+			}
 		}
-		else if ("flex-column".equals(contentDisplay)) {
-			layout.put("contentDisplay", "FlexColumn");
-		}
-
-		String widthType = ir.getString("widthType");
-
-		if ("fixed".equals(widthType)) {
-			layout.put("widthType", "Fixed");
-		}
-
-		return layout;
-	}
-
-	private JSONObject _buildViewportStyle(JSONObject ir) throws Exception {
-		JSONObject style = JSONFactoryUtil.createJSONObject();
-
-		_applySpacing(ir, style, "padding", "5");
-		_applySpacing(ir, style, "margin", null);
-		_applyStyleProperties(ir, style);
-
-		JSONObject irStyle = ir.getJSONObject("style");
-
-		if (irStyle != null) {
-			_applySpacing(irStyle, style, "padding", null);
-			_applySpacing(irStyle, style, "margin", null);
-			_applyStyleProperties(irStyle, style);
-		}
-
-		return style;
 	}
 
 	private void _applyStyleProperties(
-		JSONObject source, JSONObject style) {
+		JSONObject sourceJSONObject, JSONObject styleJSONObject) {
 
-		for (String colorKey : _COLOR_STYLE_KEYS) {
-			String value = source.getString(colorKey);
-
-			if (Validator.isNotNull(value)) {
-				style.put(colorKey, _normalizeColor(value));
-			}
-		}
-
-		for (String key : _STRING_STYLE_KEYS) {
-			String value = source.getString(key);
+		for (String colorKey : _colorStyleKeys) {
+			String value = sourceJSONObject.getString(colorKey);
 
 			if (Validator.isNotNull(value)) {
-				style.put(key, value);
+				styleJSONObject.put(colorKey, _normalizeColor(value));
 			}
 		}
 
-		if (source.has("hidden")) {
-			style.put("hidden", source.getBoolean("hidden"));
+		for (String key : _stringStyleKeys) {
+			String value = sourceJSONObject.getString(key);
+
+			if (Validator.isNotNull(value)) {
+				styleJSONObject.put(key, value);
+			}
+		}
+
+		if (sourceJSONObject.has("hidden")) {
+			styleJSONObject.put(
+				"hidden", sourceJSONObject.getBoolean("hidden"));
 		}
 	}
 
-	private JSONObject _convertContainer(
-			JSONObject ir, String parentERC, int position, String locale)
+	private JSONObject _buildContainerLayout(JSONObject irJSONObject)
 		throws Exception {
 
-		String erc = ir.getString("erc");
+		JSONObject layoutJSONObject = JSONUtil.put(
+			"align", "Center"
+		).put(
+			"contentDisplay", "Block"
+		).put(
+			"justify", "Center"
+		).put(
+			"widthType", "Fluid"
+		);
 
-		JSONObject layout = _buildContainerLayout(ir);
+		String contentDisplay = irJSONObject.getString("contentDisplay");
 
-		JSONObject viewportStyle = _buildViewportStyle(ir);
-
-		JSONObject definition = JSONFactoryUtil.createJSONObject();
-
-
-		definition.put("layout", layout);
-		definition.put("type", "Container");
-
-		JSONArray fragmentViewports = JSONFactoryUtil.createJSONArray();
-		JSONObject desktop = JSONFactoryUtil.createJSONObject();
-
-		desktop.put("fragmentViewportStyle", viewportStyle);
-		desktop.put("id", "Desktop");
-
-		fragmentViewports.put(desktop);
-
-		definition.put("fragmentViewports", fragmentViewports);
-
-		JSONArray children = _convertChildren(
-			ir.getJSONArray("children"), erc, locale);
-
-		JSONObject node = JSONFactoryUtil.createJSONObject();
-
-		node.put("externalReferenceCode", erc);
-		node.put("pageElementDefinition", definition);
-		node.put("pageElements", children);
-		node.put("position", position);
-
-		if (parentERC != null) {
-			node.put("parentExternalReferenceCode", parentERC);
+		if (Objects.equals(contentDisplay, "flex-row")) {
+			layoutJSONObject.put("contentDisplay", "FlexRow");
+		}
+		else if (Objects.equals(contentDisplay, "flex-column")) {
+			layoutJSONObject.put("contentDisplay", "FlexColumn");
 		}
 
-		return node;
+		String widthType = irJSONObject.getString("widthType");
+
+		if (Objects.equals(widthType, "fixed")) {
+			layoutJSONObject.put("widthType", "Fixed");
+		}
+
+		return layoutJSONObject;
 	}
 
-	private JSONObject _convertElement(
-			JSONObject ir, String parentERC, int position, String locale)
+	private JSONObject _buildEditable(
+			String id, String locale, Object raw, String type)
 		throws Exception {
 
-		String type = ir.getString("type");
-
-		switch (type) {
-			case "container":
-				return _convertContainer(ir, parentERC, position, locale);
-			case "grid":
-				return _convertGrid(ir, parentERC, position, locale);
-			case "fragment":
-				return _convertFragment(ir, parentERC, position, locale);
-			default:
-				return null;
-		}
-	}
-
-	private JSONObject _convertFragment(
-			JSONObject ir, String parentERC, int position, String locale)
-		throws Exception {
-
-		String erc = ir.getString("erc");
-
-		JSONObject fragmentReference = JSONFactoryUtil.createJSONObject();
-
-		String source = ir.getString("source");
-
-		if ("ootb".equals(source)) {
-			String key = ir.getString("key");
-			String fragmentKey = _OOTB_NAME_TO_KEY.get(key);
-
-			if (fragmentKey == null) {
-				fragmentKey = key;
-			}
-
-			fragmentReference.put("defaultFragmentKey", fragmentKey);
-			fragmentReference.put(
-				"fragmentReferenceType", "DefaultFragmentReference");
-		}
-		else if ("custom".equals(source)) {
-			fragmentReference.put(
-				"externalReferenceCode", ir.getString("key"));
-			fragmentReference.put(
-				"fragmentReferenceType", "FragmentItemExternalReference");
+		if (Objects.equals(type, "text")) {
+			return _buildTextEditable(id, locale, _toString(raw));
 		}
 
-		JSONObject instance = JSONFactoryUtil.createJSONObject();
-
-		instance.put(
-			"fragmentInstanceExternalReferenceCode", erc + "-inst");
-		instance.put("fragmentReference", fragmentReference);
-		instance.put("indexed", true);
-
-		JSONObject content = ir.getJSONObject("content");
-
-		if (content != null) {
-			String fragmentKey = null;
-
-			if ("ootb".equals(source)) {
-				String key = ir.getString("key");
-
-				fragmentKey = _OOTB_NAME_TO_KEY.get(key);
-
-				if (fragmentKey == null) {
-					fragmentKey = key;
-				}
-			}
-			else if ("custom".equals(source)) {
-				fragmentKey = ir.getString("key");
-			}
-
-			JSONArray editableElements = _buildEditableElements(
-				content, fragmentKey, locale);
-
-			if (editableElements.length() > 0) {
-				instance.put("fragmentEditableElements", editableElements);
-			}
+		if (Objects.equals(type, "richText")) {
+			return _buildRichTextEditable(id, locale, _toString(raw));
 		}
 
-		JSONObject irStyle = ir.getJSONObject("style");
-
-		if (irStyle != null) {
-			JSONObject viewportStyle = _buildViewportStyle(ir);
-
-			JSONArray fragmentViewports = JSONFactoryUtil.createJSONArray();
-			JSONObject desktop = JSONFactoryUtil.createJSONObject();
-
-			desktop.put("fragmentViewportStyle", viewportStyle);
-			desktop.put("id", "Desktop");
-
-			fragmentViewports.put(desktop);
-
-			instance.put("fragmentViewports", fragmentViewports);
+		if (Objects.equals(type, "image")) {
+			return _buildImageEditable(id, locale, raw);
 		}
 
-		if ("custom".equals(source)) {
-			String fragmentKey = ir.getString("key");
-
-			JSONObject fragmentSources = _customFragmentSources.get(
-				fragmentKey);
-
-			if (fragmentSources != null) {
-				String configuration = fragmentSources.getString(
-					"configuration");
-
-				if (Validator.isNotNull(configuration)) {
-					instance.put("configuration", configuration);
-				}
-
-				String css = fragmentSources.getString("css");
-
-				if (Validator.isNotNull(css)) {
-					instance.put("css", css);
-				}
-
-				String html = fragmentSources.getString("html");
-
-				if (Validator.isNotNull(html)) {
-					instance.put("html", html);
-				}
-
-				String js = fragmentSources.getString("js");
-
-				if (Validator.isNotNull(js)) {
-					instance.put("js", js);
-				}
-			}
+		if (Objects.equals(type, "link")) {
+			return _buildLinkEditable(id, locale, raw);
 		}
 
-		JSONObject definition = JSONFactoryUtil.createJSONObject();
-
-		definition.put("fragmentInstance", instance);
-		definition.put("type", "BasicFragment");
-
-		JSONObject node = JSONFactoryUtil.createJSONObject();
-
-		node.put("externalReferenceCode", erc);
-		node.put("pageElementDefinition", definition);
-		node.put("pageElements", JSONFactoryUtil.createJSONArray());
-		node.put("position", position);
-
-		if (parentERC != null) {
-			node.put("parentExternalReferenceCode", parentERC);
-		}
-
-		return node;
-	}
-
-	private JSONObject _convertGrid(
-			JSONObject ir, String parentERC, int position, String locale)
-		throws Exception {
-
-		String erc = ir.getString("erc");
-
-		JSONArray columns = ir.getJSONArray("columns");
-
-		if (columns == null) {
-			columns = JSONFactoryUtil.createJSONArray();
-		}
-
-		int columnCount = columns.length();
-
-		boolean gutters = ir.getBoolean("gutters", true);
-
-		JSONObject modulesPerRow = ir.getJSONObject("modulesPerRow");
-
-		int desktopPerRow = columnCount;
-		int tabletPerRow = 0;
-		int mobilePerRow = 0;
-
-		if (modulesPerRow != null) {
-			desktopPerRow = modulesPerRow.getInt("desktop", columnCount);
-			tabletPerRow = modulesPerRow.getInt("tablet", 0);
-			mobilePerRow = modulesPerRow.getInt("mobile", 0);
-		}
-
-		JSONArray gridViewports = JSONFactoryUtil.createJSONArray();
-
-		JSONObject desktopVP = JSONFactoryUtil.createJSONObject();
-		JSONObject desktopDef = JSONFactoryUtil.createJSONObject();
-
-		desktopDef.put("modulesPerRow", desktopPerRow);
-		desktopDef.put("verticalAlignment", "Top");
-
-		desktopVP.put("gridViewportDefinition", desktopDef);
-		desktopVP.put("id", "Desktop");
-
-		gridViewports.put(desktopVP);
-
-		if (tabletPerRow > 0) {
-			JSONObject tabletVP = JSONFactoryUtil.createJSONObject();
-			JSONObject tabletDef = JSONFactoryUtil.createJSONObject();
-
-			tabletDef.put("modulesPerRow", tabletPerRow);
-			tabletDef.put("verticalAlignment", "Top");
-
-			tabletVP.put("gridViewportDefinition", tabletDef);
-			tabletVP.put("id", "Tablet");
-
-			gridViewports.put(tabletVP);
-		}
-
-		if (mobilePerRow > 0) {
-			JSONObject mobileVP = JSONFactoryUtil.createJSONObject();
-			JSONObject mobileDef = JSONFactoryUtil.createJSONObject();
-
-			mobileDef.put("modulesPerRow", mobilePerRow);
-			mobileDef.put("verticalAlignment", "Top");
-
-			mobileVP.put("gridViewportDefinition", mobileDef);
-			mobileVP.put("id", "PortraitMobile");
-
-			gridViewports.put(mobileVP);
-		}
-
-		JSONObject definition = JSONFactoryUtil.createJSONObject();
-
-		definition.put("gridViewports", gridViewports);
-		definition.put("gutters", gutters);
-		definition.put("numberOfModules", columnCount);
-		definition.put("type", "Grid");
-
-		JSONArray moduleElements = JSONFactoryUtil.createJSONArray();
-
-		for (int i = 0; i < columnCount; i++) {
-			JSONObject col = columns.getJSONObject(i);
-
-			moduleElements.put(
-				_convertModule(col, erc, i, columnCount, locale));
-		}
-
-		JSONObject node = JSONFactoryUtil.createJSONObject();
-
-		node.put("externalReferenceCode", erc);
-		node.put("pageElementDefinition", definition);
-		node.put("pageElements", moduleElements);
-		node.put("position", position);
-
-		if (parentERC != null) {
-			node.put("parentExternalReferenceCode", parentERC);
-		}
-
-		return node;
-	}
-
-	private JSONObject _convertModule(
-			JSONObject col, String gridERC, int position, int columnCount,
-			String locale)
-		throws Exception {
-
-		int defaultSize = (columnCount > 0) ? (12 / columnCount) : 6;
-
-		int size = col.getInt("size", defaultSize);
-
-		String colERC = "mod-" + gridERC + "-" + (position + 1);
-
-		JSONObject viewportDef = JSONFactoryUtil.createJSONObject();
-
-		viewportDef.put("size", size);
-
-		JSONObject desktopVP = JSONFactoryUtil.createJSONObject();
-
-		desktopVP.put("id", "Desktop");
-		desktopVP.put("moduleViewportDefinition", viewportDef);
-
-		JSONArray moduleViewports = JSONFactoryUtil.createJSONArray();
-
-		moduleViewports.put(desktopVP);
-
-		JSONObject definition = JSONFactoryUtil.createJSONObject();
-
-
-		definition.put("moduleViewports", moduleViewports);
-		definition.put("type", "Module");
-
-		JSONArray children = _convertChildren(
-			col.getJSONArray("children"), colERC, locale);
-
-		JSONObject node = JSONFactoryUtil.createJSONObject();
-
-		node.put("externalReferenceCode", colERC);
-		node.put("pageElementDefinition", definition);
-		node.put("pageElements", children);
-		node.put("parentExternalReferenceCode", gridERC);
-		node.put("position", position);
-
-		return node;
-	}
-
-	private JSONArray _convertChildren(
-			JSONArray children, String parentERC, String locale)
-		throws Exception {
-
-		JSONArray result = JSONFactoryUtil.createJSONArray();
-
-		if (children == null) {
-			return result;
-		}
-
-		for (int i = 0; i < children.length(); i++) {
-			JSONObject converted = _convertElement(
-				children.getJSONObject(i), parentERC, i, locale);
-
-			if (converted != null) {
-				result.put(converted);
-			}
-		}
-
-		return result;
+		return null;
 	}
 
 	private JSONArray _buildEditableElements(
-			JSONObject content, String fragmentKey, String locale)
+			JSONObject contentJSONObject, String fragmentKey, String locale)
 		throws Exception {
 
-		JSONArray elements = JSONFactoryUtil.createJSONArray();
+		JSONArray elementsJSONArray = JSONFactoryUtil.createJSONArray();
 
-		Map<String, String> editableTypes = _OOTB_EDITABLE_TYPES.get(
-			fragmentKey);
+		Map<String, String> editableTypes = _editableTypes.get(fragmentKey);
 
 		if (editableTypes == null) {
 			editableTypes = _customEditableTypes.get(fragmentKey);
 		}
 
-		Iterator<String> keys = content.keys();
+		Iterator<String> iterator = contentJSONObject.keys();
 
-		while (keys.hasNext()) {
-			String id = keys.next();
+		while (iterator.hasNext()) {
+			String id = iterator.next();
 
-			Object raw = content.get(id);
+			Object raw = contentJSONObject.get(id);
 
 			String editableType = "text";
 
@@ -544,133 +241,58 @@ public class IRToPageSpecTools {
 				}
 			}
 
-			JSONObject editable = _buildEditable(
-				id, editableType, raw, locale);
+			JSONObject editableJSONObject = _buildEditable(
+				id, locale, raw, editableType);
 
-			if (editable != null) {
-				elements.put(editable);
+			if (editableJSONObject != null) {
+				elementsJSONArray.put(editableJSONObject);
 			}
 		}
 
-		return elements;
+		return elementsJSONArray;
 	}
 
-	private JSONObject _buildEditable(
-			String id, String type, Object raw, String locale)
-		throws Exception {
-
-		switch (type) {
-			case "text":
-				return _buildTextEditable(id, _toString(raw), locale);
-			case "richText":
-				return _buildRichTextEditable(id, _toString(raw), locale);
-			case "image":
-				return _buildImageEditable(id, raw, locale);
-			case "link":
-				return _buildLinkEditable(id, raw, locale);
-			default:
-				return null;
-		}
-	}
-
-	private JSONObject _buildTextEditable(
-			String id, String value, String locale)
-		throws Exception {
-
-		JSONObject inlineValue = JSONFactoryUtil.createJSONObject();
-
-		inlineValue.put("value_i18n", _i18n(locale, value));
-
-		JSONObject textFragment = JSONFactoryUtil.createJSONObject();
-
-		textFragment.put("fragmentInlineValue", inlineValue);
-		textFragment.put("type", "Inline");
-
-		JSONObject linkTextValue = JSONFactoryUtil.createJSONObject();
-
-		linkTextValue.put("textFragmentValue", textFragment);
-
-		JSONObject elementValue = JSONFactoryUtil.createJSONObject();
-
-		elementValue.put("fragmentLinkTextValue", linkTextValue);
-		elementValue.put("type", "Text");
-
-		JSONObject editable = JSONFactoryUtil.createJSONObject();
-
-		editable.put("fragmentEditableElementValue", elementValue);
-		editable.put("id", id);
-
-		return editable;
-	}
-
-	private JSONObject _buildRichTextEditable(
-			String id, String value, String locale)
-		throws Exception {
-
-		JSONObject inlineValue = JSONFactoryUtil.createJSONObject();
-
-		inlineValue.put("value_i18n", _i18n(locale, value));
-
-		JSONObject htmlFragment = JSONFactoryUtil.createJSONObject();
-
-		htmlFragment.put("fragmentInlineValue", inlineValue);
-		htmlFragment.put("type", "Inline");
-
-		JSONObject elementValue = JSONFactoryUtil.createJSONObject();
-
-		elementValue.put("htmlFragmentValue", htmlFragment);
-		elementValue.put("type", "RichText");
-
-		JSONObject editable = JSONFactoryUtil.createJSONObject();
-
-		editable.put("fragmentEditableElementValue", elementValue);
-		editable.put("id", id);
-
-		return editable;
-	}
-
-	private JSONObject _buildImageEditable(
-			String id, Object raw, String locale)
+	private JSONObject _buildImageEditable(String id, String locale, Object raw)
 		throws Exception {
 
 		String url;
 
 		if (raw instanceof JSONObject) {
-			url = ((JSONObject)raw).getString("url");
+			JSONObject rawJSONObject = (JSONObject)raw;
+
+			url = rawJSONObject.getString("url");
 		}
 		else {
 			url = String.valueOf(raw);
 		}
 
-		JSONObject urlObj = JSONFactoryUtil.createJSONObject();
-
-		urlObj.put("type", "URL");
-		urlObj.put("url", url);
-
-		JSONObject imageValue = JSONFactoryUtil.createJSONObject();
-
-		imageValue.put("type", "Direct");
-		imageValue.put("value_i18n", _i18nObject(locale, urlObj));
-
-		JSONObject fragmentImage = JSONFactoryUtil.createJSONObject();
-
-		fragmentImage.put("fragmentImageValue", imageValue);
-
-		JSONObject elementValue = JSONFactoryUtil.createJSONObject();
-
-		elementValue.put("fragmentImage", fragmentImage);
-		elementValue.put("type", "Image");
-
-		JSONObject editable = JSONFactoryUtil.createJSONObject();
-
-		editable.put("fragmentEditableElementValue", elementValue);
-		editable.put("id", id);
-
-		return editable;
+		return JSONUtil.put(
+			"fragmentEditableElementValue",
+			JSONUtil.put(
+				"fragmentImage",
+				JSONUtil.put(
+					"fragmentImageValue",
+					JSONUtil.put(
+						"type", "Direct"
+					).put(
+						"value_i18n",
+						_i18nObject(
+							locale,
+							JSONUtil.put(
+								"type", "URL"
+							).put(
+								"url", url
+							))
+					))
+			).put(
+				"type", "Image"
+			)
+		).put(
+			"id", id
+		);
 	}
 
-	private JSONObject _buildLinkEditable(
-			String id, Object raw, String locale)
+	private JSONObject _buildLinkEditable(String id, String locale, Object raw)
 		throws Exception {
 
 		String text = "Learn more";
@@ -678,12 +300,12 @@ public class IRToPageSpecTools {
 		String target = "Self";
 
 		if (raw instanceof JSONObject) {
-			JSONObject linkObj = (JSONObject)raw;
+			JSONObject linkJSONObject = (JSONObject)raw;
 
-			text = linkObj.getString("text", "Learn more");
-			url = linkObj.getString("url", "#");
+			text = linkJSONObject.getString("text", "Learn more");
+			url = linkJSONObject.getString("url", "#");
 
-			String rawTarget = linkObj.getString("target");
+			String rawTarget = linkJSONObject.getString("target");
 
 			if ((rawTarget != null) && !rawTarget.isEmpty()) {
 				target = _normalizeLinkTarget(rawTarget);
@@ -693,90 +315,492 @@ public class IRToPageSpecTools {
 			url = (String)raw;
 		}
 
-		JSONObject textInline = JSONFactoryUtil.createJSONObject();
-
-		textInline.put("value_i18n", _i18n(locale, text));
-
-		JSONObject textFragment = JSONFactoryUtil.createJSONObject();
-
-		textFragment.put("fragmentInlineValue", textInline);
-		textFragment.put("type", "Inline");
-
-		JSONObject linkUrlInline = JSONFactoryUtil.createJSONObject();
-
-		linkUrlInline.put("type", "FragmentInlineValue");
-		linkUrlInline.put("value_i18n", _i18n(locale, url));
-
-		JSONObject fragmentLink = JSONFactoryUtil.createJSONObject();
-
-		fragmentLink.put("target", target);
-		fragmentLink.put("value", linkUrlInline);
-
-		JSONObject linkRef = JSONFactoryUtil.createJSONObject();
-
-		linkRef.put("fragmentLink", fragmentLink);
-
-		JSONObject linkTextValue = JSONFactoryUtil.createJSONObject();
-
-		linkTextValue.put(
-			"fragmentEditableElementValueFragmentLink", linkRef);
-		linkTextValue.put("textFragmentValue", textFragment);
-
-		JSONObject elementValue = JSONFactoryUtil.createJSONObject();
-
-		elementValue.put("fragmentLinkTextValue", linkTextValue);
-		elementValue.put("type", "Text");
-
-		JSONObject editable = JSONFactoryUtil.createJSONObject();
-
-		editable.put("fragmentEditableElementValue", elementValue);
-		editable.put("id", id);
-
-		return editable;
+		return JSONUtil.put(
+			"fragmentEditableElementValue",
+			JSONUtil.put(
+				"fragmentLinkTextValue",
+				JSONUtil.put(
+					"fragmentEditableElementValueFragmentLink",
+					JSONUtil.put(
+						"fragmentLink",
+						JSONUtil.put(
+							"target", target
+						).put(
+							"value",
+							JSONUtil.put(
+								"type", "FragmentInlineValue"
+							).put(
+								"value_i18n", _i18n(locale, url)
+							)
+						))
+				).put(
+					"textFragmentValue",
+					JSONUtil.put(
+						"fragmentInlineValue",
+						JSONUtil.put("value_i18n", _i18n(locale, text))
+					).put(
+						"type", "Inline"
+					)
+				)
+			).put(
+				"type", "Text"
+			)
+		).put(
+			"id", id
+		);
 	}
 
-	private void _applySpacing(
-			JSONObject source, JSONObject target, String prefix,
-			String defaultValue)
+	private JSONObject _buildRichTextEditable(
+			String id, String locale, String value)
 		throws Exception {
 
-		JSONObject spacing = source.getJSONObject(prefix);
+		return JSONUtil.put(
+			"fragmentEditableElementValue",
+			JSONUtil.put(
+				"htmlFragmentValue",
+				JSONUtil.put(
+					"fragmentInlineValue",
+					JSONUtil.put("value_i18n", _i18n(locale, value))
+				).put(
+					"type", "Inline"
+				)
+			).put(
+				"type", "RichText"
+			)
+		).put(
+			"id", id
+		);
+	}
 
-		String[] sides = {"Top", "Bottom", "Left", "Right"};
+	private JSONObject _buildTextEditable(
+			String id, String locale, String value)
+		throws Exception {
 
-		for (String side : sides) {
-			String value = null;
+		return JSONUtil.put(
+			"fragmentEditableElementValue",
+			JSONUtil.put(
+				"fragmentLinkTextValue",
+				JSONUtil.put(
+					"textFragmentValue",
+					JSONUtil.put(
+						"fragmentInlineValue",
+						JSONUtil.put("value_i18n", _i18n(locale, value))
+					).put(
+						"type", "Inline"
+					))
+			).put(
+				"type", "Text"
+			)
+		).put(
+			"id", id
+		);
+	}
 
-			if (spacing != null) {
-				value = spacing.getString(side.toLowerCase());
-			}
+	private JSONObject _buildViewportStyle(JSONObject irJSONObject)
+		throws Exception {
 
-			if ((value == null) || value.isEmpty()) {
-				value = defaultValue;
-			}
+		JSONObject styleJSONObject = JSONFactoryUtil.createJSONObject();
 
-			if (value != null) {
-				target.put(prefix + side, value);
+		_applySpacing("5", "padding", irJSONObject, styleJSONObject);
+		_applySpacing(null, "margin", irJSONObject, styleJSONObject);
+		_applyStyleProperties(irJSONObject, styleJSONObject);
+
+		JSONObject irStyleJSONObject = irJSONObject.getJSONObject("style");
+
+		if (irStyleJSONObject != null) {
+			_applySpacing(null, "padding", irStyleJSONObject, styleJSONObject);
+			_applySpacing(null, "margin", irStyleJSONObject, styleJSONObject);
+			_applyStyleProperties(irStyleJSONObject, styleJSONObject);
+		}
+
+		return styleJSONObject;
+	}
+
+	private JSONArray _convertChildren(
+			JSONArray childrenJSONArray, String locale, String parentERC)
+		throws Exception {
+
+		JSONArray resultJSONArray = JSONFactoryUtil.createJSONArray();
+
+		if (childrenJSONArray == null) {
+			return resultJSONArray;
+		}
+
+		for (int i = 0; i < childrenJSONArray.length(); i++) {
+			JSONObject convertedJSONObject = _convertElement(
+				childrenJSONArray.getJSONObject(i), locale, parentERC, i);
+
+			if (convertedJSONObject != null) {
+				resultJSONArray.put(convertedJSONObject);
 			}
 		}
+
+		return resultJSONArray;
+	}
+
+	private JSONObject _convertContainer(
+			JSONObject irJSONObject, String locale, String parentERC,
+			int position)
+		throws Exception {
+
+		String erc = irJSONObject.getString("erc");
+
+		JSONObject definitionJSONObject = JSONUtil.put(
+			"fragmentViewports",
+			JSONUtil.put(
+				JSONUtil.put(
+					"fragmentViewportStyle", _buildViewportStyle(irJSONObject)
+				).put(
+					"id", "Desktop"
+				))
+		).put(
+			"layout", _buildContainerLayout(irJSONObject)
+		).put(
+			"type", "Container"
+		);
+
+		JSONArray childrenJSONArray = _convertChildren(
+			irJSONObject.getJSONArray("children"), locale, erc);
+
+		JSONObject nodeJSONObject = JSONUtil.put(
+			"externalReferenceCode", erc
+		).put(
+			"pageElementDefinition", definitionJSONObject
+		).put(
+			"pageElements", childrenJSONArray
+		).put(
+			"position", position
+		);
+
+		if (parentERC != null) {
+			nodeJSONObject.put("parentExternalReferenceCode", parentERC);
+		}
+
+		return nodeJSONObject;
+	}
+
+	private JSONObject _convertElement(
+			JSONObject irJSONObject, String locale, String parentERC,
+			int position)
+		throws Exception {
+
+		String type = irJSONObject.getString("type");
+
+		if (Objects.equals(type, "container")) {
+			return _convertContainer(irJSONObject, locale, parentERC, position);
+		}
+
+		if (Objects.equals(type, "grid")) {
+			return _convertGrid(irJSONObject, locale, parentERC, position);
+		}
+
+		if (Objects.equals(type, "fragment")) {
+			return _convertFragment(irJSONObject, locale, parentERC, position);
+		}
+
+		return null;
+	}
+
+	private JSONObject _convertFragment(
+			JSONObject irJSONObject, String locale, String parentERC,
+			int position)
+		throws Exception {
+
+		String erc = irJSONObject.getString("erc");
+
+		JSONObject fragmentReferenceJSONObject =
+			JSONFactoryUtil.createJSONObject();
+
+		String source = irJSONObject.getString("source");
+
+		if (Objects.equals(source, "ootb")) {
+			String key = irJSONObject.getString("key");
+
+			String fragmentKey = _ootbNameToKey.get(key);
+
+			if (fragmentKey == null) {
+				fragmentKey = key;
+			}
+
+			fragmentReferenceJSONObject.put(
+				"defaultFragmentKey", fragmentKey
+			).put(
+				"fragmentReferenceType", "DefaultFragmentReference"
+			);
+		}
+		else if (Objects.equals(source, "custom")) {
+			fragmentReferenceJSONObject.put(
+				"externalReferenceCode", irJSONObject.getString("key")
+			).put(
+				"fragmentReferenceType", "FragmentItemExternalReference"
+			);
+		}
+
+		JSONObject instanceJSONObject = JSONUtil.put(
+			"fragmentInstanceExternalReferenceCode", erc + "-inst"
+		).put(
+			"fragmentReference", fragmentReferenceJSONObject
+		).put(
+			"indexed", true
+		);
+
+		JSONObject contentJSONObject = irJSONObject.getJSONObject("content");
+
+		if (contentJSONObject != null) {
+			String fragmentKey = null;
+
+			if (Objects.equals(source, "ootb")) {
+				String key = irJSONObject.getString("key");
+
+				fragmentKey = _ootbNameToKey.get(key);
+
+				if (fragmentKey == null) {
+					fragmentKey = key;
+				}
+			}
+			else if (Objects.equals(source, "custom")) {
+				fragmentKey = irJSONObject.getString("key");
+			}
+
+			JSONArray editableElementsJSONArray = _buildEditableElements(
+				contentJSONObject, fragmentKey, locale);
+
+			if (editableElementsJSONArray.length() > 0) {
+				instanceJSONObject.put(
+					"fragmentEditableElements", editableElementsJSONArray);
+			}
+		}
+
+		JSONObject irStyleJSONObject = irJSONObject.getJSONObject("style");
+
+		if (irStyleJSONObject != null) {
+			JSONArray fragmentViewportsJSONArray = JSONUtil.put(
+				JSONUtil.put(
+					"fragmentViewportStyle", _buildViewportStyle(irJSONObject)
+				).put(
+					"id", "Desktop"
+				));
+
+			instanceJSONObject.put(
+				"fragmentViewports", fragmentViewportsJSONArray);
+		}
+
+		if (Objects.equals(source, "custom")) {
+			String fragmentKey = irJSONObject.getString("key");
+
+			JSONObject fragmentSourcesJSONObject = _customFragmentSources.get(
+				fragmentKey);
+
+			if (fragmentSourcesJSONObject != null) {
+				String configuration = fragmentSourcesJSONObject.getString(
+					"configuration");
+
+				if (Validator.isNotNull(configuration)) {
+					instanceJSONObject.put("configuration", configuration);
+				}
+
+				String css = fragmentSourcesJSONObject.getString("css");
+
+				if (Validator.isNotNull(css)) {
+					instanceJSONObject.put("css", css);
+				}
+
+				String html = fragmentSourcesJSONObject.getString("html");
+
+				if (Validator.isNotNull(html)) {
+					instanceJSONObject.put("html", html);
+				}
+
+				String js = fragmentSourcesJSONObject.getString("js");
+
+				if (Validator.isNotNull(js)) {
+					instanceJSONObject.put("js", js);
+				}
+			}
+		}
+
+		JSONObject nodeJSONObject = JSONUtil.put(
+			"externalReferenceCode", erc
+		).put(
+			"pageElementDefinition",
+			JSONUtil.put(
+				"fragmentInstance", instanceJSONObject
+			).put(
+				"type", "BasicFragment"
+			)
+		).put(
+			"pageElements", JSONFactoryUtil.createJSONArray()
+		).put(
+			"position", position
+		);
+
+		if (parentERC != null) {
+			nodeJSONObject.put("parentExternalReferenceCode", parentERC);
+		}
+
+		return nodeJSONObject;
+	}
+
+	private JSONObject _convertGrid(
+			JSONObject irJSONObject, String locale, String parentERC,
+			int position)
+		throws Exception {
+
+		String erc = irJSONObject.getString("erc");
+
+		JSONArray columnsJSONArray = irJSONObject.getJSONArray("columns");
+
+		if (columnsJSONArray == null) {
+			columnsJSONArray = JSONFactoryUtil.createJSONArray();
+		}
+
+		int columnCount = columnsJSONArray.length();
+
+		boolean gutters = irJSONObject.getBoolean("gutters", true);
+
+		JSONObject modulesPerRowJSONObject = irJSONObject.getJSONObject(
+			"modulesPerRow");
+
+		int desktopPerRow = columnCount;
+		int tabletPerRow = 0;
+		int mobilePerRow = 0;
+
+		if (modulesPerRowJSONObject != null) {
+			desktopPerRow = modulesPerRowJSONObject.getInt(
+				"desktop", columnCount);
+			tabletPerRow = modulesPerRowJSONObject.getInt("tablet", 0);
+			mobilePerRow = modulesPerRowJSONObject.getInt("mobile", 0);
+		}
+
+		JSONArray gridViewportsJSONArray = JSONUtil.put(
+			JSONUtil.put(
+				"gridViewportDefinition",
+				JSONUtil.put(
+					"modulesPerRow", desktopPerRow
+				).put(
+					"verticalAlignment", "Top"
+				)
+			).put(
+				"id", "Desktop"
+			));
+
+		if (tabletPerRow > 0) {
+			gridViewportsJSONArray.put(
+				JSONUtil.put(
+					"gridViewportDefinition",
+					JSONUtil.put(
+						"modulesPerRow", tabletPerRow
+					).put(
+						"verticalAlignment", "Top"
+					)
+				).put(
+					"id", "Tablet"
+				));
+		}
+
+		if (mobilePerRow > 0) {
+			gridViewportsJSONArray.put(
+				JSONUtil.put(
+					"gridViewportDefinition",
+					JSONUtil.put(
+						"modulesPerRow", mobilePerRow
+					).put(
+						"verticalAlignment", "Top"
+					)
+				).put(
+					"id", "PortraitMobile"
+				));
+		}
+
+		JSONObject definitionJSONObject = JSONUtil.put(
+			"gridViewports", gridViewportsJSONArray
+		).put(
+			"gutters", gutters
+		).put(
+			"numberOfModules", columnCount
+		).put(
+			"type", "Grid"
+		);
+
+		JSONArray moduleElementsJSONArray = JSONFactoryUtil.createJSONArray();
+
+		for (int i = 0; i < columnCount; i++) {
+			JSONObject colJSONObject = columnsJSONArray.getJSONObject(i);
+
+			moduleElementsJSONArray.put(
+				_convertModule(colJSONObject, columnCount, erc, locale, i));
+		}
+
+		JSONObject nodeJSONObject = JSONUtil.put(
+			"externalReferenceCode", erc
+		).put(
+			"pageElementDefinition", definitionJSONObject
+		).put(
+			"pageElements", moduleElementsJSONArray
+		).put(
+			"position", position
+		);
+
+		if (parentERC != null) {
+			nodeJSONObject.put("parentExternalReferenceCode", parentERC);
+		}
+
+		return nodeJSONObject;
+	}
+
+	private JSONObject _convertModule(
+			JSONObject colJSONObject, int columnCount, String gridERC,
+			String locale, int position)
+		throws Exception {
+
+		int defaultSize = 6;
+
+		if (columnCount > 0) {
+			defaultSize = 12 / columnCount;
+		}
+
+		int size = colJSONObject.getInt("size", defaultSize);
+
+		String colERC = StringBundler.concat(
+			"mod-", gridERC, "-", position + 1);
+
+		JSONArray moduleViewportsJSONArray = JSONUtil.put(
+			JSONUtil.put(
+				"id", "Desktop"
+			).put(
+				"moduleViewportDefinition", JSONUtil.put("size", size)
+			));
+
+		JSONObject definitionJSONObject = JSONUtil.put(
+			"moduleViewports", moduleViewportsJSONArray
+		).put(
+			"type", "Module"
+		);
+
+		JSONArray childrenJSONArray = _convertChildren(
+			colJSONObject.getJSONArray("children"), locale, colERC);
+
+		return JSONUtil.put(
+			"externalReferenceCode", colERC
+		).put(
+			"pageElementDefinition", definitionJSONObject
+		).put(
+			"pageElements", childrenJSONArray
+		).put(
+			"parentExternalReferenceCode", gridERC
+		).put(
+			"position", position
+		);
 	}
 
 	private JSONObject _i18n(String locale, String value) throws Exception {
-		JSONObject i18n = JSONFactoryUtil.createJSONObject();
-
-		i18n.put(locale, value);
-
-		return i18n;
+		return JSONUtil.put(locale, value);
 	}
 
-	private JSONObject _i18nObject(String locale, JSONObject value)
+	private JSONObject _i18nObject(String locale, JSONObject valueJSONObject)
 		throws Exception {
 
-		JSONObject i18n = JSONFactoryUtil.createJSONObject();
-
-		i18n.put(locale, value);
-
-		return i18n;
+		return JSONUtil.put(locale, valueJSONObject);
 	}
 
 	private String _normalizeColor(String color) {
@@ -792,18 +816,113 @@ public class IRToPageSpecTools {
 			return "Self";
 		}
 
-		String cleaned = target.replaceFirst("^_", "").toLowerCase();
+		String cleaned = StringUtil.toLowerCase(target.replaceFirst("^_", ""));
 
-		switch (cleaned) {
-			case "blank":
-				return "Blank";
-			case "parent":
-				return "Parent";
-			case "top":
-				return "Top";
-			default:
-				return "Self";
+		if (Objects.equals(cleaned, "blank")) {
+			return "Blank";
 		}
+
+		if (Objects.equals(cleaned, "parent")) {
+			return "Parent";
+		}
+
+		if (Objects.equals(cleaned, "top")) {
+			return "Top";
+		}
+
+		return "Self";
+	}
+
+	private Map<String, Map<String, String>> _parseCustomEditableTypes(
+		String fullFragmentsCatalog) {
+
+		Map<String, Map<String, String>> result = new HashMap<>();
+
+		if (Validator.isNull(fullFragmentsCatalog)) {
+			return result;
+		}
+
+		try {
+			JSONArray catalogJSONArray = JSONFactoryUtil.createJSONArray(
+				fullFragmentsCatalog);
+
+			for (int i = 0; i < catalogJSONArray.length(); i++) {
+				JSONObject fragmentJSONObject = catalogJSONArray.getJSONObject(
+					i);
+
+				JSONArray editablesJSONArray = fragmentJSONObject.getJSONArray(
+					"editables");
+
+				if ((editablesJSONArray == null) ||
+					(editablesJSONArray.length() == 0)) {
+
+					continue;
+				}
+
+				String erc = fragmentJSONObject.getString(
+					"externalReferenceCode");
+
+				Map<String, String> editableMap = new HashMap<>();
+
+				for (int j = 0; j < editablesJSONArray.length(); j++) {
+					JSONObject editableJSONObject =
+						editablesJSONArray.getJSONObject(j);
+
+					editableMap.put(
+						editableJSONObject.getString("id"),
+						editableJSONObject.getString("type"));
+				}
+
+				result.put(erc, editableMap);
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return result;
+	}
+
+	private Map<String, JSONObject> _parseCustomFragmentSources(
+		String fullFragmentsCatalog) {
+
+		Map<String, JSONObject> result = new HashMap<>();
+
+		if (Validator.isNull(fullFragmentsCatalog)) {
+			return result;
+		}
+
+		try {
+			JSONArray catalogJSONArray = JSONFactoryUtil.createJSONArray(
+				fullFragmentsCatalog);
+
+			for (int i = 0; i < catalogJSONArray.length(); i++) {
+				JSONObject fragmentJSONObject = catalogJSONArray.getJSONObject(
+					i);
+
+				result.put(
+					fragmentJSONObject.getString("externalReferenceCode"),
+					JSONUtil.put(
+						"configuration",
+						fragmentJSONObject.getString("configuration")
+					).put(
+						"css", fragmentJSONObject.getString("css")
+					).put(
+						"html", fragmentJSONObject.getString("html")
+					).put(
+						"js", fragmentJSONObject.getString("js")
+					));
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return result;
 	}
 
 	private String _stripMarkdownFences(String input) {
@@ -814,10 +933,10 @@ public class IRToPageSpecTools {
 		input = input.trim();
 
 		if (input.startsWith("```")) {
-			int firstNewline = input.indexOf('\n');
+			int index = input.indexOf('\n');
 
-			if (firstNewline > 0) {
-				input = input.substring(firstNewline + 1);
+			if (index > 0) {
+				input = input.substring(index + 1);
 			}
 			else {
 				input = input.substring(3);
@@ -855,137 +974,53 @@ public class IRToPageSpecTools {
 		return String.valueOf(value);
 	}
 
-	private Map<String, Map<String, String>> _parseCustomEditableTypes(
-		String fullFragmentsCatalog) {
+	private static final Log _log = LogFactoryUtil.getLog(
+		IRToPageSpecTools.class);
 
-		Map<String, Map<String, String>> result = new HashMap<>();
-
-		if (Validator.isNull(fullFragmentsCatalog)) {
-			return result;
-		}
-
-		try {
-			JSONArray catalog = JSONFactoryUtil.createJSONArray(
-				fullFragmentsCatalog);
-
-			for (int i = 0; i < catalog.length(); i++) {
-				JSONObject fragment = catalog.getJSONObject(i);
-
-				String erc = fragment.getString("externalReferenceCode");
-
-				JSONArray editables = fragment.getJSONArray("editables");
-
-				if ((editables == null) || (editables.length() == 0)) {
-					continue;
-				}
-
-				Map<String, String> editableMap = new HashMap<>();
-
-				for (int j = 0; j < editables.length(); j++) {
-					JSONObject editable = editables.getJSONObject(j);
-
-					editableMap.put(
-						editable.getString("id"),
-						editable.getString("type"));
-				}
-
-				result.put(erc, editableMap);
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return result;
-	}
-
-	private Map<String, JSONObject> _parseCustomFragmentSources(
-		String fullFragmentsCatalog) {
-
-		Map<String, JSONObject> result = new HashMap<>();
-
-		if (Validator.isNull(fullFragmentsCatalog)) {
-			return result;
-		}
-
-		try {
-			JSONArray catalog = JSONFactoryUtil.createJSONArray(
-				fullFragmentsCatalog);
-
-			for (int i = 0; i < catalog.length(); i++) {
-				JSONObject fragment = catalog.getJSONObject(i);
-
-				String erc = fragment.getString("externalReferenceCode");
-
-				JSONObject sources = JSONFactoryUtil.createJSONObject();
-
-				sources.put("configuration", fragment.getString("configuration"));
-				sources.put("css", fragment.getString("css"));
-				sources.put("html", fragment.getString("html"));
-				sources.put("js", fragment.getString("js"));
-
-				result.put(erc, sources);
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return result;
-	}
-
-	private final Map<String, Map<String, String>> _customEditableTypes;
-	private final Map<String, JSONObject> _customFragmentSources;
-
-	private static final Set<String> _COLOR_STYLE_KEYS = Set.of(
+	private static final Set<String> _colorStyleKeys = Set.of(
 		"backgroundColor", "borderColor", "textColor");
-
-	private static final Set<String> _STRING_STYLE_KEYS = Set.of(
+	private static final Map<String, Map<String, String>> _editableTypes =
+		HashMapBuilder.<String, Map<String, String>>put(
+			"BASIC_COMPONENT-button",
+			Map.of("element-text", "text", "element-link", "link")
+		).put(
+			"BASIC_COMPONENT-card",
+			Map.of(
+				"01-img", "image", "02-title", "richText", "03-content",
+				"richText", "04-link", "link")
+		).put(
+			"BASIC_COMPONENT-heading", Map.of("element-text", "text")
+		).put(
+			"BASIC_COMPONENT-image", Map.of("image-square", "image")
+		).put(
+			"BASIC_COMPONENT-paragraph", Map.of("element-text", "richText")
+		).put(
+			"BASIC_COMPONENT-video", Map.of("element-video", "link")
+		).build();
+	private static final Map<String, String> _ootbNameToKey =
+		HashMapBuilder.put(
+			"button", "BASIC_COMPONENT-button"
+		).put(
+			"card", "BASIC_COMPONENT-card"
+		).put(
+			"heading", "BASIC_COMPONENT-heading"
+		).put(
+			"image", "BASIC_COMPONENT-image"
+		).put(
+			"paragraph", "BASIC_COMPONENT-paragraph"
+		).put(
+			"separator", "BASIC_COMPONENT-separator"
+		).put(
+			"spacer", "BASIC_COMPONENT-spacer"
+		).put(
+			"video", "BASIC_COMPONENT-video"
+		).build();
+	private static final Set<String> _stringStyleKeys = Set.of(
 		"borderRadius", "borderWidth", "fontFamily", "fontSize", "fontWeight",
 		"height", "maxHeight", "maxWidth", "minHeight", "minWidth", "opacity",
 		"overflow", "shadow", "textAlign", "width");
 
-	private static final Map<String, String> _OOTB_NAME_TO_KEY =
-		new HashMap<String, String>() {
-			{
-				put("heading", "BASIC_COMPONENT-heading");
-				put("paragraph", "BASIC_COMPONENT-paragraph");
-				put("card", "BASIC_COMPONENT-card");
-				put("image", "BASIC_COMPONENT-image");
-				put("button", "BASIC_COMPONENT-button");
-				put("video", "BASIC_COMPONENT-video");
-				put("spacer", "BASIC_COMPONENT-spacer");
-				put("separator", "BASIC_COMPONENT-separator");
-			}
-		};
-
-	private static final Map<String, Map<String, String>>
-		_OOTB_EDITABLE_TYPES =
-			new HashMap<String, Map<String, String>>() {
-				{
-					put(
-						"BASIC_COMPONENT-heading",
-						Map.of("element-text", "text"));
-					put(
-						"BASIC_COMPONENT-paragraph",
-						Map.of("element-text", "richText"));
-					put(
-						"BASIC_COMPONENT-card",
-						Map.of(
-							"01-img", "image",
-							"02-title", "richText",
-							"03-content", "richText",
-							"04-link", "link"));
-					put(
-						"BASIC_COMPONENT-image",
-						Map.of("image-square", "image"));
-					put(
-						"BASIC_COMPONENT-button",
-						Map.of(
-							"element-text", "text",
-							"element-link", "link"));
-					put(
-						"BASIC_COMPONENT-video",
-						Map.of("element-video", "link"));
-				}
-			};
+	private final Map<String, Map<String, String>> _customEditableTypes;
+	private final Map<String, JSONObject> _customFragmentSources;
 
 }

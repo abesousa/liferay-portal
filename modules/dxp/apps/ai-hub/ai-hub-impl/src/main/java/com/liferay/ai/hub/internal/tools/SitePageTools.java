@@ -52,7 +52,7 @@ public class SitePageTools {
 			sitePageExternalReferenceCode) {
 
 		try (SafeCloseable safeCloseable =
-				 CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
 
 			return _getPageSpecification(
 				siteExternalReferenceCode, sitePageExternalReferenceCode);
@@ -67,11 +67,11 @@ public class SitePageTools {
 		@P("Site external reference code") String siteExternalReferenceCode,
 		@P("Site page external reference code") String
 			sitePageExternalReferenceCode,
-		@P("Full ContentPageSpecification JSON payload to persist")
-		String body) {
+		@P("Full ContentPageSpecification JSON payload to persist") String
+			body) {
 
 		try (SafeCloseable safeCloseable =
-				 CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
 
 			return _updatePageSpecification(
 				body, siteExternalReferenceCode, sitePageExternalReferenceCode);
@@ -101,8 +101,7 @@ public class SitePageTools {
 					else if (stringValue.startsWith(oldERC + "-")) {
 						jsonObject.put(
 							key,
-							newERC +
-							stringValue.substring(oldERC.length()));
+							newERC + stringValue.substring(oldERC.length()));
 					}
 				}
 				else {
@@ -114,8 +113,7 @@ public class SitePageTools {
 			JSONArray jsonArray = (JSONArray)node;
 
 			for (int i = 0; i < jsonArray.length(); i++) {
-				_alignExternalReferenceCodes(
-					jsonArray.get(i), oldERC, newERC);
+				_alignExternalReferenceCodes(jsonArray.get(i), oldERC, newERC);
 			}
 		}
 	}
@@ -123,32 +121,34 @@ public class SitePageTools {
 	private void _ensurePageExperienceERCs(
 		JSONObject bodyJSONObject, String specERC) {
 
-		JSONArray pageExperiences = bodyJSONObject.getJSONArray(
+		JSONArray pageExperiencesJSONArray = bodyJSONObject.getJSONArray(
 			"pageExperiences");
 
-		if (pageExperiences == null) {
+		if (pageExperiencesJSONArray == null) {
 			return;
 		}
 
-		for (int i = 0; i < pageExperiences.length(); i++) {
-			JSONObject experience = pageExperiences.getJSONObject(i);
+		for (int i = 0; i < pageExperiencesJSONArray.length(); i++) {
+			JSONObject experienceJSONObject =
+				pageExperiencesJSONArray.getJSONObject(i);
 
-			if (experience == null) {
+			if (experienceJSONObject == null) {
 				continue;
 			}
 
-			String erc = experience.getString("externalReferenceCode");
+			String erc = experienceJSONObject.getString(
+				"externalReferenceCode");
 
 			if (Validator.isNull(erc)) {
-				experience.put(
+				experienceJSONObject.put(
 					"externalReferenceCode", specERC + "-default");
 			}
 		}
 	}
 
 	private String _getPageSpecification(
-		String siteExternalReferenceCode,
-		String sitePageExternalReferenceCode)
+			String siteExternalReferenceCode,
+			String sitePageExternalReferenceCode)
 		throws Exception {
 
 		String cached = _pageSpecCache.get(sitePageExternalReferenceCode);
@@ -183,12 +183,13 @@ public class SitePageTools {
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(responseBody);
 
-		JSONObject settings = jsonObject.getJSONObject("settings");
+		JSONObject settingsJSONObject = jsonObject.getJSONObject("settings");
 
-		if (settings != null) {
+		if (settingsJSONObject != null) {
 			_settingsCache.put(
 				sitePageExternalReferenceCode,
-				JSONFactoryUtil.createJSONObject(settings.toString()));
+				JSONFactoryUtil.createJSONObject(
+					settingsJSONObject.toString()));
 		}
 
 		_pruneReadOnlyFields(jsonObject);
@@ -201,8 +202,8 @@ public class SitePageTools {
 	}
 
 	private String _getPageSpecificationLocation(
-		String siteExternalReferenceCode,
-		String sitePageExternalReferenceCode)
+			String siteExternalReferenceCode,
+			String sitePageExternalReferenceCode)
 		throws Exception {
 
 		if (Validator.isNull(_accessToken) ||
@@ -275,8 +276,8 @@ public class SitePageTools {
 	}
 
 	private String _updatePageSpecification(
-		String body, String siteExternalReferenceCode,
-		String sitePageExternalReferenceCode)
+			String body, String siteExternalReferenceCode,
+			String sitePageExternalReferenceCode)
 		throws Exception {
 
 		body = _stripMarkdownFences(body);
@@ -297,19 +298,21 @@ public class SitePageTools {
 		_ensurePageExperienceERCs(
 			bodyJSONObject, sitePageExternalReferenceCode);
 
-		JSONObject cachedSettings = _settingsCache.get(
+		JSONObject cachedSettingsJSONObject = _settingsCache.get(
 			sitePageExternalReferenceCode);
 
-		if (cachedSettings != null) {
-			JSONObject bodySettings = bodyJSONObject.getJSONObject("settings");
+		if (cachedSettingsJSONObject != null) {
+			JSONObject bodySettingsJSONObject = bodyJSONObject.getJSONObject(
+				"settings");
 
-			if (bodySettings == null) {
-				bodyJSONObject.put("settings", cachedSettings);
+			if (bodySettingsJSONObject == null) {
+				bodyJSONObject.put("settings", cachedSettingsJSONObject);
 			}
 			else {
-				for (String key : cachedSettings.keySet()) {
-					if (!bodySettings.has(key)) {
-						bodySettings.put(key, cachedSettings.get(key));
+				for (String key : cachedSettingsJSONObject.keySet()) {
+					if (!bodySettingsJSONObject.has(key)) {
+						bodySettingsJSONObject.put(
+							key, cachedSettingsJSONObject.get(key));
 					}
 				}
 			}
@@ -333,8 +336,7 @@ public class SitePageTools {
 		_log.error(
 			StringBundler.concat(
 				"updatePageSpecification PUT URL: ", location,
-				"\nAuthorization: ", _accessToken,
-				"\nRequest body:\n", body));
+				"\nAuthorization: ", _accessToken, "\nRequest body:\n", body));
 
 		String responseBody = HttpUtil.URLtoString(options);
 
@@ -355,35 +357,33 @@ public class SitePageTools {
 				"\n\nError response:\n", responseBody);
 		}
 
-		JSONObject responseJSON = JSONFactoryUtil.createJSONObject(
+		JSONObject responseJSONObject = JSONFactoryUtil.createJSONObject(
 			responseBody);
 
-		_pruneReadOnlyFields(responseJSON);
+		_pruneReadOnlyFields(responseJSONObject);
 
 		_pageSpecCache.put(
-			sitePageExternalReferenceCode, responseJSON.toString());
+			sitePageExternalReferenceCode, responseJSONObject.toString());
 
 		return responseBody;
 	}
 
 	private static final String _RETRY_HINT_PREFIX =
 		". The server rejected the request. Compare the body you sent with " +
-		"the error response below, correct the body, and call " +
-		"updatePageSpecification again.\n\nRequest body sent:\n";
+			"the error response below, correct the body, and call " +
+				"updatePageSpecification again.\n\nRequest body sent:\n";
 
 	private static final Log _log = LogFactoryUtil.getLog(SitePageTools.class);
 
 	private static final Map<String, String> _pageSpecCache =
 		new ConcurrentHashMap<>();
-
-	private static final Map<String, JSONObject> _settingsCache =
-		new ConcurrentHashMap<>();
-
 	private static final Set<String> _readOnlyKeys = Set.of(
 		"configuration", "css", "customFields", "datePropagated",
 		"draftFragmentInstanceExternalReferenceCode", "html", "indexed", "js",
 		"namespace", "pageSpecificationExternalReferenceCode",
 		"taxonomyCategoryBriefs", "uuid");
+	private static final Map<String, JSONObject> _settingsCache =
+		new ConcurrentHashMap<>();
 
 	private final String _accessToken;
 	private final long _companyId;

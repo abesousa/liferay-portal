@@ -123,7 +123,8 @@ public class ObjectDefinitionUtil {
 
 	private static final String[] _ALLOWED_INVOKER_BUNDLE_SYMBOLIC_NAMES = {
 		"com.liferay.ai.hub.site.initializer", "com.liferay.commerce.service",
-		"com.liferay.cookies.impl", "com.liferay.frontend.data.set.admin.web",
+		"com.liferay.content.site.generator.impl", "com.liferay.cookies.impl",
+		"com.liferay.frontend.data.set.admin.web",
 		"com.liferay.frontend.data.set.impl",
 		"com.liferay.headless.builder.impl", "com.liferay.list.type.service",
 		"com.liferay.mcp.server", "com.liferay.notification.service",
@@ -139,6 +140,10 @@ public class ObjectDefinitionUtil {
 			"AIHubChatbot", "/ai-hub/chatbots"
 		).put(
 			"AIHubContentRetriever", "/ai-hub/content-retrievers"
+		).put(
+			"AIHubGeneration", "/ai-hub/generations"
+		).put(
+			"AIHubGenerationItem", "/ai-hub/generation-items"
 		).put(
 			"AIHubInstructionDefinition", "/ai-hub/instruction-definitions"
 		).put(
