@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+
+<workflow-definition
+	xmlns="urn:liferay.com:liferay-workflow_7.4.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:liferay.com:liferay-workflow_7.4.0 http://www.liferay.com/dtd/liferay-workflow-definition_7_4_0.xsd"
+>
+	<name>Tool Node</name>
+	<version>1</version>
+	<state>
+		<name>start</name>
+		<initial>true</initial>
+		<transitions>
+			<transition>
+				<name>toTool</name>
+				<target>fragmentLoader</target>
+			</transition>
+		</transitions>
+	</state>
+	<tool>
+		<name>fragmentLoader</name>
+		<tool-name>getFragments</tool-name>
+		<input-variables><![CDATA[[{"name":"siteERC"}]]]></input-variables>
+		<output-variables><![CDATA[[{"name":"fragments"}]]]></output-variables>
+		<transitions>
+			<transition>
+				<name>toEnd</name>
+				<target>end</target>
+			</transition>
+		</transitions>
+	</tool>
+	<state>
+		<name>end</name>
+	</state>
+</workflow-definition>
