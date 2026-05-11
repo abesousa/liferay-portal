@@ -5,45 +5,44 @@
 
 package com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util;
 
-import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.ai.hub.internal.assistant.tool.SitePageTools;
+import com.liferay.ai.hub.internal.assistant.tool.WorkflowNodeTools;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.workflow.WorkflowNodeManager;
+import com.liferay.portal.workflow.kaleo.definition.NodeType;
+import com.liferay.portal.workflow.kaleo.model.KaleoNode;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
+
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Feliphe Marinho
  */
 public class ToolsUtil {
 
-	public static List<String> getMCPServerExternalReferenceCodes(
-		JSONFactory jsonFactory, Map<String, String> kaleoNodeSettingValues) {
+	public static Object[] getTools(
+		long companyId, KaleoNode currentKaleoNode,
+		Map<String, Serializable> workflowContext,
+		WorkflowNodeManager workflowNodeManager) {
 
-		List<String> mcpServerExternalReferenceCodes = new ArrayList<>();
+		if (Objects.equals(
+				currentKaleoNode.getType(), NodeType.AI_DECISION.name())) {
 
-		try {
-			JSONArray jsonArray = jsonFactory.createJSONArray(
-				kaleoNodeSettingValues.get("tools"));
-
-			for (JSONObject jsonObject : (Iterable<JSONObject>)jsonArray) {
-				mcpServerExternalReferenceCodes.add(
-					jsonObject.getString("mcpServerExternalReferenceCode"));
-			}
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
-			}
+			return new Object[] {new WorkflowNodeTools(workflowNodeManager)};
 		}
 
-		return mcpServerExternalReferenceCodes;
+		if (Objects.equals(currentKaleoNode.getName(), "pageBuilder")) {
+			return new Object[] {
+				new SitePageTools(
+					GetterUtil.getString(workflowContext.get("accessToken")),
+					companyId,
+					GetterUtil.getString(workflowContext.get("userToken")))
+			};
+		}
+
+		return new Object[0];
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(ToolsUtil.class);
 
 }

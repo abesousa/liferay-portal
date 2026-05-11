@@ -58,29 +58,32 @@ public class ToolNodeWorkflowDefinitionTest {
 				RandomTestUtil.randomString(), StringPool.BLANK,
 				TestPropsValues.getUserId());
 
+		Assert.assertNotNull(workflowDefinition);
+
 		KaleoDefinitionVersion kaleoDefinitionVersion =
 			_kaleoDefinitionVersionLocalService.getLatestKaleoDefinitionVersion(
 				workflowDefinition.getCompanyId(),
 				workflowDefinition.getName());
 
-		KaleoNode kaleoNode = _getKaleoNode(
+		KaleoNode toolKaleoNode = _getKaleoNode(
 			kaleoDefinitionVersion.getKaleoDefinitionVersionId(),
 			"fragmentLoader");
 
-		Assert.assertEquals(NodeType.TOOL.name(), kaleoNode.getType());
+		Assert.assertNotNull(toolKaleoNode);
+		Assert.assertEquals(NodeType.TOOL.name(), toolKaleoNode.getType());
 
 		List<KaleoNodeSetting> kaleoNodeSettings =
 			_kaleoNodeSettingLocalService.getKaleoNodeSettings(
-				kaleoNode.getKaleoNodeId());
+				toolKaleoNode.getKaleoNodeId());
 
+		Assert.assertEquals(
+			"getFragments", _getSettingValue(kaleoNodeSettings, "toolName"));
 		Assert.assertEquals(
 			"[{\"name\":\"siteERC\"}]",
 			_getSettingValue(kaleoNodeSettings, "inputVariables"));
 		Assert.assertEquals(
 			"[{\"name\":\"fragments\"}]",
 			_getSettingValue(kaleoNodeSettings, "outputVariables"));
-		Assert.assertEquals(
-			"getFragments", _getSettingValue(kaleoNodeSettings, "toolName"));
 	}
 
 	@Test

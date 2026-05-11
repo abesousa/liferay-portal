@@ -13,6 +13,7 @@ import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.KaleoLogUtil
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.PromptUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.QuotaUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.RetrievalAugmentorUtil;
+import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.ToolProviderUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.ToolsUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.VariablesUtil;
 import com.liferay.ai.hub.rest.resource.v1_0.util.SseUtil;
@@ -184,10 +185,14 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 				MCPToolProviderUtil.create(
 					kaleoInstanceToken.getCompanyId(), _dtoConverterRegistry,
 					kaleoInstanceToken.getGroupId(), serviceContext.getLocale(),
-					ToolsUtil.getMCPServerExternalReferenceCodes(
+					ToolProviderUtil.getMCPServerExternalReferenceCodes(
 						_jsonFactory, kaleoNodeSettingValues),
 					_objectEntryManager, sseEventSinkKey,
 					serviceContext.getUserId())
+			).tools(
+				ToolsUtil.getTools(
+					kaleoInstanceToken.getCompanyId(), currentKaleoNode,
+					workflowContext, _workflowNodeManager)
 			).userMessage(
 				userMessage
 			).vertexAiGeminiStreamingChatModel(
