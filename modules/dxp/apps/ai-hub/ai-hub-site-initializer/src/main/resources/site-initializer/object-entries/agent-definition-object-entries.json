@@ -83,6 +83,18 @@
 				"en_US": "Page Builder"
 			},
 			"workflowDefinitionName": "Page Builder"
+		},
+		{
+			"active": true,
+			"description": "This agent bootstraps a brand-new website end-to-end from a natural-language description. It produces all the publish-ready batch artifacts (Site, Asset Library / Space, Connected Site, Fragment Set, Fragments with full HTML/CSS/JS, Site Pages with their content page specifications, and CMS Blogs when explicitly requested) and writes them as ContentGeneratorArtifact rows. It does NOT touch the live site — nothing is persisted until the user runs the commit action. Use this agent for any 'create a website / site / portfolio / landing page' request. Do NOT chain Page Builder, Fragment Builder, or CMS Blog Builder afterwards: this agent already covers all of them.",
+			"externalReferenceCode": "L_SITE_BUILDER",
+			"inputVariables": "request",
+			"outputVariable": "response",
+			"r_accountToAIHubAgentDefinitions_accountEntryERC": "L_AI_HUB",
+			"title_i18n": {
+				"en_US": "Site Builder"
+			},
+			"workflowDefinitionName": "Site Builder"
 		}
 	],
 	"objectDefinitionName": "AIHubAgentDefinition"
