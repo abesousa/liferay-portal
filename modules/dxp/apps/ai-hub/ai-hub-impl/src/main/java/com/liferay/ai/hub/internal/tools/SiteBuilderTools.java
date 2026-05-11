@@ -55,39 +55,12 @@ public class SiteBuilderTools {
 		_userToken = userToken;
 	}
 
-	@Tool("Cache the site plan JSON in the current session")
-	public String cacheSitePlan(
-		@P("Site plan JSON") String sitePlan) {
-
-		_emitToolProgress("Drafting the site plan...");
-
-		sitePlan = _stripMarkdownFences(sitePlan);
-		sitePlan = _repairJSON(sitePlan);
-
-		SessionVariablesUtil.putVariable(
-			_sseEventSinkKey, "sitePlan", sitePlan);
-
-		return sitePlan;
-	}
-
-	@Tool("Create a new Liferay site using the cached site plan. Returns the created site JSON.")
-	public String createSite() {
-		_emitToolProgress("Creating the site...");
-
-		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
-
-			return _createSite();
-		}
-		catch (Exception exception) {
-			return ReflectionUtil.throwException(exception);
-		}
-	}
-
-	@Tool("Cache the enriched site plan with generated fragments in the current session")
+	@Tool(
+		"Cache the enriched site plan with generated fragments in the current session"
+	)
 	public String cacheFragments(
-		@P("Enriched site plan JSON with html/css/js in customFragments")
-			String enrichedSitePlan) {
+		@P("Enriched site plan JSON with html/css/js in customFragments") String
+			enrichedSitePlan) {
 
 		_emitToolProgress("Designing the fragments...");
 
@@ -107,21 +80,38 @@ public class SiteBuilderTools {
 		return enrichedSitePlan;
 	}
 
-	@Tool("Create the fragment set and all fragments on the site using the cached enriched site plan")
+	@Tool("Cache the site plan JSON in the current session")
+	public String cacheSitePlan(@P("Site plan JSON") String sitePlan) {
+		_emitToolProgress("Drafting the site plan...");
+
+		sitePlan = _stripMarkdownFences(sitePlan);
+		sitePlan = _repairJSON(sitePlan);
+
+		SessionVariablesUtil.putVariable(
+			_sseEventSinkKey, "sitePlan", sitePlan);
+
+		return sitePlan;
+	}
+
+	@Tool(
+		"Create the fragment set and all fragments on the site using the cached enriched site plan"
+	)
 	public String createFragments() {
 		_emitToolProgress("Generating the fragments...");
 
 		try (SafeCloseable safeCloseable =
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
 
-			return _createFragments();
+			return "Fragments will be created via batch files.";
 		}
 		catch (Exception exception) {
 			return ReflectionUtil.throwException(exception);
 		}
 	}
 
-	@Tool("Create all site pages from the cached enriched site plan, converting each page IR to a Liferay page specification")
+	@Tool(
+		"Create all site pages from the cached enriched site plan, converting each page IR to a Liferay page specification"
+	)
 	public String createPages(
 		@P("Blog entries JSON array") String blogEntries) {
 
@@ -137,29 +127,16 @@ public class SiteBuilderTools {
 		}
 	}
 
-	@Tool("Post batch engine artifacts for site, asset library, connected site, fragment set, fragments, and pages to the current run.")
-	public String writeBatchFiles() {
+	@Tool(
+		"Create a new Liferay site using the cached site plan. Returns the created site JSON."
+	)
+	public String createSite() {
+		_emitToolProgress("Creating the site...");
+
 		try (SafeCloseable safeCloseable =
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
 
-			return _writeBatchFiles(null);
-		}
-		catch (Exception exception) {
-			return ReflectionUtil.throwException(exception);
-		}
-	}
-
-	@Tool("Mark the current run as ready. Call this once after every artifact has been posted, signalling the user can press Generate.")
-	public String markRunReady() {
-		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
-
-			_patchRunStatus("ready");
-
-			SseUtil.send(
-				"ready", "Run Updated", null, _sseEventSinkKey);
-
-			return "Run marked ready.";
+			return _createSite();
 		}
 		catch (Exception exception) {
 			return ReflectionUtil.throwException(exception);
@@ -178,77 +155,363 @@ public class SiteBuilderTools {
 		return value;
 	}
 
-	private String _createFragments() throws Exception {
-		return "Fragments will be created via batch files.";
+	@Tool(
+		"Mark the current run as ready. Call this once after every artifact has been posted, signalling the user can press Generate."
+	)
+	public String markRunReady() {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
+
+			_patchRunStatus("ready");
+
+			SseUtil.send("ready", "Run Updated", null, _sseEventSinkKey);
+
+			return "Run marked ready.";
+		}
+		catch (Exception exception) {
+			return ReflectionUtil.throwException(exception);
+		}
 	}
 
-	private Map<String, String> _deduplicateEditableIds(String html) {
-		Map<String, String> renamedIds = new HashMap<>();
+	@Tool(
+		"Post batch engine artifacts for site, asset library, connected site, fragment set, fragments, and pages to the current run."
+	)
+	public String writeBatchFiles() {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(_companyId)) {
 
-		if (html == null) {
-			return renamedIds;
+			return _writeBatchFiles(null);
+		}
+		catch (Exception exception) {
+			return ReflectionUtil.throwException(exception);
+		}
+	}
+
+	private void _appendDraftSuffix(JSONArray elementsJSONArray) {
+		for (int i = 0; i < elementsJSONArray.length(); i++) {
+			JSONObject elementJSONObject = elementsJSONArray.getJSONObject(i);
+
+			String erc = elementJSONObject.getString("externalReferenceCode");
+
+			if (Validator.isNotNull(erc)) {
+				elementJSONObject.put("externalReferenceCode", erc + "-draft");
+			}
+
+			String parentERC = elementJSONObject.getString(
+				"parentExternalReferenceCode");
+
+			if (Validator.isNotNull(parentERC)) {
+				elementJSONObject.put(
+					"parentExternalReferenceCode", parentERC + "-draft");
+			}
+
+			JSONObject definitionJSONObject = elementJSONObject.getJSONObject(
+				"pageElementDefinition");
+
+			if (definitionJSONObject != null) {
+				JSONObject fragmentInstanceJSONObject =
+					definitionJSONObject.getJSONObject("fragmentInstance");
+
+				if (fragmentInstanceJSONObject != null) {
+					String instERC = fragmentInstanceJSONObject.getString(
+						"fragmentInstanceExternalReferenceCode");
+
+					if (Validator.isNotNull(instERC)) {
+						fragmentInstanceJSONObject.put(
+							"fragmentInstanceExternalReferenceCode",
+							instERC + "-draft");
+					}
+				}
+			}
+
+			JSONArray childrenJSONArray = elementJSONObject.getJSONArray(
+				"pageElements");
+
+			if ((childrenJSONArray != null) &&
+				(childrenJSONArray.length() > 0)) {
+
+				_appendDraftSuffix(childrenJSONArray);
+			}
+		}
+	}
+
+	private JSONObject _createBatchWrapper(
+			String className, boolean includeSiteERC, String siteERC,
+			boolean includePrivateLayout)
+		throws Exception {
+
+		JSONObject parametersJSONObject = JSONUtil.put(
+			"containsHeaders", "true"
+		).put(
+			"createStrategy", "UPSERT"
+		).put(
+			"featureFlag", "LPD-39244"
+		).put(
+			"importStrategy", "ON_ERROR_FAIL"
+		);
+
+		if (includeSiteERC) {
+			parametersJSONObject.put("siteExternalReferenceCode", siteERC);
 		}
 
-		Map<String, Integer> idCounts = new HashMap<>();
-
-		Matcher counter = _editableIdPattern.matcher(html);
-
-		Map<String, Integer> totalOccurrences = new HashMap<>();
-
-		while (counter.find()) {
-			String id = counter.group(1);
-
-			totalOccurrences.merge(id, 1, Integer::sum);
+		if (includePrivateLayout) {
+			parametersJSONObject.put("privateLayout", "false");
 		}
 
-		Matcher matcher = _editableIdPattern.matcher(html);
+		return JSONUtil.put(
+			"configuration",
+			JSONUtil.put(
+				"className", className
+			).put(
+				"multiCompany", true
+			).put(
+				"parameters", parametersJSONObject
+			).put(
+				"taskItemDelegateName", "DEFAULT"
+			));
+	}
 
-		while (matcher.find()) {
-			String id = matcher.group(1);
+	private JSONObject _createI18nJSON(String locale, String value) {
+		return JSONUtil.put(locale, value);
+	}
 
-			if (totalOccurrences.getOrDefault(id, 0) <= 1) {
+	private String _createPages(String blogEntries) throws Exception {
+		return _writeBatchFiles(blogEntries);
+	}
+
+	private String _createSite() throws Exception {
+		String sitePlan = SessionVariablesUtil.getVariable(
+			_sseEventSinkKey, "sitePlan");
+
+		if (Validator.isNull(sitePlan)) {
+			return "Error: No cached site plan found in session.";
+		}
+
+		sitePlan = _stripMarkdownFences(sitePlan);
+
+		JSONObject sitePlanJSONObject;
+
+		try {
+			sitePlanJSONObject = JSONFactoryUtil.createJSONObject(sitePlan);
+		}
+		catch (Exception exception) {
+			_log.error(
+				StringBundler.concat(
+					"Failed to parse sitePlan JSON: ", exception.getMessage(),
+					"\nRaw sitePlan:\n", sitePlan));
+
+			return "Error: Site plan is not valid JSON - " +
+				exception.getMessage();
+		}
+
+		JSONObject siteJSONObject = sitePlanJSONObject.getJSONObject("site");
+
+		if (siteJSONObject == null) {
+			return "Error: Site plan does not contain a 'site' object.";
+		}
+
+		JSONObject bodyJSONObject = JSONUtil.put(
+			"active", true
+		).put(
+			"description", siteJSONObject.getString("description")
+		).put(
+			"externalReferenceCode",
+			siteJSONObject.getString("externalReferenceCode")
+		).put(
+			"membershipType", "open"
+		).put(
+			"name", siteJSONObject.getString("name")
+		);
+
+		String location = _getBaseURL() + "/o/headless-admin-site/v1.0/sites";
+
+		Http.Options options = new Http.Options();
+
+		options.addHeader("Authorization", _accessToken);
+		options.addHeader(
+			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
+		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
+		options.setBody(
+			bodyJSONObject.toString(), ContentTypes.APPLICATION_JSON, "UTF-8");
+		options.setLocation(location);
+		options.setMethod(Http.Method.POST);
+
+		String responseBody = HttpUtil.URLtoString(options);
+
+		int responseCode = options.getResponse(
+		).getResponseCode();
+
+		if ((responseCode < 200) || (responseCode >= 300)) {
+			_log.error(
+				StringBundler.concat(
+					"createSite failed with HTTP ", responseCode,
+					". Request body: ", bodyJSONObject, ". Response body: ",
+					responseBody));
+
+			return StringBundler.concat(
+				"Error: HTTP ", responseCode, ". ", responseBody);
+		}
+
+		return responseBody;
+	}
+
+	private JSONObject _createThemeSettings() throws Exception {
+		return JSONUtil.put(
+			"colorSchemeName", "01"
+		).put(
+			"themeName", "classic_WAR_classictheme"
+		).put(
+			"themeSettings",
+			JSONUtil.put(
+				"lfr-theme:regular:show-footer", "false"
+			).put(
+				"lfr-theme:regular:show-header", "false"
+			).put(
+				"lfr-theme:regular:show-header-search", "false"
+			).put(
+				"lfr-theme:regular:wrap-widget-page-content", "false"
+			)
+		);
+	}
+
+	private String _detectLanguages(JSONArray itemsJSONArray, String fileName) {
+		Set<String> locales = new TreeSet<>();
+
+		if ((itemsJSONArray != null) && (itemsJSONArray.length() > 0)) {
+			Matcher i18nMatcher = _i18nBlockPattern.matcher(
+				itemsJSONArray.toString());
+
+			while (i18nMatcher.find()) {
+				Matcher localeMatcher = _localeKeyPattern.matcher(
+					i18nMatcher.group(1));
+
+				while (localeMatcher.find()) {
+					locales.add(
+						localeMatcher.group(
+							1
+						).toLowerCase());
+				}
+			}
+		}
+
+		if (locales.isEmpty()) {
+			Matcher matcher = _fileNameLanguagePattern.matcher(fileName);
+
+			if (matcher.find()) {
+				locales.add(
+					matcher.group(
+						1
+					).toLowerCase());
+			}
+		}
+
+		return String.join(",", locales);
+	}
+
+	private void _emitToolProgress(String label) {
+		SseUtil.send(label, "Tool Progress", null, _sseEventSinkKey);
+	}
+
+	private void _fixContentReferences(
+		JSONArray elementsJSONArray, String fragmentKey,
+		Map<String, Integer> totalOccurrences) {
+
+		if (elementsJSONArray == null) {
+			return;
+		}
+
+		for (int i = 0; i < elementsJSONArray.length(); i++) {
+			JSONObject elementJSONObject = elementsJSONArray.getJSONObject(i);
+
+			if (elementJSONObject == null) {
 				continue;
 			}
 
-			int count = idCounts.getOrDefault(id, 0);
+			String type = elementJSONObject.getString("type");
 
-			idCounts.put(id, count + 1);
+			if (type.equals("fragment") &&
+				fragmentKey.equals(elementJSONObject.getString("key"))) {
 
-			if (count > 0) {
-				renamedIds.put(id + ":" + count, id + "-" + (count + 1));
+				JSONObject contentJSONObject = elementJSONObject.getJSONObject(
+					"content");
+
+				if (contentJSONObject != null) {
+					JSONObject fixedContentJSONObject =
+						JSONFactoryUtil.createJSONObject();
+
+					for (String editableId : contentJSONObject.keySet()) {
+						fixedContentJSONObject.put(
+							editableId, contentJSONObject.get(editableId));
+
+						if (totalOccurrences.getOrDefault(editableId, 0) > 1) {
+							int total = totalOccurrences.get(editableId);
+
+							for (int d = 2; d <= total; d++) {
+								fixedContentJSONObject.put(
+									editableId + "-" + d,
+									contentJSONObject.get(editableId));
+							}
+						}
+					}
+
+					elementJSONObject.put("content", fixedContentJSONObject);
+				}
+			}
+
+			// Recurse into children/columns
+
+			JSONArray childrenJSONArray = elementJSONObject.getJSONArray(
+				"children");
+
+			if (childrenJSONArray != null) {
+				_fixContentReferences(
+					childrenJSONArray, fragmentKey, totalOccurrences);
+			}
+
+			JSONArray columnsJSONArray = elementJSONObject.getJSONArray(
+				"columns");
+
+			if (columnsJSONArray != null) {
+				for (int c = 0; c < columnsJSONArray.length(); c++) {
+					JSONObject columnJSONObject =
+						columnsJSONArray.getJSONObject(c);
+
+					if (columnJSONObject != null) {
+						_fixContentReferences(
+							columnJSONObject.getJSONArray("children"),
+							fragmentKey, totalOccurrences);
+					}
+				}
 			}
 		}
-
-		return renamedIds;
 	}
 
 	private String _fixDuplicateEditableIds(String enrichedSitePlan)
 		throws Exception {
 
-		JSONObject planJSON = JSONFactoryUtil.createJSONObject(enrichedSitePlan);
+		JSONObject planJSONObject = JSONFactoryUtil.createJSONObject(
+			enrichedSitePlan);
 
-		JSONArray customFragments = planJSON.getJSONArray("customFragments");
+		JSONArray customFragmentsJSONArray = planJSONObject.getJSONArray(
+			"customFragments");
 
-		if ((customFragments == null) || (customFragments.length() == 0)) {
+		if ((customFragmentsJSONArray == null) ||
+			(customFragmentsJSONArray.length() == 0)) {
+
 			return enrichedSitePlan;
 		}
 
-		JSONArray pages = planJSON.getJSONArray("pages");
+		JSONArray pagesJSONArray = planJSONObject.getJSONArray("pages");
 
-		for (int i = 0; i < customFragments.length(); i++) {
-			JSONObject fragment = customFragments.getJSONObject(i);
+		for (int i = 0; i < customFragmentsJSONArray.length(); i++) {
+			JSONObject fragmentJSONObject =
+				customFragmentsJSONArray.getJSONObject(i);
 
-			String html = fragment.getString("html");
+			String html = fragmentJSONObject.getString("html");
 
 			if (Validator.isNull(html)) {
 				continue;
 			}
-
-			String fragmentKey = fragment.getString("key");
-
-			// Find duplicate IDs
-
-			Map<String, Integer> idCounts = new HashMap<>();
 
 			Matcher matcher = _editableIdPattern.matcher(html);
 
@@ -272,9 +535,11 @@ public class SiteBuilderTools {
 				continue;
 			}
 
-			// Fix HTML — rename duplicate occurrences
+			String fragmentKey = fragmentJSONObject.getString("key");
 
-			Map<String, String> oldToNewIds = new HashMap<>();
+			Map<String, Integer> idCounts = new HashMap<>();
+
+			// Fix HTML — rename duplicate occurrences
 
 			matcher = _editableIdPattern.matcher(html);
 
@@ -285,8 +550,7 @@ public class SiteBuilderTools {
 
 				if (totalOccurrences.getOrDefault(id, 0) <= 1) {
 					matcher.appendReplacement(
-						sb,
-						Matcher.quoteReplacement(matcher.group()));
+						sb, Matcher.quoteReplacement(matcher.group()));
 
 					continue;
 				}
@@ -298,983 +562,105 @@ public class SiteBuilderTools {
 				if (count > 0) {
 					String newId = id + "-" + (count + 1);
 
-					oldToNewIds.put(id + "##" + count, newId);
-
 					matcher.appendReplacement(
 						sb,
 						Matcher.quoteReplacement(
 							"data-lfr-editable-id=\"" + newId + "\""));
-
 				}
 				else {
 					matcher.appendReplacement(
-						sb,
-						Matcher.quoteReplacement(matcher.group()));
+						sb, Matcher.quoteReplacement(matcher.group()));
 				}
 			}
 
 			matcher.appendTail(sb);
 
-			fragment.put("html", sb.toString());
+			fragmentJSONObject.put("html", sb.toString());
 
 			// Fix editables array — add new IDs
 
-			JSONArray editables = fragment.getJSONArray("editables");
+			JSONArray editablesJSONArray = fragmentJSONObject.getJSONArray(
+				"editables");
 
-			if (editables != null) {
-				JSONArray fixedEditables = JSONFactoryUtil.createJSONArray();
+			if (editablesJSONArray != null) {
+				JSONArray fixedEditablesJSONArray =
+					JSONFactoryUtil.createJSONArray();
 
-				for (int e = 0; e < editables.length(); e++) {
-					JSONObject editable = editables.getJSONObject(e);
+				for (int e = 0; e < editablesJSONArray.length(); e++) {
+					JSONObject editableJSONObject =
+						editablesJSONArray.getJSONObject(e);
 
-					fixedEditables.put(editable);
+					fixedEditablesJSONArray.put(editableJSONObject);
 
-					String editableId = editable.getString("id");
+					String editableId = editableJSONObject.getString("id");
 
 					if (totalOccurrences.getOrDefault(editableId, 0) > 1) {
 						int total = totalOccurrences.get(editableId);
 
 						for (int d = 2; d <= total; d++) {
-							JSONObject newEditable =
-								JSONFactoryUtil.createJSONObject();
-
-							newEditable.put("id", editableId + "-" + d);
-							newEditable.put(
-								"type", editable.getString("type"));
-
-							fixedEditables.put(newEditable);
+							fixedEditablesJSONArray.put(
+								JSONUtil.put(
+									"id", editableId + "-" + d
+								).put(
+									"type", editableJSONObject.getString("type")
+								));
 						}
 					}
 				}
 
-				fragment.put("editables", fixedEditables);
+				fragmentJSONObject.put("editables", fixedEditablesJSONArray);
 			}
 
 			// Fix page IR content references
 
-			if (pages != null) {
-				for (int p = 0; p < pages.length(); p++) {
-					JSONObject page = pages.getJSONObject(p);
+			if (pagesJSONArray != null) {
+				for (int p = 0; p < pagesJSONArray.length(); p++) {
+					JSONObject pageJSONObject = pagesJSONArray.getJSONObject(p);
 
-					JSONObject ir = page.getJSONObject("ir");
+					JSONObject irJSONObject = pageJSONObject.getJSONObject(
+						"ir");
 
-					if (ir != null) {
+					if (irJSONObject != null) {
 						_fixContentReferences(
-							ir.getJSONArray("elements"), fragmentKey,
+							irJSONObject.getJSONArray("elements"), fragmentKey,
 							totalOccurrences);
 					}
 				}
 			}
 		}
 
-		String fixedPlan = planJSON.toString();
-
-		return fixedPlan;
+		return planJSONObject.toString();
 	}
 
-	private void _fixContentReferences(
-		JSONArray elements, String fragmentKey,
-		Map<String, Integer> totalOccurrences) {
-
-		if (elements == null) {
-			return;
+	private String _fixImageEditables(String html) {
+		if (html == null) {
+			return html;
 		}
 
-		for (int i = 0; i < elements.length(); i++) {
-			JSONObject element = elements.getJSONObject(i);
+		// Find image editable elements that are not <img> tags and
+		// don't contain <img> tags — replace them with <img> tags
 
-			if (element == null) {
-				continue;
-			}
+		Matcher matcher = _imageEditableTagPattern.matcher(html);
 
-			String type = element.getString("type");
+		StringBuffer sb = new StringBuffer();
 
-			if ("fragment".equals(type) &&
-				fragmentKey.equals(element.getString("key"))) {
+		while (matcher.find()) {
+			String editableId = matcher.group(2);
 
-				JSONObject content = element.getJSONObject("content");
+			String afterAttrs = matcher.group(3);
 
-				if (content != null) {
-					JSONObject fixedContent =
-						JSONFactoryUtil.createJSONObject();
+			String replacement = StringBundler.concat(
+				"<img data-lfr-editable-id=\"", editableId,
+				"\" data-lfr-editable-type=\"image\"", afterAttrs,
+				" alt=\"\" src=\"\">");
 
-					for (String editableId : content.keySet()) {
-						fixedContent.put(editableId, content.get(editableId));
-
-						if (totalOccurrences.getOrDefault(
-								editableId, 0) > 1) {
-
-							int total = totalOccurrences.get(editableId);
-
-							for (int d = 2; d <= total; d++) {
-								fixedContent.put(
-									editableId + "-" + d,
-									content.get(editableId));
-							}
-						}
-					}
-
-					element.put("content", fixedContent);
-				}
-			}
-
-			// Recurse into children/columns
-
-			JSONArray children = element.getJSONArray("children");
-
-			if (children != null) {
-				_fixContentReferences(
-					children, fragmentKey, totalOccurrences);
-			}
-
-			JSONArray columns = element.getJSONArray("columns");
-
-			if (columns != null) {
-				for (int c = 0; c < columns.length(); c++) {
-					JSONObject column = columns.getJSONObject(c);
-
-					if (column != null) {
-						_fixContentReferences(
-							column.getJSONArray("children"), fragmentKey,
-							totalOccurrences);
-					}
-				}
-			}
-		}
-	}
-
-	private String _createPages(String blogEntries) throws Exception {
-		return _writeBatchFiles(blogEntries);
-	}
-
-	private String _writeBatchFiles(String blogEntries) throws Exception {
-		String enrichedSitePlan = SessionVariablesUtil.getVariable(
-			_sseEventSinkKey, "enrichedSitePlan");
-
-		if (Validator.isNull(enrichedSitePlan)) {
-			return "Error: No cached enriched site plan found in session.";
+			matcher.appendReplacement(
+				sb, Matcher.quoteReplacement(replacement));
 		}
 
-		JSONObject planJSON = JSONFactoryUtil.createJSONObject(enrichedSitePlan);
+		matcher.appendTail(sb);
 
-		JSONObject siteJSON = planJSON.getJSONObject("site");
-
-		if (siteJSON == null) {
-			return "Error: Enriched site plan does not contain a 'site' object.";
-		}
-
-		String siteERC = siteJSON.getString("externalReferenceCode");
-		String siteTitle = siteJSON.getString("name");
-
-		StringBuilder results = new StringBuilder();
-
-		// 01-site
-
-		JSONObject siteBatch = _createBatchWrapper(
-			"com.liferay.headless.admin.site.dto.v1_0.Site", false, siteERC,
-			false);
-
-		JSONObject siteItem = JSONFactoryUtil.createJSONObject();
-
-		siteItem.put("active", true);
-		siteItem.put("description", siteJSON.getString("description"));
-		siteItem.put("externalReferenceCode", siteERC);
-		siteItem.put("membershipType", "open");
-		siteItem.put("name", siteTitle);
-
-		siteBatch.put(
-			"items", JSONFactoryUtil.createJSONArray().put(siteItem));
-
-		_postArtifact(1, "01-site.batch-engine-data.json", siteBatch);
-
-		results.append("Posted 01-site.batch-engine-data.json\n");
-
-		// 02-asset-library
-
-		String assetLibraryERC = siteERC + "-space";
-
-		JSONObject assetLibraryBatch = _createBatchWrapper(
-			"com.liferay.headless.asset.library.dto.v1_0.AssetLibrary",
-			false, siteERC, false);
-
-		JSONObject assetLibraryItem = JSONFactoryUtil.createJSONObject();
-
-		assetLibraryItem.put("assetLibraryKey", assetLibraryERC);
-		assetLibraryItem.put("externalReferenceCode", assetLibraryERC);
-		assetLibraryItem.put("name", siteTitle + " Space");
-		assetLibraryItem.put(
-			"name_i18n", _createI18nJSON("en-US", siteTitle + " Space"));
-
-		// AssetLibraryResourceImpl._putUnicodeProperties returns null when
-		// settings is null; the upsert path then NPEs in
-		// UnicodePropertiesBuilder.putAll. Send an empty settings object to
-		// take the non-null branch with default values.
-
-		assetLibraryItem.put("settings", JSONFactoryUtil.createJSONObject());
-		assetLibraryItem.put("type", "Space");
-
-		assetLibraryBatch.put(
-			"items",
-			JSONFactoryUtil.createJSONArray().put(assetLibraryItem));
-
-		_postArtifact(
-			2, "02-asset-library.batch-engine-data.json", assetLibraryBatch);
-
-		results.append("Posted 02-asset-library.batch-engine-data.json\n");
-
-		// 03-connected-site
-
-		JSONObject connectedSiteBatch = JSONFactoryUtil.createJSONObject();
-
-		JSONObject connectedSiteConfig =
-			JSONFactoryUtil.createJSONObject();
-
-		connectedSiteConfig.put(
-			"className",
-			"com.liferay.headless.asset.library.dto.v1_0.ConnectedSite");
-		connectedSiteConfig.put("multiCompany", true);
-		connectedSiteConfig.put("taskItemDelegateName", "DEFAULT");
-
-		JSONObject connectedSiteParams =
-			JSONFactoryUtil.createJSONObject();
-
-		connectedSiteParams.put(
-			"assetLibraryExternalReferenceCode", assetLibraryERC);
-		connectedSiteParams.put("containsHeaders", "true");
-		connectedSiteParams.put("createStrategy", "UPSERT");
-		connectedSiteParams.put("importStrategy", "ON_ERROR_FAIL");
-
-		connectedSiteConfig.put("parameters", connectedSiteParams);
-
-		connectedSiteBatch.put("configuration", connectedSiteConfig);
-
-		JSONObject connectedSiteItem =
-			JSONFactoryUtil.createJSONObject();
-
-		connectedSiteItem.put("descriptiveName", siteTitle);
-		connectedSiteItem.put("externalReferenceCode", siteERC);
-		connectedSiteItem.put("name", siteTitle);
-		connectedSiteItem.put("searchable", true);
-
-		connectedSiteBatch.put(
-			"items",
-			JSONFactoryUtil.createJSONArray().put(connectedSiteItem));
-
-		_postArtifact(
-			3, "03-connected-site.batch-engine-data.json",
-			connectedSiteBatch);
-
-		results.append(
-			"Posted 03-connected-site.batch-engine-data.json\n");
-
-		// 04-fragment-set
-
-		String fragmentSetERC = siteERC + "-fragments";
-
-		JSONObject fragmentSetBatch = _createBatchWrapper(
-			"com.liferay.headless.admin.fragment.dto.v1_0.FragmentSet", true,
-			siteERC, false);
-
-		JSONObject fragmentSetItem = JSONFactoryUtil.createJSONObject();
-
-		fragmentSetItem.put("externalReferenceCode", fragmentSetERC);
-		fragmentSetItem.put("key", fragmentSetERC);
-		fragmentSetItem.put("name", siteTitle + " Fragments");
-
-		fragmentSetBatch.put(
-			"items", JSONFactoryUtil.createJSONArray().put(fragmentSetItem));
-
-		_postArtifact(
-			4, "04-fragment-set.batch-engine-data.json", fragmentSetBatch);
-
-		results.append("Posted 04-fragment-set.batch-engine-data.json\n");
-
-		// 05-fragments
-
-		JSONArray customFragments = planJSON.getJSONArray("customFragments");
-
-		JSONObject fragmentsBatch = _createBatchWrapper(
-			"com.liferay.headless.admin.fragment.dto.v1_0.Fragment", true,
-			siteERC, false);
-
-		JSONArray fragmentItems = JSONFactoryUtil.createJSONArray();
-
-		if ((customFragments != null) && (customFragments.length() > 0)) {
-			for (int i = 0; i < customFragments.length(); i++) {
-				JSONObject fragment = customFragments.getJSONObject(i);
-
-				String fragmentKey = fragment.getString("key");
-
-				JSONObject fragmentItem = JSONFactoryUtil.createJSONObject();
-
-				fragmentItem.put("externalReferenceCode", fragmentKey);
-				fragmentItem.put(
-					"fragmentSetExternalReferenceCode", fragmentSetERC);
-				fragmentItem.put("key", fragmentKey);
-				fragmentItem.put("name", fragment.getString("name"));
-				fragmentItem.put("type", "Component");
-
-				JSONArray fragmentVersions =
-					JSONFactoryUtil.createJSONArray();
-
-				JSONObject approvedVersion =
-					JSONFactoryUtil.createJSONObject();
-
-				approvedVersion.put("css", fragment.getString("css"));
-				approvedVersion.put(
-					"html",
-					_fixImageEditables(fragment.getString("html")));
-				approvedVersion.put("js", fragment.getString("js"));
-				approvedVersion.put("status", "Approved");
-
-				if (fragment.getBoolean("isNavigationMenu")) {
-					approvedVersion.put(
-						"configuration", _NAV_MENU_CONFIGURATION);
-				}
-
-				fragmentVersions.put(approvedVersion);
-
-				fragmentItem.put("fragmentVersions", fragmentVersions);
-
-				fragmentItems.put(fragmentItem);
-			}
-		}
-
-		fragmentsBatch.put("items", fragmentItems);
-
-		_postArtifact(
-			5, "05-fragments.batch-engine-data.json", fragmentsBatch);
-
-		results.append("Posted 05-fragments.batch-engine-data.json\n");
-
-		// 06-pages
-
-		JSONArray pages = planJSON.getJSONArray("pages");
-
-		JSONObject pagesBatch = _createBatchWrapper(
-			"com.liferay.headless.admin.site.dto.v1_0.SitePage", true,
-			siteERC, true);
-
-		JSONArray pageItems = JSONFactoryUtil.createJSONArray();
-
-		if ((pages != null) && (pages.length() > 0)) {
-			String fragmentsCatalog = "[]";
-
-			if ((customFragments != null) &&
-				(customFragments.length() > 0)) {
-
-				JSONArray catalog = JSONFactoryUtil.createJSONArray();
-
-				for (int f = 0; f < customFragments.length(); f++) {
-					JSONObject fragment =
-						customFragments.getJSONObject(f);
-
-					JSONObject catalogEntry =
-						JSONFactoryUtil.createJSONObject();
-
-					if (fragment.getBoolean("isNavigationMenu")) {
-						catalogEntry.put(
-							"configuration", _NAV_MENU_CONFIGURATION);
-					}
-
-					catalogEntry.put("css", fragment.getString("css"));
-					catalogEntry.put(
-						"editables",
-						fragment.getJSONArray("editables"));
-					catalogEntry.put(
-						"externalReferenceCode",
-						fragment.getString("key"));
-					catalogEntry.put("html", fragment.getString("html"));
-					catalogEntry.put("js", fragment.getString("js"));
-
-					catalog.put(catalogEntry);
-				}
-
-				fragmentsCatalog = catalog.toString();
-			}
-
-			IRToPageSpecTools irToPageSpecTools = new IRToPageSpecTools(
-				fragmentsCatalog);
-
-			for (int i = 0; i < pages.length(); i++) {
-				JSONObject page = pages.getJSONObject(i);
-
-				String pageTitle = page.getString("title");
-				String pageERC = page.getString("externalReferenceCode");
-
-				JSONObject ir = page.getJSONObject("ir");
-
-				JSONArray pageElements = JSONFactoryUtil.createJSONArray();
-
-				if (ir != null) {
-					String approvedSpecStr =
-						irToPageSpecTools.convertToPageSpec(
-							ir.toString(), pageERC, pageERC + "-default",
-							"en-US");
-
-					if (!approvedSpecStr.startsWith("Error")) {
-						JSONObject specJSON =
-							JSONFactoryUtil.createJSONObject(
-								approvedSpecStr);
-
-						JSONArray experiences = specJSON.getJSONArray(
-							"pageExperiences");
-
-						if ((experiences != null) &&
-							(experiences.length() > 0)) {
-
-							pageElements =
-								experiences.getJSONObject(
-									0).getJSONArray("pageElements");
-						}
-					}
-				}
-
-				// Approved spec
-
-				JSONObject approvedExp =
-					JSONFactoryUtil.createJSONObject();
-
-				approvedExp.put(
-					"externalReferenceCode", pageERC + "-default");
-				approvedExp.put("key", "DEFAULT");
-				approvedExp.put(
-					"name_i18n", _createI18nJSON("en-US", "Default"));
-				approvedExp.put("pageElements", pageElements);
-				approvedExp.put("priority", 0);
-
-				JSONObject approvedSpec =
-					JSONFactoryUtil.createJSONObject();
-
-				approvedSpec.put(
-					"draftContentPageSpecificationExternalReferenceCode",
-					pageERC + "-draft");
-				approvedSpec.put("externalReferenceCode", pageERC);
-				approvedSpec.put(
-					"pageExperiences",
-					JSONFactoryUtil.createJSONArray().put(approvedExp));
-				approvedSpec.put("settings", _createThemeSettings());
-				approvedSpec.put("status", "Approved");
-				approvedSpec.put("type", "ContentPageSpecification");
-
-				// Draft spec
-
-				JSONArray draftPageElements =
-					JSONFactoryUtil.createJSONArray();
-
-				if (pageElements.length() > 0) {
-					draftPageElements = JSONFactoryUtil.createJSONArray(
-						pageElements.toString());
-
-					_appendDraftSuffix(draftPageElements);
-				}
-
-				JSONObject draftExp = JSONFactoryUtil.createJSONObject();
-
-				draftExp.put(
-					"externalReferenceCode",
-					pageERC + "-draft-default");
-				draftExp.put("key", "DEFAULT");
-				draftExp.put(
-					"name_i18n", _createI18nJSON("en-US", "Default"));
-				draftExp.put("pageElements", draftPageElements);
-				draftExp.put("priority", 0);
-
-				JSONObject draftSpec = JSONFactoryUtil.createJSONObject();
-
-				draftSpec.put(
-					"externalReferenceCode", pageERC + "-draft");
-				draftSpec.put(
-					"pageExperiences",
-					JSONFactoryUtil.createJSONArray().put(draftExp));
-				draftSpec.put("settings", _createThemeSettings());
-				draftSpec.put("status", "Draft");
-				draftSpec.put("type", "ContentPageSpecification");
-
-				// Page body
-
-				JSONObject pageBody = JSONFactoryUtil.createJSONObject();
-
-				pageBody.put("externalReferenceCode", pageERC);
-				pageBody.put(
-					"name_i18n", _createI18nJSON("en-US", pageTitle));
-				pageBody.put(
-					"pageSettings",
-					JSONFactoryUtil.createJSONObject().put(
-						"type", "ContentPageSettings"));
-				pageBody.put(
-					"pageSpecifications",
-					JSONFactoryUtil.createJSONArray().put(
-						approvedSpec).put(draftSpec));
-				pageBody.put("type", "ContentPage");
-
-				pageItems.put(pageBody);
-			}
-		}
-
-		pagesBatch.put("items", pageItems);
-
-		_postArtifact(6, "06-pages.batch-engine-data.json", pagesBatch);
-
-		results.append("Posted 06-pages.batch-engine-data.json\n");
-
-		// 07-blogs
-
-		if (Validator.isNotNull(blogEntries)) {
-			blogEntries = _stripMarkdownFences(blogEntries);
-			blogEntries = _repairJSON(blogEntries);
-
-			String trimmed = blogEntries.trim();
-
-			JSONArray blogArray = null;
-
-			try {
-				if (trimmed.startsWith("[")) {
-					blogArray = JSONFactoryUtil.createJSONArray(trimmed);
-				}
-				else if (trimmed.startsWith("{")) {
-					JSONObject wrapper = JSONFactoryUtil.createJSONObject(
-						trimmed);
-
-					for (String key : wrapper.keySet()) {
-						Object value = wrapper.get(key);
-
-						if (value instanceof JSONArray) {
-							blogArray = (JSONArray)value;
-
-							break;
-						}
-					}
-				}
-			}
-			catch (Exception exception) {
-				_log.error(
-					"Unable to parse blogEntries as JSON; skipping 07-blogs",
-					exception);
-			}
-
-			if (blogArray != null) {
-				_sanitizeBlogKeywords(blogArray);
-
-				JSONObject blogsBatch = JSONFactoryUtil.createJSONObject();
-
-				JSONObject blogsConfig = JSONFactoryUtil.createJSONObject();
-
-				blogsConfig.put(
-					"className",
-					"com.liferay.object.rest.dto.v1_0.ObjectEntry");
-				blogsConfig.put("multiCompany", true);
-				blogsConfig.put("taskItemDelegateName", "CMSBlog");
-
-				JSONObject blogsParams = JSONFactoryUtil.createJSONObject();
-
-				blogsParams.put("containsHeaders", "true");
-				blogsParams.put("createStrategy", "UPSERT");
-				blogsParams.put("featureFlag", "LPD-17564");
-				blogsParams.put("importStrategy", "ON_ERROR_FAIL");
-				blogsParams.put("scopeKey", siteERC + "-space");
-				blogsParams.put("updateStrategy", "UPDATE");
-
-				blogsConfig.put("parameters", blogsParams);
-
-				blogsBatch.put("configuration", blogsConfig);
-				blogsBatch.put("items", blogArray);
-
-				_postArtifact(
-					7, "07-blogs.batch-engine-data.json", blogsBatch);
-
-				results.append("Posted 07-blogs.batch-engine-data.json\n");
-			}
-			else {
-				_log.error(
-					"Failed to parse blogEntries as JSON array. Raw:\n" +
-						blogEntries);
-			}
-		}
-
-		return results.toString();
-	}
-
-	private JSONObject _createBatchWrapper(
-			String className, boolean includeSiteERC, String siteERC,
-			boolean includePrivateLayout)
-		throws Exception {
-
-		JSONObject wrapper = JSONFactoryUtil.createJSONObject();
-
-		JSONObject configuration = JSONFactoryUtil.createJSONObject();
-
-		configuration.put("className", className);
-		configuration.put("multiCompany", true);
-
-		JSONObject parameters = JSONFactoryUtil.createJSONObject();
-
-		parameters.put("containsHeaders", "true");
-		parameters.put("createStrategy", "UPSERT");
-		parameters.put("featureFlag", "LPD-39244");
-		parameters.put("importStrategy", "ON_ERROR_FAIL");
-
-		if (includeSiteERC) {
-			parameters.put("siteExternalReferenceCode", siteERC);
-		}
-
-		if (includePrivateLayout) {
-			parameters.put("privateLayout", "false");
-		}
-
-		configuration.put("parameters", parameters);
-		configuration.put("taskItemDelegateName", "DEFAULT");
-
-		wrapper.put("configuration", configuration);
-
-		return wrapper;
-	}
-
-	private String _postArtifact(
-			int loadOrder, String fileName, JSONObject envelope)
-		throws Exception {
-
-		JSONObject configuration = envelope.getJSONObject("configuration");
-
-		JSONArray items = envelope.getJSONArray("items");
-
-		int itemCount = (items != null) ? items.length() : 0;
-
-		String previewItem = "";
-
-		if (itemCount > 0) {
-			JSONObject firstItem = items.getJSONObject(0);
-
-			previewItem = _stripMetadata(firstItem).toString();
-		}
-
-		String languages = _detectLanguages(items, fileName);
-
-		String uniqueFileName = StringBundler.concat(
-			_sseEventSinkKey, "-", System.currentTimeMillis(), "-", fileName);
-
-		JSONObject artifactBody = JSONFactoryUtil.createJSONObject();
-
-		artifactBody.put("className", configuration.getString("className"));
-		artifactBody.put(
-			"delegateName", configuration.getString("taskItemDelegateName"));
-		artifactBody.put("fileName", fileName);
-		artifactBody.put("itemCount", itemCount);
-		artifactBody.put(
-			"json",
-			JSONUtil.put(
-				"fileBase64",
-				Base64.getEncoder(
-				).encodeToString(
-					envelope.toString(
-					).getBytes(StandardCharsets.UTF_8)
-				)
-			).put(
-				"name", uniqueFileName
-			));
-		artifactBody.put("languages", languages);
-		artifactBody.put("loadOrder", loadOrder);
-		artifactBody.put("previewItem", previewItem);
-		artifactBody.put(
-			"r_artifacts_l_contentGeneratorRunERC", _sseEventSinkKey);
-
-		Http.Options options = new Http.Options();
-
-		options.addHeader(
-			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
-		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
-		options.setBody(
-			artifactBody.toString(), ContentTypes.APPLICATION_JSON, "UTF-8");
-		options.setLocation(
-			_getBaseURL() + "/o/content-site-generator/artifacts/");
-		options.setMethod(Http.Method.POST);
-
-		String responseBody = HttpUtil.URLtoString(options);
-
-		int responseCode = options.getResponse(
-		).getResponseCode();
-
-		if ((responseCode < 200) || (responseCode >= 300)) {
-			throw new Exception(
-				StringBundler.concat(
-					"POST artifact ", fileName, " failed with HTTP ",
-					responseCode, ". Response: ", responseBody));
-		}
-
-		JSONObject responseJSONObject = JSONFactoryUtil.createJSONObject(
-			responseBody);
-
-		SseUtil.send(fileName, "Artifacts Updated", null, _sseEventSinkKey);
-
-		_emitToolProgress("Posted artifact " + loadOrder + ": " + fileName);
-
-		return responseJSONObject.getString("externalReferenceCode");
-	}
-
-	private String _detectLanguages(JSONArray items, String fileName) {
-		Set<String> locales = new TreeSet<>();
-
-		if ((items != null) && (items.length() > 0)) {
-			Matcher i18nMatcher = _i18nBlockPattern.matcher(items.toString());
-
-			while (i18nMatcher.find()) {
-				Matcher localeMatcher = _localeKeyPattern.matcher(
-					i18nMatcher.group(1));
-
-				while (localeMatcher.find()) {
-					locales.add(localeMatcher.group(1).toLowerCase());
-				}
-			}
-		}
-
-		if (locales.isEmpty()) {
-			Matcher matcher = _fileNameLanguagePattern.matcher(fileName);
-
-			if (matcher.find()) {
-				locales.add(matcher.group(1).toLowerCase());
-			}
-		}
-
-		return String.join(",", locales);
-	}
-
-	private void _emitToolProgress(String label) {
-		SseUtil.send(label, "Tool Progress", null, _sseEventSinkKey);
-	}
-
-	private void _patchRunStatus(String runStatus) throws Exception {
-		JSONObject body = JSONFactoryUtil.createJSONObject();
-
-		body.put("runStatus", runStatus);
-
-		Http.Options options = new Http.Options();
-
-		options.addHeader(
-			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
-		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
-		options.setBody(
-			body.toString(), ContentTypes.APPLICATION_JSON, "UTF-8");
-		options.setLocation(
-			StringBundler.concat(
-				_getBaseURL(),
-				"/o/content-site-generator/runs/by-external-reference-code/",
-				_sseEventSinkKey));
-		options.setMethod(Http.Method.PATCH);
-
-		String responseBody = HttpUtil.URLtoString(options);
-
-		int responseCode = options.getResponse(
-		).getResponseCode();
-
-		if ((responseCode < 200) || (responseCode >= 300)) {
-			throw new Exception(
-				StringBundler.concat(
-					"PATCH run ", _sseEventSinkKey, " runStatus=", runStatus,
-					" failed with HTTP ", responseCode, ". Response: ",
-					responseBody));
-		}
-	}
-
-	private void _appendDraftSuffix(JSONArray elements) {
-		for (int i = 0; i < elements.length(); i++) {
-			JSONObject element = elements.getJSONObject(i);
-
-			String erc = element.getString("externalReferenceCode");
-
-			if (Validator.isNotNull(erc)) {
-				element.put("externalReferenceCode", erc + "-draft");
-			}
-
-			String parentERC = element.getString(
-				"parentExternalReferenceCode");
-
-			if (Validator.isNotNull(parentERC)) {
-				element.put(
-					"parentExternalReferenceCode", parentERC + "-draft");
-			}
-
-			JSONObject definition = element.getJSONObject(
-				"pageElementDefinition");
-
-			if (definition != null) {
-				JSONObject fragmentInstance = definition.getJSONObject(
-					"fragmentInstance");
-
-				if (fragmentInstance != null) {
-					String instERC = fragmentInstance.getString(
-						"fragmentInstanceExternalReferenceCode");
-
-					if (Validator.isNotNull(instERC)) {
-						fragmentInstance.put(
-							"fragmentInstanceExternalReferenceCode",
-							instERC + "-draft");
-					}
-				}
-			}
-
-			JSONArray children = element.getJSONArray("pageElements");
-
-			if ((children != null) && (children.length() > 0)) {
-				_appendDraftSuffix(children);
-			}
-		}
-	}
-
-	private JSONObject _createThemeSettings() throws Exception {
-		JSONObject settings = JSONFactoryUtil.createJSONObject();
-
-		settings.put("colorSchemeName", "01");
-		settings.put("themeName", "classic_WAR_classictheme");
-
-		JSONObject themeSettings = JSONFactoryUtil.createJSONObject();
-
-		themeSettings.put("lfr-theme:regular:show-header", "false");
-		themeSettings.put(
-			"lfr-theme:regular:wrap-widget-page-content", "false");
-		themeSettings.put("lfr-theme:regular:show-header-search", "false");
-		themeSettings.put("lfr-theme:regular:show-footer", "false");
-
-		settings.put("themeSettings", themeSettings);
-
-		return settings;
-	}
-
-	private JSONObject _createI18nJSON(String locale, String value) {
-		JSONObject json = JSONFactoryUtil.createJSONObject();
-
-		json.put(locale, value);
-
-		return json;
-	}
-
-	private String _createSite() throws Exception {
-		String sitePlan = SessionVariablesUtil.getVariable(
-			_sseEventSinkKey, "sitePlan");
-
-		if (Validator.isNull(sitePlan)) {
-			return "Error: No cached site plan found in session.";
-		}
-
-		sitePlan = _stripMarkdownFences(sitePlan);
-
-		JSONObject sitePlanJSON;
-
-		try {
-			sitePlanJSON = JSONFactoryUtil.createJSONObject(sitePlan);
-		}
-		catch (Exception exception) {
-			_log.error(
-				"Failed to parse sitePlan JSON: " + exception.getMessage() +
-					"\nRaw sitePlan:\n" + sitePlan);
-
-			return "Error: Site plan is not valid JSON - " +
-				exception.getMessage();
-		}
-
-		JSONObject siteJSON = sitePlanJSON.getJSONObject("site");
-
-		if (siteJSON == null) {
-			return "Error: Site plan does not contain a 'site' object.";
-		}
-
-		JSONObject body = JSONFactoryUtil.createJSONObject();
-
-		body.put("active", true);
-		body.put("description", siteJSON.getString("description"));
-		body.put(
-			"externalReferenceCode",
-			siteJSON.getString("externalReferenceCode"));
-		body.put("membershipType", "open");
-		body.put("name", siteJSON.getString("name"));
-
-		String location = _getBaseURL() + "/o/headless-admin-site/v1.0/sites";
-
-		Http.Options options = new Http.Options();
-
-		options.addHeader("Authorization", _accessToken);
-		options.addHeader(
-			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
-		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
-		options.setBody(
-			body.toString(), ContentTypes.APPLICATION_JSON, "UTF-8");
-		options.setLocation(location);
-		options.setMethod(Http.Method.POST);
-
-		String responseBody = HttpUtil.URLtoString(options);
-
-		int responseCode = options.getResponse(
-		).getResponseCode();
-
-		if ((responseCode < 200) || (responseCode >= 300)) {
-			_log.error(
-				StringBundler.concat(
-					"createSite failed with HTTP ", responseCode,
-					". Request body: ", body.toString(),
-					". Response body: ", responseBody));
-
-			return StringBundler.concat(
-				"Error: HTTP ", responseCode, ". ", responseBody);
-		}
-
-		return responseBody;
-	}
-
-	private String _httpPOST(String location, String body) throws Exception {
-		Http.Options options = new Http.Options();
-
-		options.addHeader("Authorization", _accessToken);
-		options.addHeader(
-			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
-		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
-		options.setBody(body, ContentTypes.APPLICATION_JSON, "UTF-8");
-		options.setLocation(location);
-		options.setMethod(Http.Method.POST);
-
-		String responseBody = HttpUtil.URLtoString(options);
-
-		int responseCode = options.getResponse(
-		).getResponseCode();
-
-		if ((responseCode < 200) || (responseCode >= 300)) {
-			_log.error(
-				StringBundler.concat(
-					"POST ", location, " failed with HTTP ", responseCode,
-					". Response: ", responseBody));
-
-			return StringBundler.concat(
-				"Error: HTTP ", responseCode, ". ", responseBody);
-		}
-
-		return responseBody;
-	}
-
-	private String _httpPUT(String location, String body) throws Exception {
-		Http.Options options = new Http.Options();
-
-		options.addHeader("Authorization", _accessToken);
-		options.addHeader(
-			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
-		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
-		options.setBody(body, ContentTypes.APPLICATION_JSON, "UTF-8");
-		options.setLocation(location);
-		options.setMethod(Http.Method.PUT);
-
-		String responseBody = HttpUtil.URLtoString(options);
-
-		int responseCode = options.getResponse(
-		).getResponseCode();
-
-		if ((responseCode < 200) || (responseCode >= 300)) {
-			_log.error(
-				StringBundler.concat(
-					"PUT ", location, " failed with HTTP ", responseCode,
-					". Response: ", responseBody));
-
-			return StringBundler.concat(
-				"Error: HTTP ", responseCode, ". ", responseBody);
-		}
-
-		return responseBody;
+		return sb.toString();
 	}
 
 	private String _getBaseURL() throws Exception {
@@ -1296,44 +682,142 @@ public class SiteBuilderTools {
 		return oAuth2Application.getHomePageURL();
 	}
 
-	private static String _fixImageEditables(String html) {
-		if (html == null) {
-			return html;
+	private void _patchRunStatus(String runStatus) throws Exception {
+		JSONObject bodyJSONObject = JSONUtil.put("runStatus", runStatus);
+
+		Http.Options options = new Http.Options();
+
+		options.addHeader(
+			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
+		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
+		options.setBody(
+			bodyJSONObject.toString(), ContentTypes.APPLICATION_JSON, "UTF-8");
+		options.setLocation(
+			StringBundler.concat(
+				_getBaseURL(),
+				"/o/content-site-generator/runs/by-external-reference-code/",
+				_sseEventSinkKey));
+		options.setMethod(Http.Method.PATCH);
+
+		String responseBody = HttpUtil.URLtoString(options);
+
+		int responseCode = options.getResponse(
+		).getResponseCode();
+
+		if ((responseCode < 200) || (responseCode >= 300)) {
+			throw new Exception(
+				StringBundler.concat(
+					"PATCH run ", _sseEventSinkKey, " runStatus=", runStatus,
+					" failed with HTTP ", responseCode, ". Response: ",
+					responseBody));
 		}
-
-		// Find image editable elements that are not <img> tags and
-		// don't contain <img> tags — replace them with <img> tags
-
-		Matcher matcher = _nonImgImageEditablePattern.matcher(html);
-
-		StringBuffer sb = new StringBuffer();
-
-		while (matcher.find()) {
-			String tag = matcher.group(1);
-			String editableId = matcher.group(2);
-			String afterAttrs = matcher.group(3);
-
-			String replacement =
-				"<img data-lfr-editable-id=\"" + editableId +
-					"\" data-lfr-editable-type=\"image\"" + afterAttrs +
-					" alt=\"\" src=\"\">";
-
-			matcher.appendReplacement(
-				sb, Matcher.quoteReplacement(replacement));
-		}
-
-		matcher.appendTail(sb);
-
-		return sb.toString();
 	}
 
-	private static String _repairJSON(String json) {
+	private String _postArtifact(
+			int loadOrder, String fileName, JSONObject envelopeJSONObject)
+		throws Exception {
+
+		JSONObject configurationJSONObject = envelopeJSONObject.getJSONObject(
+			"configuration");
+
+		JSONArray itemsJSONArray = envelopeJSONObject.getJSONArray("items");
+
+		int itemCount = (itemsJSONArray != null) ? itemsJSONArray.length() : 0;
+
+		String previewItem = "";
+
+		if (itemCount > 0) {
+			JSONObject firstItemJSONObject = itemsJSONArray.getJSONObject(0);
+
+			previewItem = _stripMetadata(
+				firstItemJSONObject
+			).toString();
+		}
+
+		String languages = _detectLanguages(itemsJSONArray, fileName);
+
+		String uniqueFileName = StringBundler.concat(
+			_sseEventSinkKey, "-", System.currentTimeMillis(), "-", fileName);
+
+		JSONObject artifactBodyJSONObject = JSONUtil.put(
+			"className", configurationJSONObject.getString("className")
+		).put(
+			"delegateName",
+			configurationJSONObject.getString("taskItemDelegateName")
+		).put(
+			"fileName", fileName
+		).put(
+			"itemCount", itemCount
+		).put(
+			"json",
+			JSONUtil.put(
+				"fileBase64",
+				Base64.getEncoder(
+				).encodeToString(
+					envelopeJSONObject.toString(
+					).getBytes(
+						StandardCharsets.UTF_8
+					)
+				)
+			).put(
+				"name", uniqueFileName
+			)
+		).put(
+			"languages", languages
+		).put(
+			"loadOrder", loadOrder
+		).put(
+			"previewItem", previewItem
+		).put(
+			"r_artifacts_l_contentGeneratorRunERC", _sseEventSinkKey
+		);
+
+		Http.Options options = new Http.Options();
+
+		options.addHeader(
+			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
+		options.addHeader("Liferay-AI-Hub-Cell-On-Behalf-Of", _userToken);
+		options.setBody(
+			artifactBodyJSONObject.toString(), ContentTypes.APPLICATION_JSON,
+			"UTF-8");
+		options.setLocation(
+			_getBaseURL() + "/o/content-site-generator/artifacts/");
+		options.setMethod(Http.Method.POST);
+
+		String responseBody = HttpUtil.URLtoString(options);
+
+		int responseCode = options.getResponse(
+		).getResponseCode();
+
+		if ((responseCode < 200) || (responseCode >= 300)) {
+			throw new Exception(
+				StringBundler.concat(
+					"POST artifact ", fileName, " failed with HTTP ",
+					responseCode, ". Response: ", responseBody));
+		}
+
+		JSONObject responseJSONObject = JSONFactoryUtil.createJSONObject(
+			responseBody);
+
+		SseUtil.send(fileName, "Artifacts Updated", null, _sseEventSinkKey);
+
+		_emitToolProgress(
+			StringBundler.concat(
+				"Posted artifact ", loadOrder, ": ", fileName));
+
+		return responseJSONObject.getString("externalReferenceCode");
+	}
+
+	private String _repairJSON(String json) {
 		try {
 			JSONFactoryUtil.createJSONObject(json);
 
 			return json;
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Attempting to repair malformed JSON", exception);
+			}
 		}
 
 		// Step 1: Fix truncated strings (unclosed quotes)
@@ -1378,12 +862,19 @@ public class SiteBuilderTools {
 
 		// Step 2: Remove trailing commas before } or ]
 
-		repaired = _trailingCommaPattern.matcher(repaired).replaceAll("$1");
+		repaired = _trailingCommaPattern.matcher(
+			repaired
+		).replaceAll(
+			"$1"
+		);
 
 		// Step 3: Add missing commas between "value""key" patterns
 
-		repaired = _missingCommaPattern.matcher(repaired).replaceAll(
-			"$1,$2");
+		repaired = _missingCommaPattern.matcher(
+			repaired
+		).replaceAll(
+			"$1,$2"
+		);
 
 		// Step 4: Balance unclosed braces and brackets
 
@@ -1452,7 +943,59 @@ public class SiteBuilderTools {
 		}
 	}
 
-	private static String _stripMarkdownFences(String text) {
+	private void _sanitizeBlogKeywords(JSONArray blogJSONArray) {
+
+		// Asset tag validation rejects ~26 special characters (see
+		// AssetTagLocalServiceImpl). LLM-emitted keywords with characters like
+		// '&', '/', or "'" would otherwise fail the entire batch under
+		// ON_ERROR_FAIL. Strip invalid characters; drop keywords that go blank.
+
+		for (int i = 0; i < blogJSONArray.length(); i++) {
+			JSONObject blogJSONObject = blogJSONArray.getJSONObject(i);
+
+			if (blogJSONObject == null) {
+				continue;
+			}
+
+			JSONArray keywordsJSONArray = blogJSONObject.getJSONArray(
+				"keywords");
+
+			if (keywordsJSONArray == null) {
+				continue;
+			}
+
+			JSONArray sanitizedJSONArray = JSONFactoryUtil.createJSONArray();
+
+			for (int j = 0; j < keywordsJSONArray.length(); j++) {
+				String keyword = keywordsJSONArray.getString(j);
+
+				if (Validator.isNull(keyword)) {
+					continue;
+				}
+
+				StringBuilder sb = new StringBuilder(keyword.length());
+
+				for (int k = 0; k < keyword.length(); k++) {
+					char c = keyword.charAt(k);
+
+					if (_INVALID_ASSET_TAG_CHARS.indexOf(c) < 0) {
+						sb.append(c);
+					}
+				}
+
+				String cleaned = sb.toString(
+				).trim();
+
+				if (!cleaned.isEmpty()) {
+					sanitizedJSONArray.put(cleaned);
+				}
+			}
+
+			blogJSONObject.put("keywords", sanitizedJSONArray);
+		}
+	}
+
+	private String _stripMarkdownFences(String text) {
 		if (text == null) {
 			return text;
 		}
@@ -1474,107 +1017,549 @@ public class SiteBuilderTools {
 		return text.trim();
 	}
 
-	private static void _sanitizeBlogKeywords(JSONArray blogArray) {
+	private JSONObject _stripMetadata(JSONObject itemJSONObject) {
+		JSONObject strippedJSONObject = JSONFactoryUtil.createJSONObject();
 
-		// Asset tag validation rejects ~26 special characters (see
-		// AssetTagLocalServiceImpl). LLM-emitted keywords with characters like
-		// '&', '/', or "'" would otherwise fail the entire batch under
-		// ON_ERROR_FAIL. Strip invalid characters; drop keywords that go blank.
-
-		for (int i = 0; i < blogArray.length(); i++) {
-			JSONObject blog = blogArray.getJSONObject(i);
-
-			if (blog == null) {
+		for (String key : itemJSONObject.keySet()) {
+			if (_metadataKeys.contains(key)) {
 				continue;
 			}
 
-			JSONArray keywords = blog.getJSONArray("keywords");
+			strippedJSONObject.put(key, itemJSONObject.get(key));
+		}
 
-			if (keywords == null) {
-				continue;
-			}
+		return strippedJSONObject;
+	}
 
-			JSONArray sanitized = JSONFactoryUtil.createJSONArray();
+	private String _writeBatchFiles(String blogEntries) throws Exception {
+		String enrichedSitePlan = SessionVariablesUtil.getVariable(
+			_sseEventSinkKey, "enrichedSitePlan");
 
-			for (int j = 0; j < keywords.length(); j++) {
-				String keyword = keywords.getString(j);
+		if (Validator.isNull(enrichedSitePlan)) {
+			return "Error: No cached enriched site plan found in session.";
+		}
 
-				if (Validator.isNull(keyword)) {
-					continue;
+		JSONObject planJSONObject = JSONFactoryUtil.createJSONObject(
+			enrichedSitePlan);
+
+		JSONObject siteJSONObject = planJSONObject.getJSONObject("site");
+
+		if (siteJSONObject == null) {
+			return "Error: Enriched site plan does not contain a 'site' " +
+				"object.";
+		}
+
+		String siteERC = siteJSONObject.getString("externalReferenceCode");
+		String siteTitle = siteJSONObject.getString("name");
+
+		StringBuilder results = new StringBuilder();
+
+		// 01-site
+
+		JSONObject siteBatchJSONObject = _createBatchWrapper(
+			"com.liferay.headless.admin.site.dto.v1_0.Site", false, siteERC,
+			false);
+
+		siteBatchJSONObject.put(
+			"items",
+			JSONFactoryUtil.createJSONArray(
+			).put(
+				JSONUtil.put(
+					"active", true
+				).put(
+					"description", siteJSONObject.getString("description")
+				).put(
+					"externalReferenceCode", siteERC
+				).put(
+					"membershipType", "open"
+				).put(
+					"name", siteTitle
+				)
+			));
+
+		_postArtifact(1, "01-site.batch-engine-data.json", siteBatchJSONObject);
+
+		results.append("Posted 01-site.batch-engine-data.json\n");
+
+		// 02-asset-library
+
+		String assetLibraryERC = siteERC + "-space";
+
+		JSONObject assetLibraryBatchJSONObject = _createBatchWrapper(
+			"com.liferay.headless.asset.library.dto.v1_0.AssetLibrary", false,
+			siteERC, false);
+
+		// AssetLibraryResourceImpl._putUnicodeProperties returns null when
+		// settings is null; the upsert path then NPEs in
+		// UnicodePropertiesBuilder.putAll. Send an empty settings object to
+		// take the non-null branch with default values.
+
+		assetLibraryBatchJSONObject.put(
+			"items",
+			JSONFactoryUtil.createJSONArray(
+			).put(
+				JSONUtil.put(
+					"assetLibraryKey", assetLibraryERC
+				).put(
+					"externalReferenceCode", assetLibraryERC
+				).put(
+					"name", siteTitle + " Space"
+				).put(
+					"name_i18n", _createI18nJSON("en-US", siteTitle + " Space")
+				).put(
+					"settings", JSONFactoryUtil.createJSONObject()
+				).put(
+					"type", "Space"
+				)
+			));
+
+		_postArtifact(
+			2, "02-asset-library.batch-engine-data.json",
+			assetLibraryBatchJSONObject);
+
+		results.append("Posted 02-asset-library.batch-engine-data.json\n");
+
+		// 03-connected-site
+
+		_postArtifact(
+			3, "03-connected-site.batch-engine-data.json",
+			JSONUtil.put(
+				"configuration",
+				JSONUtil.put(
+					"className",
+					"com.liferay.headless.asset.library.dto.v1_0.ConnectedSite"
+				).put(
+					"multiCompany", true
+				).put(
+					"parameters",
+					JSONUtil.put(
+						"assetLibraryExternalReferenceCode", assetLibraryERC
+					).put(
+						"containsHeaders", "true"
+					).put(
+						"createStrategy", "UPSERT"
+					).put(
+						"importStrategy", "ON_ERROR_FAIL"
+					)
+				).put(
+					"taskItemDelegateName", "DEFAULT"
+				)
+			).put(
+				"items",
+				JSONFactoryUtil.createJSONArray(
+				).put(
+					JSONUtil.put(
+						"descriptiveName", siteTitle
+					).put(
+						"externalReferenceCode", siteERC
+					).put(
+						"name", siteTitle
+					).put(
+						"searchable", true
+					)
+				)
+			));
+
+		results.append("Posted 03-connected-site.batch-engine-data.json\n");
+
+		// 04-fragment-set
+
+		String fragmentSetERC = siteERC + "-fragments";
+
+		JSONObject fragmentSetBatchJSONObject = _createBatchWrapper(
+			"com.liferay.headless.admin.fragment.dto.v1_0.FragmentSet", true,
+			siteERC, false);
+
+		fragmentSetBatchJSONObject.put(
+			"items",
+			JSONFactoryUtil.createJSONArray(
+			).put(
+				JSONUtil.put(
+					"externalReferenceCode", fragmentSetERC
+				).put(
+					"key", fragmentSetERC
+				).put(
+					"name", siteTitle + " Fragments"
+				)
+			));
+
+		_postArtifact(
+			4, "04-fragment-set.batch-engine-data.json",
+			fragmentSetBatchJSONObject);
+
+		results.append("Posted 04-fragment-set.batch-engine-data.json\n");
+
+		// 05-fragments
+
+		JSONArray customFragmentsJSONArray = planJSONObject.getJSONArray(
+			"customFragments");
+
+		JSONObject fragmentsBatchJSONObject = _createBatchWrapper(
+			"com.liferay.headless.admin.fragment.dto.v1_0.Fragment", true,
+			siteERC, false);
+
+		JSONArray fragmentItemsJSONArray = JSONFactoryUtil.createJSONArray();
+
+		if ((customFragmentsJSONArray != null) &&
+			(customFragmentsJSONArray.length() > 0)) {
+
+			for (int i = 0; i < customFragmentsJSONArray.length(); i++) {
+				JSONObject fragmentJSONObject =
+					customFragmentsJSONArray.getJSONObject(i);
+
+				String fragmentKey = fragmentJSONObject.getString("key");
+
+				JSONObject fragmentItemJSONObject = JSONUtil.put(
+					"externalReferenceCode", fragmentKey
+				).put(
+					"fragmentSetExternalReferenceCode", fragmentSetERC
+				).put(
+					"key", fragmentKey
+				).put(
+					"name", fragmentJSONObject.getString("name")
+				).put(
+					"type", "Component"
+				);
+
+				JSONObject approvedVersionJSONObject = JSONUtil.put(
+					"css", fragmentJSONObject.getString("css")
+				).put(
+					"html",
+					_fixImageEditables(fragmentJSONObject.getString("html"))
+				).put(
+					"js", fragmentJSONObject.getString("js")
+				).put(
+					"status", "Approved"
+				);
+
+				if (fragmentJSONObject.getBoolean("isNavigationMenu")) {
+					approvedVersionJSONObject.put(
+						"configuration", _NAV_MENU_CONFIGURATION);
 				}
 
-				StringBuilder sb = new StringBuilder(keyword.length());
+				JSONArray fragmentVersionsJSONArray = JSONUtil.put(
+					approvedVersionJSONObject);
 
-				for (int k = 0; k < keyword.length(); k++) {
-					char c = keyword.charAt(k);
+				fragmentItemJSONObject.put(
+					"fragmentVersions", fragmentVersionsJSONArray);
 
-					if (_INVALID_ASSET_TAG_CHARS.indexOf(c) < 0) {
-						sb.append(c);
+				fragmentItemsJSONArray.put(fragmentItemJSONObject);
+			}
+		}
+
+		fragmentsBatchJSONObject.put("items", fragmentItemsJSONArray);
+
+		_postArtifact(
+			5, "05-fragments.batch-engine-data.json", fragmentsBatchJSONObject);
+
+		results.append("Posted 05-fragments.batch-engine-data.json\n");
+
+		// 06-pages
+
+		JSONArray pagesJSONArray = planJSONObject.getJSONArray("pages");
+
+		JSONObject pagesBatchJSONObject = _createBatchWrapper(
+			"com.liferay.headless.admin.site.dto.v1_0.SitePage", true, siteERC,
+			true);
+
+		JSONArray pageItemsJSONArray = JSONFactoryUtil.createJSONArray();
+
+		if ((pagesJSONArray != null) && (pagesJSONArray.length() > 0)) {
+			String fragmentsCatalog = "[]";
+
+			if ((customFragmentsJSONArray != null) &&
+				(customFragmentsJSONArray.length() > 0)) {
+
+				JSONArray catalogJSONArray = JSONFactoryUtil.createJSONArray();
+
+				for (int f = 0; f < customFragmentsJSONArray.length(); f++) {
+					JSONObject fragmentJSONObject =
+						customFragmentsJSONArray.getJSONObject(f);
+
+					JSONObject catalogEntryJSONObject =
+						JSONFactoryUtil.createJSONObject();
+
+					if (fragmentJSONObject.getBoolean("isNavigationMenu")) {
+						catalogEntryJSONObject.put(
+							"configuration", _NAV_MENU_CONFIGURATION);
+					}
+
+					catalogEntryJSONObject.put(
+						"css", fragmentJSONObject.getString("css")
+					).put(
+						"editables",
+						fragmentJSONObject.getJSONArray("editables")
+					).put(
+						"externalReferenceCode",
+						fragmentJSONObject.getString("key")
+					).put(
+						"html", fragmentJSONObject.getString("html")
+					).put(
+						"js", fragmentJSONObject.getString("js")
+					);
+
+					catalogJSONArray.put(catalogEntryJSONObject);
+				}
+
+				fragmentsCatalog = catalogJSONArray.toString();
+			}
+
+			IRToPageSpecTools irToPageSpecTools = new IRToPageSpecTools(
+				fragmentsCatalog);
+
+			for (int i = 0; i < pagesJSONArray.length(); i++) {
+				JSONObject pageJSONObject = pagesJSONArray.getJSONObject(i);
+
+				String pageTitle = pageJSONObject.getString("title");
+				String pageERC = pageJSONObject.getString(
+					"externalReferenceCode");
+
+				JSONObject irJSONObject = pageJSONObject.getJSONObject("ir");
+
+				JSONArray pageElementsJSONArray =
+					JSONFactoryUtil.createJSONArray();
+
+				if (irJSONObject != null) {
+					String approvedSpecStr =
+						irToPageSpecTools.convertToPageSpec(
+							irJSONObject.toString(), pageERC,
+							pageERC + "-default", "en-US");
+
+					if (!approvedSpecStr.startsWith("Error")) {
+						JSONObject specJSONObject =
+							JSONFactoryUtil.createJSONObject(approvedSpecStr);
+
+						JSONArray experiencesJSONArray =
+							specJSONObject.getJSONArray("pageExperiences");
+
+						if ((experiencesJSONArray != null) &&
+							(experiencesJSONArray.length() > 0)) {
+
+							pageElementsJSONArray =
+								experiencesJSONArray.getJSONObject(
+									0
+								).getJSONArray(
+									"pageElements"
+								);
+						}
 					}
 				}
 
-				String cleaned = sb.toString().trim();
+				// Approved spec
 
-				if (!cleaned.isEmpty()) {
-					sanitized.put(cleaned);
+				JSONObject approvedExpJSONObject = JSONUtil.put(
+					"externalReferenceCode", pageERC + "-default"
+				).put(
+					"key", "DEFAULT"
+				).put(
+					"name_i18n", _createI18nJSON("en-US", "Default")
+				).put(
+					"pageElements", pageElementsJSONArray
+				).put(
+					"priority", 0
+				);
+
+				JSONObject approvedSpecJSONObject = JSONUtil.put(
+					"draftContentPageSpecificationExternalReferenceCode",
+					pageERC + "-draft"
+				).put(
+					"externalReferenceCode", pageERC
+				).put(
+					"pageExperiences",
+					JSONFactoryUtil.createJSONArray(
+					).put(
+						approvedExpJSONObject
+					)
+				).put(
+					"settings", _createThemeSettings()
+				).put(
+					"status", "Approved"
+				).put(
+					"type", "ContentPageSpecification"
+				);
+
+				// Draft spec
+
+				JSONArray draftPageElementsJSONArray =
+					JSONFactoryUtil.createJSONArray();
+
+				if (pageElementsJSONArray.length() > 0) {
+					draftPageElementsJSONArray =
+						JSONFactoryUtil.createJSONArray(
+							pageElementsJSONArray.toString());
+
+					_appendDraftSuffix(draftPageElementsJSONArray);
+				}
+
+				JSONObject draftSpecJSONObject = JSONUtil.put(
+					"externalReferenceCode", pageERC + "-draft"
+				).put(
+					"pageExperiences",
+					JSONFactoryUtil.createJSONArray(
+					).put(
+						JSONUtil.put(
+							"externalReferenceCode", pageERC + "-draft-default"
+						).put(
+							"key", "DEFAULT"
+						).put(
+							"name_i18n", _createI18nJSON("en-US", "Default")
+						).put(
+							"pageElements", draftPageElementsJSONArray
+						).put(
+							"priority", 0
+						)
+					)
+				).put(
+					"settings", _createThemeSettings()
+				).put(
+					"status", "Draft"
+				).put(
+					"type", "ContentPageSpecification"
+				);
+
+				// Page body
+
+				pageItemsJSONArray.put(
+					JSONUtil.put(
+						"externalReferenceCode", pageERC
+					).put(
+						"name_i18n", _createI18nJSON("en-US", pageTitle)
+					).put(
+						"pageSettings",
+						JSONUtil.put("type", "ContentPageSettings")
+					).put(
+						"pageSpecifications",
+						JSONFactoryUtil.createJSONArray(
+						).put(
+							approvedSpecJSONObject
+						).put(
+							draftSpecJSONObject
+						)
+					).put(
+						"type", "ContentPage"
+					));
+			}
+		}
+
+		pagesBatchJSONObject.put("items", pageItemsJSONArray);
+
+		_postArtifact(
+			6, "06-pages.batch-engine-data.json", pagesBatchJSONObject);
+
+		results.append("Posted 06-pages.batch-engine-data.json\n");
+
+		// 07-blogs
+
+		if (Validator.isNotNull(blogEntries)) {
+			blogEntries = _stripMarkdownFences(blogEntries);
+			blogEntries = _repairJSON(blogEntries);
+
+			String trimmed = blogEntries.trim();
+
+			JSONArray blogJSONArray = null;
+
+			try {
+				if (trimmed.startsWith("[")) {
+					blogJSONArray = JSONFactoryUtil.createJSONArray(trimmed);
+				}
+				else if (trimmed.startsWith("{")) {
+					JSONObject wrapperJSONObject =
+						JSONFactoryUtil.createJSONObject(trimmed);
+
+					for (String key : wrapperJSONObject.keySet()) {
+						Object value = wrapperJSONObject.get(key);
+
+						if (value instanceof JSONArray) {
+							blogJSONArray = (JSONArray)value;
+
+							break;
+						}
+					}
 				}
 			}
-
-			blog.put("keywords", sanitized);
-		}
-	}
-
-	private static JSONObject _stripMetadata(JSONObject item) {
-		JSONObject stripped = JSONFactoryUtil.createJSONObject();
-
-		for (String key : item.keySet()) {
-			if (_METADATA_KEYS.contains(key)) {
-				continue;
+			catch (Exception exception) {
+				_log.error(
+					"Unable to parse blogEntries as JSON; skipping 07-blogs",
+					exception);
 			}
 
-			stripped.put(key, item.get(key));
+			if (blogJSONArray != null) {
+				_sanitizeBlogKeywords(blogJSONArray);
+
+				_postArtifact(
+					7, "07-blogs.batch-engine-data.json",
+					JSONUtil.put(
+						"configuration",
+						JSONUtil.put(
+							"className",
+							"com.liferay.object.rest.dto.v1_0.ObjectEntry"
+						).put(
+							"multiCompany", true
+						).put(
+							"parameters",
+							JSONUtil.put(
+								"containsHeaders", "true"
+							).put(
+								"createStrategy", "UPSERT"
+							).put(
+								"featureFlag", "LPD-17564"
+							).put(
+								"importStrategy", "ON_ERROR_FAIL"
+							).put(
+								"scopeKey", siteERC + "-space"
+							).put(
+								"updateStrategy", "UPDATE"
+							)
+						).put(
+							"taskItemDelegateName", "CMSBlog"
+						)
+					).put(
+						"items", blogJSONArray
+					));
+
+				results.append("Posted 07-blogs.batch-engine-data.json\n");
+			}
+			else {
+				_log.error(
+					"Failed to parse blogEntries as JSON array. Raw:\n" +
+						blogEntries);
+			}
 		}
 
-		return stripped;
+		return results.toString();
 	}
 
 	private static final String _INVALID_ASSET_TAG_CHARS =
 		"&'@\\]}:,=>/<\n[{%|+#`?\"\r;*~";
 
-	private static final Set<String> _METADATA_KEYS = Set.of(
-		"actions", "classNameId", "classPK", "createDate", "creator",
-		"dateCreated", "dateModified", "externalReferenceCode", "groupId", "id",
-		"modifiedDate", "parentExternalReferenceCode", "priority", "siteId",
-		"sortOrder", "status", "userId");
-
 	private static final String _NAV_MENU_CONFIGURATION =
 		"{\"fieldSets\":[{\"fields\":[{\"name\":\"source\"," +
 			"\"label\":\"source\",\"type\":\"navigationMenuSelector\"}]}]}";
 
-	private static final Pattern _editableIdPattern = Pattern.compile(
-		"data-lfr-editable-id=\"([^\"]+)\"");
-
-	private static final Pattern _fileNameLanguagePattern = Pattern.compile(
-		"-([a-z]{2})(?:[-_][A-Z]{2})?\\.json$");
-
-	private static final Pattern _i18nBlockPattern = Pattern.compile(
-		"\"[a-zA-Z]+_i18n\"\\s*:\\s*\\{([^{}]*)\\}");
-
-	private static final Pattern _localeKeyPattern = Pattern.compile(
-		"\"([a-z]{2})(?:_[A-Z]{2})?\"\\s*:");
-
-	private static final Pattern _missingCommaPattern = Pattern.compile(
-		"(\"\\s*(?:\"[^\"]*\"|\\d+(?:\\.\\d+)?|true|false|null|\\}|\\]))\\s*(\"[^\"]*\"\\s*:)");
-
-	private static final Pattern _nonImgImageEditablePattern = Pattern.compile(
-		"<(?!img)(\\w+)\\s+[^>]*?data-lfr-editable-id=\"([^\"]+)\"\\s+" +
-			"data-lfr-editable-type=\"image\"([^>]*?)>");
-
-	private static final Pattern _trailingCommaPattern = Pattern.compile(
-		",\\s*([}\\]])");
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		SiteBuilderTools.class);
+
+	private static final Pattern _editableIdPattern = Pattern.compile(
+		"data-lfr-editable-id=\"([^\"]+)\"");
+	private static final Pattern _fileNameLanguagePattern = Pattern.compile(
+		"-([a-z]{2})(?:[-_][A-Z]{2})?\\.json$");
+	private static final Pattern _i18nBlockPattern = Pattern.compile(
+		"\"[a-zA-Z]+_i18n\"\\s*:\\s*\\{([^{}]*)\\}");
+	private static final Pattern _imageEditableTagPattern = Pattern.compile(
+		"<(?!img)(\\w+)\\s+[^>]*?data-lfr-editable-id=\"([^\"]+)\"\\s+" +
+			"data-lfr-editable-type=\"image\"([^>]*?)>");
+	private static final Pattern _localeKeyPattern = Pattern.compile(
+		"\"([a-z]{2})(?:_[A-Z]{2})?\"\\s*:");
+	private static final Set<String> _metadataKeys = Set.of(
+		"actions", "classNameId", "classPK", "createDate", "creator",
+		"dateCreated", "dateModified", "externalReferenceCode", "groupId", "id",
+		"modifiedDate", "parentExternalReferenceCode", "priority", "siteId",
+		"sortOrder", "status", "userId");
+	private static final Pattern _missingCommaPattern = Pattern.compile(
+		"(\"\\s*(?:\"[^\"]*\"|\\d+(?:\\.\\d+)?|true|false|null|\\}|\\]))" +
+			"\\s*(\"[^\"]*\"\\s*:)");
+	private static final Pattern _trailingCommaPattern = Pattern.compile(
+		",\\s*([}\\]])");
 
 	private final String _accessToken;
 	private final long _companyId;
