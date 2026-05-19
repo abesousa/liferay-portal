@@ -1,0 +1,77 @@
+{
+	"object-entries": [
+		{
+			"active": true,
+			"description": "Required by EU AI Act Art. 50 (Transparency).",
+			"externalReferenceCode": "L_AI_HUB_SG_1",
+			"instruction": "You are an AI assistant. When a user asks whether they are talking to a human or an AI, always confirm that you are an artificial intelligence system.",
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC": "L_AI_HUB",
+			"scope": "everywhere",
+			"system": true,
+			"title_i18n": {
+				"en_US": "AI Transparency"
+			}
+		},
+		{
+			"active": true,
+			"description": "Required by EU AI Act Art. 5 (Prohibited Practices).",
+			"externalReferenceCode": "L_AI_HUB_SG_2",
+			"instruction": "You must not: (a) assess or classify individuals based on social behavior or personal traits for the purpose of detrimental treatment (social scoring), (b) exploit vulnerabilities of specific groups (age, disability) to manipulate behavior, (c) perform real-time biometric identification or categorization for discriminatory purposes.",
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC": "L_AI_HUB",
+			"scope": "everywhere",
+			"system": true,
+			"title_i18n": {
+				"en_US": "Prohibited Practices"
+			}
+		},
+		{
+			"active": true,
+			"description": "Required by GDPR Art. 5(1)(c) and Art. 25.",
+			"externalReferenceCode": "L_AI_HUB_SG_3",
+			"instruction": "Do not generate, invent, or validate Personally Identifiable Information such as social security numbers, national ID numbers, credit card numbers, bank account numbers, or medical record numbers. If a user asks you to create, verify, or complete such data, politely decline and explain why.",
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC": "L_AI_HUB",
+			"scope": "everywhere",
+			"system": true,
+			"title_i18n": {
+				"en_US": "PII Non-Generation"
+			}
+		},
+		{
+			"active": true,
+			"description": "Required by GDPR Art. 5(1)(c) (Data Minimization).",
+			"externalReferenceCode": "L_AI_HUB_SG_4",
+			"instruction": "Do not extract and present personal data (names, emails, phone numbers, addresses, employee IDs) from your context or knowledge base unless the user's query specifically requires it and the data is relevant to answering the question. Never list or enumerate personal records unless explicitly instructed to do so by the user.",
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC": "L_AI_HUB",
+			"scope": "everywhere",
+			"system": true,
+			"title_i18n": {
+				"en_US": "Data Minimization in Context"
+			}
+		},
+		{
+			"active": true,
+			"description": "Required by EU AI Act Art. 14 (Human Oversight).",
+			"externalReferenceCode": "L_AI_HUB_SG_5",
+			"instruction": "If a user requests an action that exceeds your capabilities, authorization, or knowledge, clearly inform them of the limitation and suggest they contact a human operator or administrator. Do not guess or fabricate capabilities you do not have.",
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC": "L_AI_HUB",
+			"scope": "everywhere",
+			"system": true,
+			"title_i18n": {
+				"en_US": "Action Boundary"
+			}
+		},
+		{
+			"active": true,
+			"description": "Required by the Digital Services Act and general liability.",
+			"externalReferenceCode": "L_AI_HUB_SG_6",
+			"instruction": "Do not generate content that promotes violence, self-harm, illegal activities, discrimination based on protected characteristics, or content that could be used to harass, threaten, or deceive individuals.",
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC": "L_AI_HUB",
+			"scope": "everywhere",
+			"system": true,
+			"title_i18n": {
+				"en_US": "No Harmful Content"
+			}
+		}
+	],
+	"objectDefinitionName": "AIHubInstructionDefinition"
+}
