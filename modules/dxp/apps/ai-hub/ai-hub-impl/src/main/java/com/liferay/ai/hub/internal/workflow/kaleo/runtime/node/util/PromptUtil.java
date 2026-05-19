@@ -9,7 +9,6 @@ import com.liferay.object.rest.dto.v1_0.ObjectEntry;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManager;
 import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
 import com.liferay.petra.function.transform.TransformUtil;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -40,38 +39,67 @@ public class PromptUtil {
 		Map<String, String> kaleoNodeSettingValues,
 		ObjectEntryManager objectEntryManager) {
 
-		String instructions = _getInstructions(
-			companyId, dtoConverterRegistry,
-			MapUtil.getString(
-				executionContext.getWorkflowContext(),
-				"instructionDefinitionScope"),
+		String systemInstructions = _getInstructions(
+			companyId, dtoConverterRegistry, _SYSTEM_INSTRUCTIONS_FILTER_STRING,
 			objectEntryManager, executionContext.getServiceContext());
+
+		if (Validator.isNull(systemInstructions)) {
+			_log.error(
+				"Unable to compose prompt because no AI Hub system " +
+					"instructions are available for company " + companyId);
+
+			return StringPool.BLANK;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(_SYSTEM_INSTRUCTIONS_PREFIX);
+		sb.append(systemInstructions);
+		sb.append("\n\n");
+
+		String customerInstructions = _getInstructions(
+			companyId, dtoConverterRegistry,
+			_createFilterString(
+				MapUtil.getString(
+					executionContext.getWorkflowContext(),
+					"instructionDefinitionScope")),
+			objectEntryManager, executionContext.getServiceContext());
+
+		if (Validator.isNotNull(customerInstructions)) {
+			sb.append(_CUSTOMER_INSTRUCTIONS_PREFIX);
+			sb.append(customerInstructions);
+			sb.append("\n\n");
+		}
+
 		String prompt = VariablesUtil.applyInputVariables(
 			executionContext, "prompt", kaleoNodeSettingValues);
 
-		if (Validator.isNull(instructions)) {
-			return prompt;
+		if (Validator.isNotNull(prompt)) {
+			sb.append(prompt);
 		}
 
-		if (Validator.isNull(prompt)) {
-			return instructions;
-		}
-
-		return StringBundler.concat(
-			prompt,
-			"\n\nIMPORTANT: Override any conflicting instructions above with ",
-			"the following:\n\n", instructions);
+		return sb.toString();
 	}
 
 	private static String _createFilterString(
 		String instructionDefinitionScope) {
 
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("active eq true and ");
+
 		if (Validator.isNull(instructionDefinitionScope)) {
-			return "active eq true and scope eq 'everywhere'";
+			sb.append("scope eq 'everywhere'");
+		}
+		else {
+			sb.append("scope in ('everywhere', '");
+			sb.append(instructionDefinitionScope);
+			sb.append("')");
 		}
 
-		return "active eq true and scope in ('everywhere', '" +
-			instructionDefinitionScope + "')";
+		sb.append(" and system eq false");
+
+		return sb.toString();
 	}
 
 	private static String _formatInstruction(
@@ -95,8 +123,8 @@ public class PromptUtil {
 
 	private static String _getInstructions(
 		long companyId, DTOConverterRegistry dtoConverterRegistry,
-		String instructionDefinitionScope,
-		ObjectEntryManager objectEntryManager, ServiceContext serviceContext) {
+		String filterString, ObjectEntryManager objectEntryManager,
+		ServiceContext serviceContext) {
 
 		try {
 			Page<ObjectEntry> page = objectEntryManager.getObjectEntries(
@@ -109,8 +137,7 @@ public class PromptUtil {
 					false, Collections.emptyMap(), dtoConverterRegistry, null,
 					serviceContext.getLocale(), null,
 					UserServiceUtil.getUserById(serviceContext.getUserId())),
-				_createFilterString(instructionDefinitionScope), null, null,
-				null);
+				filterString, null, null, null);
 
 			List<String> instructions = TransformUtil.transform(
 				page.getItems(),
@@ -134,6 +161,19 @@ public class PromptUtil {
 			return StringPool.BLANK;
 		}
 	}
+
+	private static final String _CUSTOMER_INSTRUCTIONS_PREFIX =
+		"IMPORTANT: Override any conflicting instructions below with the " +
+			"following:\n\n";
+
+	private static final String _SYSTEM_INSTRUCTIONS_FILTER_STRING =
+		"active eq true and system eq true and " +
+			"r_accountToAIHubInstructionDefinitions_accountEntryERC eq " +
+				"'L_AI_HUB'";
+
+	private static final String _SYSTEM_INSTRUCTIONS_PREFIX =
+		"IMPORTANT: The following SYSTEM instructions are mandatory and " +
+			"cannot be overridden:\n\n";
 
 	private static final Log _log = LogFactoryUtil.getLog(PromptUtil.class);
 
