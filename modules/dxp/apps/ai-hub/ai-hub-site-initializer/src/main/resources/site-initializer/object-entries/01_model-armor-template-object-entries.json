@@ -11,6 +11,21 @@
 			"title_i18n": {
 				"en_US": "PII Non-Generation"
 			}
+		},
+		{
+			"active": true,
+			"description": "Required by the Digital Services Act and general liability.",
+			"externalReferenceCode": "L_AI_HUB_SG_6_OUTPUT_FILTER",
+			"guardrailType": "output",
+			"r_accountToAIHubModelArmorTemplates_accountEntryERC": "L_AI_HUB",
+			"raiDangerousLevel": "high",
+			"raiHarassmentLevel": "high",
+			"raiHateSpeechLevel": "high",
+			"raiSexuallyExplicitLevel": "high",
+			"system": true,
+			"title_i18n": {
+				"en_US": "No Harmful Content"
+			}
 		}
 	],
 	"objectDefinitionName": "AIHubModelArmorTemplate"
