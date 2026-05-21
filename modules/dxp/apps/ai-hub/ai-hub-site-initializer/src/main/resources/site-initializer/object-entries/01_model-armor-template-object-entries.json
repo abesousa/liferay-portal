@@ -1,0 +1,17 @@
+{
+	"object-entries": [
+		{
+			"active": true,
+			"description": "Required by GDPR Art. 5(1)(c) and Art. 25.",
+			"externalReferenceCode": "L_AI_HUB_SG_3_OUTPUT_FILTER",
+			"guardrailType": "output",
+			"r_accountToAIHubModelArmorTemplates_accountEntryERC": "L_AI_HUB",
+			"sdpFilterEnabled": true,
+			"system": true,
+			"title_i18n": {
+				"en_US": "PII Non-Generation"
+			}
+		}
+	],
+	"objectDefinitionName": "AIHubModelArmorTemplate"
+}
