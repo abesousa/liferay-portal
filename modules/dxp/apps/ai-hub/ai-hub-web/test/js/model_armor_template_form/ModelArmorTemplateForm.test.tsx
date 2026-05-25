@@ -119,6 +119,7 @@ const defaultProps = {
 	accountEntryExternalReferenceCode: 'ACCOUNT',
 	backURL: '/back',
 	externalReferenceCode: '',
+	readOnly: false,
 };
 
 describe('ModelArmorTemplateForm', () => {

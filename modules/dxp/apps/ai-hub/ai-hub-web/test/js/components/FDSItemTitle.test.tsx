@@ -7,12 +7,43 @@ import '@testing-library/jest-dom';
 import {cleanup, render, screen} from '@testing-library/react';
 import React from 'react';
 
+(global as any).Liferay = {
+	Icons: {spritemap: 'icons.svg'},
+	Language: {
+		get: (key: string) => key,
+	},
+};
+
 const mockGetFDSInternalRenderer = jest.fn();
 
 jest.mock('@liferay/frontend-data-set-web', () => ({
 	getFDSInternalRenderer: (...args: any[]) =>
 		mockGetFDSInternalRenderer(...args),
 }));
+
+jest.mock('@clayui/icon', () => {
+	const React = require('react');
+
+	return {
+		__esModule: true,
+		default: ({symbol}: {symbol: string}) =>
+			React.createElement(
+				'svg',
+				null,
+				React.createElement('use', {'xlink:href': `#${symbol}`})
+			),
+	};
+});
+
+jest.mock('@clayui/label', () => {
+	const React = require('react');
+
+	return {
+		__esModule: true,
+		default: ({children}: {children: any}) =>
+			React.createElement('span', null, children),
+	};
+});
 
 function loadFDSItemTitle() {
 	let component: any;
@@ -103,5 +134,49 @@ describe('FDSItemTitle', () => {
 		expect(link.getAttribute('data-item-data')).toBe(
 			JSON.stringify({title: 'My Template'})
 		);
+	});
+
+	it('renders a lock icon and a System label when itemData.system is true', () => {
+		mockGetFDSInternalRenderer.mockReturnValue(undefined);
+
+		const FDSItemTitle = loadFDSItemTitle();
+
+		const {container} = render(
+			<FDSItemTitle
+				actions={[]}
+				itemData={{system: true}}
+				itemId={1}
+				value="AI Transparency"
+			/>
+		);
+
+		expect(screen.getByText('AI Transparency')).toBeInTheDocument();
+		expect(screen.getByText('system')).toBeInTheDocument();
+
+		const useElement = container.querySelector('use');
+
+		const href =
+			useElement?.getAttribute('xlink:href') ||
+			useElement?.getAttribute('href');
+
+		expect(href).toMatch(/#lock$/);
+	});
+
+	it('renders only the title when itemData.system is false', () => {
+		mockGetFDSInternalRenderer.mockReturnValue(undefined);
+
+		const FDSItemTitle = loadFDSItemTitle();
+
+		render(
+			<FDSItemTitle
+				actions={[]}
+				itemData={{system: false}}
+				itemId={1}
+				value="AI Transparency"
+			/>
+		);
+
+		expect(screen.getByText('AI Transparency')).toBeInTheDocument();
+		expect(screen.queryByText('system')).not.toBeInTheDocument();
 	});
 });

@@ -42,6 +42,7 @@ function renderPanel(overrides: Partial<ModelArmorTemplate> = {}) {
 
 	render(
 		<DetectionsPanel
+			readOnly={false}
 			setField={setField}
 			values={{...baseValues, ...overrides}}
 		/>
