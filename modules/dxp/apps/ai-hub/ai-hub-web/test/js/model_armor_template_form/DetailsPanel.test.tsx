@@ -111,6 +111,7 @@ const baseValues: ModelArmorTemplate = {
 	raiHateSpeechLevel: 'none',
 	raiSexuallyExplicitLevel: 'none',
 	sdpFilterEnabled: false,
+	system: false,
 	title_i18n: {},
 };
 

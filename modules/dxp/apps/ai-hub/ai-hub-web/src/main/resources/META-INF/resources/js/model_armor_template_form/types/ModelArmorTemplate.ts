@@ -23,5 +23,6 @@ export type ModelArmorTemplate = {
 	raiHateSpeechLevel: RAILevel;
 	raiSexuallyExplicitLevel: RAILevel;
 	sdpFilterEnabled: boolean;
+	system: boolean;
 	title_i18n: Liferay.Language.LocalizedValue<string>;
 };

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayIcon from '@clayui/icon';
+import ClayLabel from '@clayui/label';
 import {getFDSInternalRenderer} from '@liferay/frontend-data-set-web';
 import React from 'react';
 
@@ -18,7 +20,7 @@ interface IProps {
 }
 
 const FDSItemTitle = ({actions, itemData, itemId, value}: IProps) => {
-	return ActionLinkRenderer ? (
+	const title = ActionLinkRenderer ? (
 		<ActionLinkRenderer
 			actions={actions}
 			itemData={itemData}
@@ -28,6 +30,25 @@ const FDSItemTitle = ({actions, itemData, itemId, value}: IProps) => {
 		/>
 	) : (
 		<>{value}</>
+	);
+
+	const system =
+		(itemData as {system?: boolean} | null | undefined)?.system === true;
+
+	if (!system) {
+		return title;
+	}
+
+	return (
+		<span className="align-items-center d-inline-flex">
+			<ClayIcon className="mr-2 text-muted" symbol="lock" />
+
+			{title}
+
+			<ClayLabel className="ml-2" displayType="info">
+				{Liferay.Language.get('system')}
+			</ClayLabel>
+		</span>
 	);
 };
 
