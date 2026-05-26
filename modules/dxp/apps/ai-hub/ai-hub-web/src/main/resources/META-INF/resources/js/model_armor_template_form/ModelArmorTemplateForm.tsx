@@ -22,12 +22,14 @@ interface IProps {
 	accountEntryExternalReferenceCode: string;
 	backURL: string;
 	externalReferenceCode: string;
+	readOnly: boolean;
 }
 
 export default function ModelArmorTemplateForm({
 	accountEntryExternalReferenceCode,
 	backURL,
 	externalReferenceCode,
+	readOnly,
 }: IProps) {
 	const {
 		errors,
@@ -69,7 +71,7 @@ export default function ModelArmorTemplateForm({
 				<Toolbar.Item>
 					<Button
 						aria-label={Liferay.Language.get('save')}
-						disabled={isSubmitting}
+						disabled={isSubmitting || readOnly}
 						form={FORM_ID}
 						size="sm"
 						type="submit"
@@ -86,6 +88,7 @@ export default function ModelArmorTemplateForm({
 							<DetailsPanel
 								errors={errors}
 								handleBlur={handleBlur}
+								readOnly={readOnly}
 								setField={setField}
 								setFieldTouched={setFieldTouched}
 								touched={touched}
@@ -94,6 +97,7 @@ export default function ModelArmorTemplateForm({
 
 							{values.guardrailType === 'input' && (
 								<DetectionsPanel
+									readOnly={readOnly}
 									setField={setField}
 									values={values}
 								/>
@@ -101,6 +105,7 @@ export default function ModelArmorTemplateForm({
 
 							{values.guardrailType === 'output' && (
 								<ResponsibleAIPanel
+									readOnly={readOnly}
 									setField={setField}
 									values={values}
 								/>
