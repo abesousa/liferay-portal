@@ -647,7 +647,7 @@ public class AgentDefinitionResourceTest
 	private void _testGetAgentDefinitionsPage() throws Exception {
 		Page<AgentDefinition> page =
 			agentDefinitionResource.getAgentDefinitionsPage(
-				null, null, Pagination.of(1, 10), null);
+				null, null, Pagination.of(1, 11), null);
 
 		assertEquals(
 			_systemAgentDefinitions, (List<AgentDefinition>)page.getItems());
@@ -680,7 +680,7 @@ public class AgentDefinitionResourceTest
 		// Date created
 
 		page = agentDefinitionResource.getAgentDefinitionsPage(
-			null, "dateCreated gt 2000-01-01T00:00:00Z", Pagination.of(1, 10),
+			null, "dateCreated gt 2000-01-01T00:00:00Z", Pagination.of(1, 11),
 			null);
 
 		assertEquals(
@@ -689,7 +689,7 @@ public class AgentDefinitionResourceTest
 		// Date modified
 
 		page = agentDefinitionResource.getAgentDefinitionsPage(
-			null, "dateModified gt 2000-01-01T00:00:00Z", Pagination.of(1, 10),
+			null, "dateModified gt 2000-01-01T00:00:00Z", Pagination.of(1, 11),
 			null);
 
 		assertEquals(
@@ -836,11 +836,11 @@ public class AgentDefinitionResourceTest
 
 		Page<AgentDefinition> ascPage =
 			agentDefinitionResource.getAgentDefinitionsPage(
-				null, null, Pagination.of(1, 10), sortField + ":asc");
+				null, null, Pagination.of(1, 11), sortField + ":asc");
 
 		Page<AgentDefinition> descPage =
 			agentDefinitionResource.getAgentDefinitionsPage(
-				null, null, Pagination.of(1, 10), sortField + ":desc");
+				null, null, Pagination.of(1, 11), sortField + ":desc");
 
 		List<AgentDefinition> agentDefinitions = ListUtil.fromCollection(
 			descPage.getItems());
@@ -938,6 +938,43 @@ public class AgentDefinitionResourceTest
 					version = 1;
 					workflowDefinitionName =
 						WorkflowDefinitionConstants.NAME_CHANGE_TONE;
+				}
+			},
+			new AgentDefinition() {
+				{
+					active = true;
+					externalReferenceCode =
+						WorkflowDefinitionConstants.
+							EXTERNAL_REFERENCE_CODE_CONTENT_GAP_ANALYSIS;
+					inputVariables = new Variable[] {
+						new Variable() {
+							{
+								name = "contentCoverage";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "focusScope";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "projectContext";
+								type = "string";
+							}
+						}
+					};
+					outputVariable = new Variable() {
+						{
+							name = "gapAnalysis";
+							type = "string";
+						}
+					};
+					version = 1;
+					workflowDefinitionName =
+						WorkflowDefinitionConstants.NAME_CONTENT_GAP_ANALYSIS;
 				}
 			},
 			new AgentDefinition() {
