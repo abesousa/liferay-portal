@@ -1,5 +1,5 @@
 {
-	"@generated": "b195a93ae64116d6e7cf5b16b58eb1b9e63b6ae1",
+	"@generated": "9bca92a2dd2c7cb4de4da97a9c48a2514b108f27",
 	"@readonly": "** AUTO-GENERATED: DO NOT EDIT **",
 	"compilerOptions": {
 		"allowSyntheticDefaultImports": true,
@@ -13,6 +13,9 @@
 		"paths": {
 			"@liferay/ai-hub-cell-js-components-web": [
 				"../../../../../../../ai-hub-cell/ai-hub-cell-js-components-web/src/main/resources/META-INF/resources/js/index.ts"
+			],
+			"@liferay/ai-hub-cell-js-components-web/writing-assistant": [
+				"../../../../../../../ai-hub-cell/ai-hub-cell-js-components-web/src/main/resources/META-INF/resources/js/WritingAssistant/index.ts"
 			],
 			"@liferay/analytics-reports-js-components-web": [
 				"../../../../../../../analytics/analytics-reports-js-components-web/src/main/resources/META-INF/resources/js/index.ts"
