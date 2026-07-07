@@ -5,7 +5,7 @@
 
 import React, {useEffect, useState} from 'react';
 
-import FeedbackActionsRow from '../../ReportFeedback/FeedbackActionsRow';
+import {FeedbackActionsRow} from '../../index';
 import ConfirmationBalloon from './ConfirmationBalloon';
 
 export default function WritingAssistantConfirmationAction({

@@ -41,10 +41,11 @@ export type {
 	GapSeverity,
 } from './GapInsights/types';
 export {default as useGapInsightsAgent} from './GapInsights/useGapInsightsAgent';
+export {default as FeedbackActionsRow} from './ReportFeedback/FeedbackActionsRow';
 export {default as ReportFeedbackModal} from './ReportFeedback/ReportFeedbackModal';
 export type {
 	ReportFeedbackPayload,
 	ReportFeedbackReason,
 	ReportFeedbackSurface,
 } from './ReportFeedback/api';
-export {default as WritingAssistant} from './WritingAssistant/WritingAssistant';
+export {default as submitPositiveReportFeedback} from './ReportFeedback/submitPositiveReportFeedback';
