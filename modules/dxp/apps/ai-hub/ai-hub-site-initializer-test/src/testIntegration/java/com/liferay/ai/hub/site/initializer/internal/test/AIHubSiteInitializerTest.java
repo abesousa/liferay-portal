@@ -44,6 +44,7 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
@@ -290,6 +291,11 @@ public class AIHubSiteInitializerTest {
 		_assertWorkflowDefinitionExists(
 			_ACCOUNT_EXTERNAL_REFERENCE_CODE_AI_HUB,
 			WorkflowDefinitionConstants.
+				EXTERNAL_REFERENCE_CODE_CONTENT_GAP_ANALYSIS,
+			WorkflowDefinitionConstants.NAME_CONTENT_GAP_ANALYSIS);
+		_assertWorkflowDefinitionExists(
+			_ACCOUNT_EXTERNAL_REFERENCE_CODE_AI_HUB,
+			WorkflowDefinitionConstants.
 				EXTERNAL_REFERENCE_CODE_FIX_SPELLING_AND_GRAMMAR,
 			WorkflowDefinitionConstants.NAME_FIX_SPELLING_AND_GRAMMAR);
 		_assertWorkflowDefinitionExists(
@@ -384,7 +390,7 @@ public class AIHubSiteInitializerTest {
 		Layout layout = _layoutLocalService.fetchLayoutByFriendlyURL(
 			TestPropsValues.getGroupId(), false, friendlyURL);
 
-		Assert.assertEquals(name, layout.getName());
+		Assert.assertEquals(name, layout.getName(LocaleUtil.getSiteDefault()));
 	}
 
 	private void _assertLayoutUtilityPageEntryExists(

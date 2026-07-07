@@ -11,8 +11,7 @@ import {cancelDebounce, debounce} from 'frontend-js-web';
 import React from 'react';
 import {Root, createRoot} from 'react-dom/client';
 
-import ReportFeedbackModal from '../ReportFeedback/ReportFeedbackModal';
-import submitPositiveReportFeedback from '../ReportFeedback/submitPositiveReportFeedback';
+import {ReportFeedbackModal, submitPositiveReportFeedback} from '../index';
 import {createEventSource, postAgentInstance} from './api';
 import WritingAssistantActions from './components/WritingAssistantActions';
 import WritingAssistantConfirmationAction from './components/WritingAssistantConfirmationAction';

@@ -17,6 +17,10 @@ import {
 	CategorizeEventPayload,
 } from '../Categorization/events';
 import {ECategorizationAgent} from '../Categorization/types';
+import {
+	GAP_INSIGHTS_EVENT,
+	GapInsightsEventPayload,
+} from '../GapInsights/events';
 import ReportFeedbackModal from '../ReportFeedback/ReportFeedbackModal';
 import submitPositiveReportFeedback from '../ReportFeedback/submitPositiveReportFeedback';
 import {
@@ -27,6 +31,7 @@ import {
 import AIAssistantFooterDisclaimer from './components/AIAssistantFooterDisclaimer';
 import AIAssistantMessageBalloon from './components/AIAssistantMessageBalloon';
 import CategorizationMessageBalloon from './components/CategorizationMessageBalloon';
+import GapInsightsMessageBalloon from './components/GapInsightsMessageBalloon';
 import UserMessageBalloon from './components/UserMessageBalloon';
 
 import './chat.scss';
@@ -35,6 +40,7 @@ interface message {
 	agentDefinitionExternalReferenceCodes?: string[];
 	categorization?: CategorizeEventPayload;
 	error?: boolean;
+	gapInsights?: GapInsightsEventPayload;
 	sender: string;
 	text: string;
 }
@@ -341,6 +347,35 @@ const AIAssistantChat: React.FC<AIAssistantChatProps> = ({
 		};
 	}, []);
 
+	useEffect(() => {
+		const handleGapInsights = (payload: GapInsightsEventPayload) => {
+			setActive(true);
+
+			setMessages((previousMessages) => {
+				setTimeout(() => {
+					messagesEndRef.current?.scrollIntoView({
+						behavior: 'smooth',
+					});
+				}, 0);
+
+				return [
+					...previousMessages,
+					{
+						sender: 'user',
+						text: Liferay.Language.get('get-gap-insights'),
+					},
+					{gapInsights: payload, sender: 'assistant', text: ''},
+				];
+			});
+		};
+
+		Liferay.on(GAP_INSIGHTS_EVENT, handleGapInsights);
+
+		return () => {
+			Liferay.detach(GAP_INSIGHTS_EVENT, handleGapInsights);
+		};
+	}, []);
+
 	const chatSurface = (
 		<>
 			<div className="ai-assistant-chat__messages-container flex-grow-1 overflow-auto px-3">
@@ -367,6 +402,15 @@ const AIAssistantChat: React.FC<AIAssistantChatProps> = ({
 							<CategorizationMessageBalloon
 								key={index}
 								{...item.categorization}
+							/>
+						);
+					}
+
+					if (item.gapInsights) {
+						return (
+							<GapInsightsMessageBalloon
+								key={index}
+								{...item.gapInsights}
 							/>
 						);
 					}

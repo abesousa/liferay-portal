@@ -9,6 +9,7 @@ export {default as ProjectSelector} from './components/ProjectSelector';
 export {default as StateSelector} from './components/StateSelector';
 export {default as Tags} from './components/Tags';
 export {default as Categorization} from './components/project/Categorization';
+export {default as GapInsightsTrigger} from './components/project/GapInsightsTrigger';
 export {default as ProjectHistory} from './components/project/ProjectHistory';
 export {default as ProjectInfoSummary} from './components/project/ProjectInfoSummary';
 export {default as AllTasksFDSPropsTransformer} from './components/props_transformer/AllTasksFDSPropsTransformer';

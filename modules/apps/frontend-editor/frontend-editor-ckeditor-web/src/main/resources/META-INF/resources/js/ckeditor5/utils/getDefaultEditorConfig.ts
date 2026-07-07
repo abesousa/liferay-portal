@@ -45,7 +45,7 @@ import {
 	TableToolbar,
 } from '@ckeditor/ckeditor5-table/dist/index.js';
 import {BlockToolbar} from '@ckeditor/ckeditor5-ui/dist/index.js';
-import {WritingAssistant} from '@liferay/ai-hub-cell-js-components-web';
+import {WritingAssistant} from '@liferay/ai-hub-cell-js-components-web/writing-assistant';
 import {sub} from 'frontend-js-web';
 
 import AICreator from '../plugins/AICreator';
