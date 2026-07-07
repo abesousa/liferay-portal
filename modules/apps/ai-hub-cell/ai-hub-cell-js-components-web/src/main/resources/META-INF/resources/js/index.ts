@@ -21,6 +21,26 @@ export type {
 	Suggestion,
 } from './Categorization/types';
 export {default as useCategorizationAgent} from './Categorization/useCategorizationAgent';
+export {default as GapInsightsResults} from './GapInsights/components/GapInsightsResults';
+export {
+	GAP_INSIGHTS_EVENT,
+	GAP_INSIGHTS_FIND_ASSETS_EVENT,
+	GAP_INSIGHTS_GENERATE_CONTENT_EVENT,
+} from './GapInsights/events';
+export type {
+	GapInsightsActionEventPayload,
+	GapInsightsEventPayload,
+} from './GapInsights/events';
+export {GAP_INSIGHTS_AGENT} from './GapInsights/types';
+export type {
+	Gap,
+	GapAnalysisResult,
+	GapInsightsContext,
+	GapInsightsStatus,
+	GapInsightsSummary,
+	GapSeverity,
+} from './GapInsights/types';
+export {default as useGapInsightsAgent} from './GapInsights/useGapInsightsAgent';
 export {default as ReportFeedbackModal} from './ReportFeedback/ReportFeedbackModal';
 export type {
 	ReportFeedbackPayload,

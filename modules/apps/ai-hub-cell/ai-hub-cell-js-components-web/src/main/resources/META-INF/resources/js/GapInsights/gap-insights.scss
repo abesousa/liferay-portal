@@ -1,0 +1,55 @@
+.gap-insights {
+	&__gaps {
+		margin-bottom: 1rem;
+	}
+
+	&__gap {
+		border: 1px solid var(--gray-300, #e7e7ed);
+		border-radius: 0.25rem;
+		margin-bottom: 0.5rem;
+		padding: 0.5rem 0.75rem;
+	}
+
+	&__gap-header {
+		margin-bottom: 0.25rem;
+	}
+
+	&__gap-count {
+		font-size: 0.75rem;
+		margin-left: 0.5rem;
+	}
+
+	&__gap-reason {
+		font-size: 0.875rem;
+		margin-bottom: 0.5rem;
+	}
+
+	&__gap-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	&__severity {
+		border-radius: 0.25rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		padding: 0.125rem 0.5rem;
+		text-transform: capitalize;
+
+		&--high {
+			background-color: var(--danger-l2, #fde6e6);
+			color: var(--danger, #da1414);
+		}
+
+		&--low {
+			background-color: var(--info-l2, #e6f6fc);
+			color: var(--info-d1, #2e5aac);
+		}
+
+		&--medium {
+			background-color: var(--warning-l2, #fff6e6);
+			color: var(--warning-d1, #b95000);
+		}
+	}
+}
