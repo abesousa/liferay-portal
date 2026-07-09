@@ -647,7 +647,7 @@ public class AgentDefinitionResourceTest
 	private void _testGetAgentDefinitionsPage() throws Exception {
 		Page<AgentDefinition> page =
 			agentDefinitionResource.getAgentDefinitionsPage(
-				null, null, Pagination.of(1, 10), null);
+				null, null, Pagination.of(1, 11), null);
 
 		assertEquals(
 			_systemAgentDefinitions, (List<AgentDefinition>)page.getItems());
@@ -680,7 +680,7 @@ public class AgentDefinitionResourceTest
 		// Date created
 
 		page = agentDefinitionResource.getAgentDefinitionsPage(
-			null, "dateCreated gt 2000-01-01T00:00:00Z", Pagination.of(1, 10),
+			null, "dateCreated gt 2000-01-01T00:00:00Z", Pagination.of(1, 11),
 			null);
 
 		assertEquals(
@@ -689,7 +689,7 @@ public class AgentDefinitionResourceTest
 		// Date modified
 
 		page = agentDefinitionResource.getAgentDefinitionsPage(
-			null, "dateModified gt 2000-01-01T00:00:00Z", Pagination.of(1, 10),
+			null, "dateModified gt 2000-01-01T00:00:00Z", Pagination.of(1, 11),
 			null);
 
 		assertEquals(
@@ -938,6 +938,61 @@ public class AgentDefinitionResourceTest
 					version = 1;
 					workflowDefinitionName =
 						WorkflowDefinitionConstants.NAME_CHANGE_TONE;
+				}
+			},
+			new AgentDefinition() {
+				{
+					active = true;
+					externalReferenceCode =
+						WorkflowDefinitionConstants.
+							EXTERNAL_REFERENCE_CODE_FIND_MATCHING_ASSETS;
+					inputVariables = new Variable[] {
+						new Variable() {
+							{
+								name = "cmsGroupId";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "funnelStageId";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "keywords";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "personaId";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "portalURL";
+								type = "string";
+							}
+						},
+						new Variable() {
+							{
+								name = "tasks";
+								type = "string";
+							}
+						}
+					};
+					outputVariable = new Variable() {
+						{
+							name = "matchingAssets";
+							type = "string";
+						}
+					};
+					version = 1;
+					workflowDefinitionName =
+						WorkflowDefinitionConstants.NAME_FIND_MATCHING_ASSETS;
 				}
 			},
 			new AgentDefinition() {
