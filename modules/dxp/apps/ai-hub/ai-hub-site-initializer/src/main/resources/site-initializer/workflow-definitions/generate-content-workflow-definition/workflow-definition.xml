@@ -154,11 +154,11 @@ so re-running the same brief updates the existing draft instead of duplicating.
 			<transition>
 				<labels>
 					<label language-id="en_US">
-						Post Content Entries
+						Categorize Content Entries
 					</label>
 				</labels>
-				<name>postContentEntries</name>
-				<target>postContentEntries</target>
+				<name>categorizeContentEntries</name>
+				<target>categorizeContentEntries</target>
 				<default>true</default>
 			</transition>
 		</transitions>
@@ -170,6 +170,51 @@ Number of entries requested: {{count}}
 Space id: {{spaceId}}]]>
 		</user-message>
 	</llm>
+	<service>
+		<name>categorizeContentEntries</name>
+		<input-variables>
+			<![CDATA[
+				[
+					{
+						"name": "contentEntriesPayload",
+						"type": "string"
+					},
+					{
+						"name": "taxonomyCategoryIds",
+						"type": "string"
+					}
+				]
+			]]>
+		</input-variables>
+		<java-delegate>javaDelegate#GenerateContent#categorizeContentEntries</java-delegate>
+		<labels>
+			<label language-id="en_US">
+				Categorize Content Entries
+			</label>
+		</labels>
+		<output-variables>
+			<![CDATA[
+				[
+					{
+						"name": "contentEntriesPayload",
+						"type": "string"
+					}
+				]
+			]]>
+		</output-variables>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Post Content Entries
+					</label>
+				</labels>
+				<name>postContentEntries</name>
+				<target>postContentEntries</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</service>
 	<http-request>
 		<name>postContentEntries</name>
 		<labels>
