@@ -13,11 +13,19 @@ interface GapAnalysis {
 	summary?: {overview?: string};
 }
 
+function stripCodeFences(text: string): string {
+	const trimmed = text.trim();
+
+	const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+
+	return match ? match[1].trim() : trimmed;
+}
+
 export default function formatContentGapAnalysis(data: string): string | null {
 	let gapAnalysis: GapAnalysis;
 
 	try {
-		gapAnalysis = JSON.parse(data);
+		gapAnalysis = JSON.parse(stripCodeFences(data));
 	}
 	catch {
 		return null;
