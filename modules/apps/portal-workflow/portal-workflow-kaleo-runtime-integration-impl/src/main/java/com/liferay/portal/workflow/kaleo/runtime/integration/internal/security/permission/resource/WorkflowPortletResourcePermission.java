@@ -70,7 +70,7 @@ public class WorkflowPortletResourcePermission
 		PermissionChecker permissionChecker, long groupId, String actionId) {
 
 		try {
-			return _contains(permissionChecker, groupId);
+			return _contains(permissionChecker, groupId, actionId);
 		}
 		catch (PortalException portalException) {
 			_log.error(portalException);
@@ -95,7 +95,8 @@ public class WorkflowPortletResourcePermission
 			workflowDefinitionConfiguration.companyAdministratorCanPublish();
 	}
 
-	private boolean _contains(PermissionChecker permissionChecker, long groupId)
+	private boolean _contains(
+			PermissionChecker permissionChecker, long groupId, String actionId)
 		throws PortalException {
 
 		if (permissionChecker.isOmniadmin() ||
@@ -115,12 +116,16 @@ public class WorkflowPortletResourcePermission
 			_accountEntryLocalService.fetchUserAccountEntry(
 				permissionChecker.getUserId(), group.getClassPK());
 
-		if (accountEntry == null) {
+		if ((accountEntry == null) ||
+			Objects.equals(
+				accountEntry.getExternalReferenceCode(), "L_AI_HUB")) {
+
 			return false;
 		}
 
-		return !Objects.equals(
-			accountEntry.getExternalReferenceCode(), "L_AI_HUB");
+		return permissionChecker.hasPermission(
+			groupId, WorkflowConstants.RESOURCE_NAME,
+			WorkflowConstants.RESOURCE_NAME, actionId);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

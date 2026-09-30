@@ -6,15 +6,19 @@
 package com.liferay.portal.workflow.kaleo.service.test;
 
 import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.constants.AccountRoleConstants;
 import com.liferay.account.model.AccountEntry;
+import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
+import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
@@ -23,6 +27,7 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
@@ -217,6 +222,22 @@ public class KaleoDefinitionServiceImplTest {
 		return user;
 	}
 
+	private void _associateAccountAdministratorUser(
+			AccountEntry accountEntry, User user)
+		throws Exception {
+
+		Role role = _roleLocalService.getRole(
+			accountEntry.getCompanyId(),
+			AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR);
+
+		AccountRole accountRole =
+			_accountRoleLocalService.fetchAccountRoleByRoleId(role.getRoleId());
+
+		_accountRoleLocalService.associateUser(
+			accountEntry.getAccountEntryId(), accountRole.getAccountRoleId(),
+			user.getUserId());
+	}
+
 	private String _read() throws Exception {
 		ClassLoader classLoader =
 			BaseKaleoLocalServiceTestCase.class.getClassLoader();
@@ -298,6 +319,18 @@ public class KaleoDefinitionServiceImplTest {
 
 		_accountEntryUserRelLocalService.addAccountEntryUserRel(
 			accountEntry.getAccountEntryId(), user.getUserId());
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", user.getUserId(), " must have ",
+				ActionKeys.ADD_DEFINITION, " permission for ",
+				WorkflowConstants.RESOURCE_NAME, StringPool.SPACE),
+			() -> _addKaleoDefinition(
+				ServiceContextTestUtil.getServiceContext(
+					accountEntry.getAccountEntryGroupId(), user.getUserId())));
+
+		_associateAccountAdministratorUser(accountEntry, user);
 
 		KaleoDefinition kaleoDefinition = _addKaleoDefinition(
 			ServiceContextTestUtil.getServiceContext(
@@ -452,6 +485,22 @@ public class KaleoDefinitionServiceImplTest {
 		_accountEntryUserRelLocalService.addAccountEntryUserRel(
 			accountEntry.getAccountEntryId(), user.getUserId());
 
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", user.getUserId(), " must have ",
+				ActionKeys.ADD_DEFINITION, " permission for ",
+				WorkflowConstants.RESOURCE_NAME, StringPool.SPACE),
+			() -> _kaleoDefinitionService.updateKaleoDefinition(
+				kaleoDefinition.getExternalReferenceCode(),
+				kaleoDefinition.getKaleoDefinitionId(),
+				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+				kaleoDefinition.getContent(), false,
+				ServiceContextTestUtil.getServiceContext(
+					accountEntry.getAccountEntryGroupId(), user.getUserId())));
+
+		_associateAccountAdministratorUser(accountEntry, user);
+
 		Assert.assertNotNull(
 			_kaleoDefinitionService.updateKaleoDefinition(
 				kaleoDefinition.getExternalReferenceCode(),
@@ -476,6 +525,9 @@ public class KaleoDefinitionServiceImplTest {
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@Inject
+	private AccountRoleLocalService _accountRoleLocalService;
+
+	@Inject
 	private GroupLocalService _groupLocalService;
 
 	@Inject
@@ -490,6 +542,10 @@ public class KaleoDefinitionServiceImplTest {
 
 	private String _originalName;
 	private PermissionChecker _originalPermissionChecker;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
 	private ServiceContext _serviceContext;
 
 }
