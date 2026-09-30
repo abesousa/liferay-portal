@@ -2,8 +2,11 @@
 <!DOCTYPE resource-action-mapping PUBLIC "-//Liferay//DTD Resource Action Mapping 7.4.0//EN" "http://www.liferay.com/dtd/liferay-resource-action-mapping_7_4_0.dtd">
 
 <resource-action-mapping>
-	<portlet-resource>
-		<portlet-name>com.liferay.portal.workflow</portlet-name>
+	<model-resource>
+		<model-name>com.liferay.portal.workflow</model-name>
+		<portlet-ref>
+			<portlet-name>com_liferay_portal_workflow_web_portlet_ControlPanelWorkflowPortlet</portlet-name>
+		</portlet-ref>
 		<permissions>
 			<supports>
 				<action-key>ADD_DEFINITION</action-key>
@@ -12,7 +15,7 @@
 				<action-key>ADD_DEFINITION</action-key>
 			</guest-unsupported>
 		</permissions>
-	</portlet-resource>
+	</model-resource>
 	<model-resource>
 		<model-name>com.liferay.portal.workflow.kaleo.designer</model-name>
 		<portlet-ref>

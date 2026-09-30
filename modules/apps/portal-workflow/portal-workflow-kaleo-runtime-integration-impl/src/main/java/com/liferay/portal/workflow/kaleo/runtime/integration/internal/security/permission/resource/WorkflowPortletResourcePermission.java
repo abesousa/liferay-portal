@@ -124,7 +124,8 @@ public class WorkflowPortletResourcePermission
 		}
 
 		return permissionChecker.hasPermission(
-			groupId, WorkflowConstants.RESOURCE_NAME, 0, actionId);
+			groupId, WorkflowConstants.RESOURCE_NAME,
+			WorkflowConstants.RESOURCE_NAME, actionId);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -3,19 +3,19 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-package com.liferay.portal.workflow.kaleo.runtime.integration.internal.instance.lifecycle;
+package com.liferay.portal.workflow.kaleo.runtime.integration.internal.verify;
 
 import com.liferay.account.constants.AccountRoleConstants;
-import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener;
-import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.verify.VerifyProcess;
 
 import java.util.Arrays;
 
@@ -25,17 +25,20 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alberto Sousa
  */
-@Component(
-	property = "service.ranking:Integer=100",
-	service = PortalInstanceLifecycleListener.class
-)
-public class WorkflowAccountRolePortalInstanceLifecycleListener
-	extends BasePortalInstanceLifecycleListener {
+@Component(property = "initial.deployment=true", service = VerifyProcess.class)
+public class WorkflowAccountRolePermissionVerifyProcess extends VerifyProcess {
 
 	@Override
-	public void portalInstanceRegistered(Company company) throws Exception {
+	protected void doVerify() throws Exception {
+		try (LoggingTimer loggingTimer = new LoggingTimer()) {
+			_companyLocalService.forEachCompanyId(
+				companyId -> _checkResourcePermission(companyId));
+		}
+	}
+
+	private void _checkResourcePermission(long companyId) throws Exception {
 		Role role = _roleLocalService.fetchRole(
-			company.getCompanyId(),
+			companyId,
 			AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR);
 
 		if (role == null) {
@@ -47,11 +50,13 @@ public class WorkflowAccountRolePortalInstanceLifecycleListener
 			Arrays.asList(ActionKeys.ADD_DEFINITION));
 
 		_resourcePermissionLocalService.addResourcePermission(
-			company.getCompanyId(), WorkflowConstants.RESOURCE_NAME,
-			ResourceConstants.SCOPE_COMPANY,
-			String.valueOf(company.getCompanyId()), role.getRoleId(),
-			ActionKeys.ADD_DEFINITION);
+			companyId, WorkflowConstants.RESOURCE_NAME,
+			ResourceConstants.SCOPE_COMPANY, String.valueOf(companyId),
+			role.getRoleId(), ActionKeys.ADD_DEFINITION);
 	}
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
 
 	@Reference
 	private ResourceActionLocalService _resourceActionLocalService;
